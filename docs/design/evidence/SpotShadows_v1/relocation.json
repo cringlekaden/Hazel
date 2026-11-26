@@ -1,0 +1,33 @@
+{
+  "config": "Release",
+  "validation": true,
+  "head": "d80bb5e9a3fcfd687b1a995980806c91748e1b8d",
+  "sourceSHA256": "7073ddc36af97276231c0e4fec6b3099d0de2ce07075cedcb532e39062527235",
+  "artifactSHA256": "c68373f5eeff4f5599196933c2e19e352bc24f6fc03a5236ad4fb4e6b7f08d17",
+  "cases": {
+    "Nutella-inventory": {
+      "exitCode": 0,
+      "artifacts": 16
+    },
+    "Nutella-metal": {
+      "exitCode": 0
+    },
+    "Nutella-opengl": {
+      "exitCode": 0
+    },
+    "metal-source-free": {
+      "exitCode": 0
+    },
+    "Hazelnut-inventory": {
+      "exitCode": 0,
+      "artifacts": 16
+    },
+    "Hazelnut-metal": {
+      "exitCode": 0
+    },
+    "Hazelnut-opengl": {
+      "exitCode": 0
+    }
+  },
+  "status": "PASS"
+}

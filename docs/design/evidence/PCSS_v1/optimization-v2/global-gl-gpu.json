@@ -1,0 +1,568 @@
+{
+  "configuration": "Release",
+  "head": "d80bb5e9a3fcfd687b1a995980806c91748e1b8d",
+  "sourceSHA256": "7dcfec716f3f64883c4fb8b549ece6a090d150ccc3302f9dc43e922f61fd4570",
+  "commands": {
+    "opengl": [
+      "<repo>/bin/Release-macos-arm64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke",
+      "--shadows",
+      "<repo>/build/pcss-v1/gl-offscreen-completed-query/opengl"
+    ]
+  },
+  "backends": {
+    "opengl": {
+      "status": "MEASURED; acceptance separate",
+      "warmups": 5,
+      "cases": {
+        "1280/720/1024/0/18": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 4.4042449999999995,
+            "p95": 5.16017,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 1.349375,
+            "p95": 2.01342,
+            "samples": 20
+          }
+        },
+        "1280/720/1024/0/19.0763": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 4.4598949999999995,
+            "p95": 5.12804,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 1.3440400000000001,
+            "p95": 1.91012,
+            "samples": 20
+          }
+        },
+        "1280/720/1024/0/21": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 4.31369,
+            "p95": 4.67288,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 1.1744400000000002,
+            "p95": 1.64212,
+            "samples": 20
+          }
+        },
+        "1280/720/1024/1/18": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 4.552289999999999,
+            "p95": 5.40321,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 1.377375,
+            "p95": 2.13125,
+            "samples": 20
+          }
+        },
+        "1280/720/1024/1/19.0763": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 5.069815,
+            "p95": 5.27363,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 1.942955,
+            "p95": 2.12,
+            "samples": 20
+          }
+        },
+        "1280/720/1024/1/21": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 4.443770000000001,
+            "p95": 4.67942,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 1.3529200000000001,
+            "p95": 1.4925,
+            "samples": 20
+          }
+        },
+        "1280/720/2048/0/18": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 5.25658,
+            "p95": 5.44496,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 2.084355,
+            "p95": 2.59033,
+            "samples": 20
+          }
+        },
+        "1280/720/2048/0/19.0763": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 5.559065,
+            "p95": 6.05608,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 2.317165,
+            "p95": 2.85,
+            "samples": 20
+          }
+        },
+        "1280/720/2048/0/21": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 5.2337299999999995,
+            "p95": 5.40417,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 2.07637,
+            "p95": 2.547,
+            "samples": 20
+          }
+        },
+        "1280/720/2048/1/18": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 5.434645,
+            "p95": 5.59883,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 2.265415,
+            "p95": 2.35563,
+            "samples": 20
+          }
+        },
+        "1280/720/2048/1/19.0763": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 5.98873,
+            "p95": 6.14121,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 2.84998,
+            "p95": 2.93487,
+            "samples": 20
+          }
+        },
+        "1280/720/2048/1/21": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 5.520625,
+            "p95": 6.04267,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 2.307045,
+            "p95": 2.81317,
+            "samples": 20
+          }
+        },
+        "1920/1080/1024/0/18": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 5.99879,
+            "p95": 6.19913,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 1.10129,
+            "p95": 1.36342,
+            "samples": 20
+          }
+        },
+        "1920/1080/1024/0/19.0763": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 6.341295000000001,
+            "p95": 6.90646,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 1.50719,
+            "p95": 1.70613,
+            "samples": 20
+          }
+        },
+        "1920/1080/1024/0/21": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 6.031375,
+            "p95": 6.35954,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 1.3375599999999999,
+            "p95": 1.64212,
+            "samples": 20
+          }
+        },
+        "1920/1080/1024/1/18": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 6.415665000000001,
+            "p95": 6.70746,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 1.5474199999999998,
+            "p95": 1.99212,
+            "samples": 20
+          }
+        },
+        "1920/1080/1024/1/19.0763": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 7.590895,
+            "p95": 8.32304,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 2.768935,
+            "p95": 3.22996,
+            "samples": 20
+          }
+        },
+        "1920/1080/1024/1/21": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 6.42683,
+            "p95": 6.66583,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 1.561375,
+            "p95": 1.67775,
+            "samples": 20
+          }
+        },
+        "1920/1080/2048/0/18": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 6.890689999999999,
+            "p95": 7.52417,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 2.20779,
+            "p95": 2.52004,
+            "samples": 20
+          }
+        },
+        "1920/1080/2048/0/19.0763": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 7.246065,
+            "p95": 7.63554,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 2.7248349999999997,
+            "p95": 2.90158,
+            "samples": 20
+          }
+        },
+        "1920/1080/2048/0/21": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 6.898540000000001,
+            "p95": 7.33604,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 2.16025,
+            "p95": 2.64671,
+            "samples": 20
+          }
+        },
+        "1920/1080/2048/1/18": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 7.306145000000001,
+            "p95": 7.70062,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 2.569875,
+            "p95": 3.05579,
+            "samples": 20
+          }
+        },
+        "1920/1080/2048/1/19.0763": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 8.61783,
+            "p95": 9.03629,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 4.046315,
+            "p95": 4.49804,
+            "samples": 20
+          }
+        },
+        "1920/1080/2048/1/21": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 7.270835,
+            "p95": 7.71392,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 2.67671,
+            "p95": 2.94621,
+            "samples": 20
+          }
+        }
+      },
+      "scope": "Fully blocked, single/overlap/single, offscreen serialized. Metal GPU atlas/forward counters; GL total SceneRenderer elapsed query where recorded, no GL pass split. Serialized CPU is not GPU timing."
+    }
+  },
+  "angled": false,
+  "casterHeight": null,
+  "angularRadius": null,
+  "status": "MEASURED; acceptance separate",
+  "candidate": {
+    "kind": "qualified-global-search-control",
+    "blockerLocations": 8,
+    "filterLocations": 32,
+    "filterPattern": "vogel",
+    "comparison": "native plane envelope",
+    "fusedFilter": true,
+    "smallContact": true,
+    "refineEmpty": true,
+    "receiverPlaneBounds": false,
+    "productionSelected": false,
+    "sourceSHA256": "7dcfec716f3f64883c4fb8b549ece6a090d150ccc3302f9dc43e922f61fd4570",
+    "note": "Qualified416-byte algorithm with unused world-bound fields in448-byte ABI for comparison with current prototype binaries; same512-byte GPU alignment."
+  },
+  "peakChildResidentBytes": 280477696
+}

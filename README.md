@@ -82,7 +82,10 @@ authored normals provide continuous direct-light transitions; IBL retains its
 geometric reflection-horizon protection. See the
 [local-light gallery](examples/RenderingReference/README.md#locallights_v1-authored-point-and-spot-gallery)
 and [qualification status](docs/design/local-lighting.md). The owner accepted the
-local-light terminator correction at `c36fd1a`; point/spot shadows remain deferred.
+local-light terminator correction at `c36fd1a`. Up to four spots can cast
+perspective shadows. See the [spotlight study](examples/RenderingReference/README.md#spotlight-shadow-study)
+and [qualification record](docs/design/spotlight-shadows.md). Point-light shadows
+remain deferred.
 
 An opt-in [directional CSM foundation](docs/design/directional-shadows.md) is under
 qualification, with a [separate shadow study](examples/RenderingReference/README.md#directional-shadow-study).

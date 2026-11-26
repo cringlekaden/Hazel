@@ -482,15 +482,18 @@ uint32_t OpenGLFramebuffer::GetColorAttachmentRendererID(uint32_t index) const
 }
 
 namespace Hazel {
-void OpenGLFramebuffer::PrepareDirectionalShadows(const Ref<Framebuffer>& depth)
+void OpenGLFramebuffer::PrepareShadowDepth(const Ref<Framebuffer>& depth, ShadowMapKind kind)
 {
     auto source=std::dynamic_pointer_cast<OpenGLFramebuffer>(depth);
     GLint bound=0;glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING,&bound);
     if(!source || source.get()==this || bound!=GLint(m_RendererID) || !source->m_ColorAttachments.empty() ||
        !source->m_DepthAttachment || source->m_Specification.Samples!=1)
-        throw std::logic_error("Directional shadows require a distinct depth-only producer and bound lighting view");
+        throw std::logic_error("Shadows require a distinct depth-only producer and bound lighting view");
     GLint active=0;glGetIntegerv(GL_ACTIVE_TEXTURE,&active);
-    glActiveTexture(GL_TEXTURE10);glBindTexture(GL_TEXTURE_2D,source->m_DepthAttachment);glBindSampler(10,0);
+    const GLuint binding = kind == ShadowMapKind::Directional ? 10 : 11;
+    glActiveTexture(GL_TEXTURE0 + binding);
+    glBindTexture(GL_TEXTURE_2D, source->m_DepthAttachment);
+    glBindSampler(binding, 0);
     glActiveTexture(active);
 }
 }

@@ -1,0 +1,101 @@
+{
+  "config": "Debug",
+  "validation": true,
+  "head": "d80bb5e9a3fcfd687b1a995980806c91748e1b8d",
+  "sourceSHA256": "7073ddc36af97276231c0e4fec6b3099d0de2ce07075cedcb532e39062527235",
+  "artifactSHA256": "c68373f5eeff4f5599196933c2e19e352bc24f6fc03a5236ad4fb4e6b7f08d17",
+  "cases": {
+    "metal": {
+      "command": [
+        "<repo>/bin/Debug-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+        "<repo>/Hazel/Resources",
+        "<repo>/build/spot-shadows/qualification-debug-v2/metal",
+        "--spot-shadows"
+      ],
+      "exitCode": 0,
+      "summary": [
+        "PASS spot FP64 projection cone samples=1296 maxDepthError=3.66931e-08",
+        "SPOT referenceError=3.95772e-07 loopError=0 redBlocked=3273/3273 greenBlocked=3793/3793 redLit=24769/24769 greenLit=23561/23561 overlap=1178 contact=48 outsideCone=36108 outsideRange=39975",
+        "SPOT mask revealed=166 retained=1879",
+        "SPOT slopeError=1.19267e-07",
+        "PASS spotlight shadows, mixed maps, motion, resize, disable and authored study",
+        "SPOT_RESOURCES peak=74117232 attachments=35381504 final=0"
+      ]
+    },
+    "spot-shadow-lifetime": {
+      "command": [
+        "<repo>/bin/Debug-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+        "<repo>/Hazel/Resources",
+        "<repo>/build/spot-shadows/qualification-debug-v2/spot-shadow-lifetime",
+        "--spot-shadow-lifetime"
+      ],
+      "exitCode": 0,
+      "summary": [
+        "PASS lit moving-shadow serialized/three-slot equivalence, shared atlas storage, resolution replacement, busy cancellation and view destruction/retirement spot=1 TAA=0",
+        "SPOT_RESOURCES peak=6325296 attachments=9281792 final=0"
+      ]
+    },
+    "spot-shadow-taa-lifetime": {
+      "command": [
+        "<repo>/bin/Debug-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+        "<repo>/Hazel/Resources",
+        "<repo>/build/spot-shadows/qualification-debug-v2/spot-shadow-taa-lifetime",
+        "--spot-shadow-taa-lifetime"
+      ],
+      "exitCode": 0,
+      "summary": [
+        "PASS lit moving-shadow serialized/three-slot equivalence, shared atlas storage, resolution replacement, busy cancellation and view destruction/retirement spot=1 TAA=1",
+        "SPOT_RESOURCES peak=6889048 attachments=9838848 final=0"
+      ]
+    },
+    "opengl": {
+      "command": [
+        "<repo>/bin/Debug-macos-arm64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke",
+        "--spot-shadows",
+        "<repo>/build/spot-shadows/qualification-debug-v2/opengl"
+      ],
+      "exitCode": 0,
+      "summary": [
+        "Renderer: Apple M4; Version: 4.1 Metal - 91.7",
+        "PASS spot FP64 projection cone samples=1296 maxDepthError=3.66931e-08",
+        "SPOT referenceError=4.07995e-07 loopError=0 redBlocked=3273/3273 greenBlocked=3793/3793 redLit=24769/24769 greenLit=23561/23561 overlap=1178 contact=48 outsideCone=36108 outsideRange=39975",
+        "SPOT mask revealed=166 retained=1879",
+        "SPOT slopeError=8.97169e-08",
+        "PASS spotlight shadows, mixed maps, motion, resize, disable and authored study"
+      ]
+    }
+  },
+  "status": "PASS",
+  "parity": {
+    "hard": {
+      "idMismatches": 0,
+      "maxDepth": 5.960464477539063e-08,
+      "maxRGB": 0.013637423515319824
+    },
+    "masked": {
+      "idMismatches": 0,
+      "maxDepth": 5.960464477539063e-08,
+      "maxRGB": 8.83452594280243e-06
+    },
+    "slope": {
+      "idMismatches": 0,
+      "maxDepth": 3.5762786865234375e-07,
+      "maxRGB": 1.4886260032653809e-05
+    },
+    "unshadowed": {
+      "idMismatches": 0,
+      "maxDepth": 5.960464477539063e-08,
+      "maxRGB": 7.003545761108398e-07
+    },
+    "study": {
+      "idMismatches": 1,
+      "maxDepth": 1.7881393432617188e-07,
+      "maxRGB": 0.1079477472230792
+    },
+    "combined": {
+      "idMismatches": 1,
+      "maxDepth": 1.7881393432617188e-07,
+      "maxRGB": 0.11702127195894718
+    }
+  }
+}

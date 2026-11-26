@@ -188,13 +188,19 @@ bool Scene(const YAML::Node& root, bool prefabDocument)
         }
         for(const char *name:{"PointLightComponent","SpotLightComponent"})if(auto n=entity[name]) {
             const bool spot=std::string(name)=="SpotLightComponent";
-            if(spot)Keys(n,{"Color","Intensity","Enabled","Range","InnerCone","OuterCone"},name);
+            if(spot)Keys(n,{"Color","Intensity","Enabled","Range","InnerCone","OuterCone","CastShadows","ShadowResolution"},name);
             else Keys(n,{"Color","Intensity","Enabled","Range"},name);
             Vector(n["Color"],3);
             SpotLight light;
             for(int i=0;i<3;++i)light.Color[i]=n["Color"][i].as<float>();
             light.Intensity=n["Intensity"].as<float>();light.Enabled=n["Enabled"].as<bool>();light.Range=n["Range"].as<float>();
-            if(spot){light.InnerCone=n["InnerCone"].as<float>();light.OuterCone=n["OuterCone"].as<float>();light.Validate();}
+            if (spot) {
+                light.InnerCone = n["InnerCone"].as<float>();
+                light.OuterCone = n["OuterCone"].as<float>();
+                if (auto cast = n["CastShadows"]) light.CastShadows = cast.as<bool>();
+                if (auto side = n["ShadowResolution"]) light.ShadowResolution = side.as<unsigned>();
+                light.Validate();
+            }
             else light.PointLight::Validate();
         }
         if(auto n=entity["MeshRendererComponent"])ReadMeshBinding(n);

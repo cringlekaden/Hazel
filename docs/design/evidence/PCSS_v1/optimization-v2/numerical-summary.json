@@ -1,0 +1,75 @@
+{
+  "release": {
+    "metal": {
+      "status": "PASS scoped planes",
+      "cases": 32,
+      "maxFP64VisibilityError": 0.0005000976643607657,
+      "maxSeparationError": 2.665447452976366e-05,
+      "maxRadiusError": 9.312893640908704e-07,
+      "maxContourNativeTexels": 0.4653156910825253,
+      "maxResolvedWidthRelativeError": 0.06919965735323752,
+      "maxRadianceError": 1.4747030263606575e-08,
+      "maxDiskError": 0.06057648194511045,
+      "maxExtraMotionPixels": 0.013630211679235893,
+      "staticRepeat": true
+    },
+    "opengl": {
+      "status": "PASS scoped planes",
+      "cases": 32,
+      "maxFP64VisibilityError": 0.0006194501562326593,
+      "maxSeparationError": 2.7090131496265712e-05,
+      "maxRadiusError": 9.241376782154198e-07,
+      "maxContourNativeTexels": 0.46525460999942175,
+      "maxResolvedWidthRelativeError": 0.06919965735323752,
+      "maxRadianceError": 1.475928002037108e-08,
+      "maxDiskError": 0.060578257249529255,
+      "maxExtraMotionPixels": 0.012884455363193631,
+      "staticRepeat": true
+    }
+  },
+  "debug": {
+    "metal": {
+      "status": "PASS scoped planes",
+      "cases": 32,
+      "maxFP64VisibilityError": 0.0005000976643607657,
+      "maxSeparationError": 2.665447452976366e-05,
+      "maxRadiusError": 9.312893640908704e-07,
+      "maxContourNativeTexels": 0.4653156910825253,
+      "maxResolvedWidthRelativeError": 0.06919965735323752,
+      "maxRadianceError": 1.4747030263606575e-08,
+      "maxDiskError": 0.06057648194511045,
+      "maxExtraMotionPixels": 0.013630211679235893,
+      "staticRepeat": true
+    },
+    "opengl": {
+      "status": "PASS scoped planes",
+      "cases": 32,
+      "maxFP64VisibilityError": 0.0006194501562326593,
+      "maxSeparationError": 2.7090131496265712e-05,
+      "maxRadiusError": 9.241376782154198e-07,
+      "maxContourNativeTexels": 0.46525460999942175,
+      "maxResolvedWidthRelativeError": 0.06919965735323752,
+      "maxRadianceError": 1.475928002037108e-08,
+      "maxDiskError": 0.060578257249529255,
+      "maxExtraMotionPixels": 0.012884455363193631,
+      "staticRepeat": true
+    }
+  },
+  "glNativePCSS": {
+    "1280x720": {
+      "samples": 690,
+      "median": 5.881667,
+      "p95": 6.329876
+    },
+    "1920x1080": {
+      "samples": 689,
+      "median": 6.515166,
+      "p95": 7.114501
+    }
+  },
+  "notes": [
+    "Global8/32 candidate,416-byte ABI, scoped Debug/Release references.",
+    "GL native visible-window GPU measurements have no presentation timestamp proof and use RGBA16F display; Metal native presentation uses RGBA32F.",
+    "New common-bound448 experiment separately fails the frozen continuous-disk gate; no threshold changed."
+  ]
+}

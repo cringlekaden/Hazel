@@ -182,6 +182,7 @@ std::string SceneSerializer::CaptureAuthoredState(Entity only, const std::type_i
         state.Component<PointLightComponent>(e, localLight);
         state.Component<SpotLightComponent>(e, [&](auto &c) {
             localLight(c);state.Value(c.InnerCone);state.Value(c.OuterCone);
+            state.Value(c.CastShadows);state.Value(c.ShadowResolution);
         });
         state.Component<MeshRendererComponent>(e,[&](auto& c){state.Value(c.Mesh);state.Value(uint64_t(c.Materials.size()));for(auto& m:c.Materials){state.Value(m.first);state.Value(m.second);}});
         state.Component<CircleRendererComponent>(e, [&](auto &c) {

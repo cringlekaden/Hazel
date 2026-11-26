@@ -1,0 +1,10 @@
+{
+  "protectedBytesEqual": {
+    "docs/design/directional-shadows.md": true,
+    "examples/RenderingReference/RenderingReference-Shadows.hproj": true,
+    "tests/macos/DirectionalShadowQualification.h": true,
+    "tests/macos/MetalRenderer2DQuadSmoke.cpp": true,
+    "tests/macos/ShadowContinuityChecks.h": true
+  },
+  "productionDiff": ""
+}

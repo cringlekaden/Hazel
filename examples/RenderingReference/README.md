@@ -313,3 +313,17 @@ records a rejected filter experiment and the unresolved contour/coverage limitat
 This is an experimental foundation, pending owner visual acceptance and the
 remaining gates in the [CSM record](../../docs/design/directional-shadows.md).
 Native macOS evidence does not qualify Windows/Linux or Intel hardware.
+
+## Spotlight shadow study
+
+Open `RenderingReference-SpotShadows.hproj` in Hazelnut and press Play to use
+the authored camera. The amber and blue spotlights use 512 and 1024 maps.
+The scene includes an opaque contact block, a mirrored block and a floating
+texture cutout. Toggle **Cast shadows** on either Spot Light to inspect its
+contribution independently, or resize the viewport to inspect coverage.
+
+```sh
+python3 scripts/hazel.py run Nutella --config Release --project examples/RenderingReference/RenderingReference-SpotShadows.hproj
+```
+
+See the [spotlight shadow design and evidence](../../docs/design/spotlight-shadows.md).

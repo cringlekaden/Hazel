@@ -1363,6 +1363,13 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         if (PropertyUI::SliderFloat("inner", "Inner half angle", inner, 0, glm::degrees(light.OuterCone-.0011f)))
             light.InnerCone=glm::radians(inner);
         ImGui::TextWrapped("Local -Z is the cone direction. Angles are half angles in degrees.");
+        PropertyUI::Checkbox("cast-shadows", "Cast shadows", light.CastShadows);
+        if (light.CastShadows) {
+            int resolution = light.ShadowResolution == 256 ? 0 : light.ShadowResolution == 512 ? 1 : 2;
+            if (PropertyUI::Combo("shadow-resolution", "Shadow resolution", resolution, "256\0" "512\0" "1024\0"))
+                light.ShadowResolution = 256u << resolution;
+            ImGui::TextWrapped("Up to four enabled, emitting spotlights cast shadows, ordered by entity ID.");
+        }
     });
     DrawUIComponent<MeshRendererComponent>(
         "Mesh Renderer", entity, m_Sections, m_RestoreSections, [&, entity](auto &c) mutable {

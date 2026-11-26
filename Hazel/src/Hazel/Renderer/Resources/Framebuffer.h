@@ -71,6 +71,7 @@ namespace Hazel {
     };
 
     class ComputePipeline;
+    enum class ShadowMapKind { Directional, Spot };
 	class Framebuffer
 	{
 	public:
@@ -85,7 +86,7 @@ namespace Hazel {
         virtual void Clear(glm::vec4 color);
         virtual void ClearEditor(glm::vec4 color);
         // Consume an unbound, depth-only atlas before this view's forward draws.
-        virtual void PrepareDirectionalShadows(const Ref<Framebuffer>& depth) = 0;
+        virtual void PrepareShadowDepth(const Ref<Framebuffer>& depth, ShadowMapKind kind) = 0;
         // Captures an unbound producer into an empty, equal-size FP32 destination.
         // IDs/depth are preserved; a later render pass or Submit consumes the result.
         virtual void DispatchColorTo(const Ref<Framebuffer>& destination, const Ref<ComputePipeline>& pipeline, const std::vector<uint8_t>& parameters);

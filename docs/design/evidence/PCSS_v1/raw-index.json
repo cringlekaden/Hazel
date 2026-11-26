@@ -1,0 +1,151 @@
+{
+  "root": "/Volumes/External/kadencringle/Projects/Hazel/build/pcss-v1",
+  "note": "All raw captures, logs, isolated binaries/resources retained under ignored build/pcss-v1; selected hashes below. Archive contains derived native PNGs and compact numerical evidence.",
+  "selected": [
+    {
+      "path": "build/pcss-v1/planes-release/metal/plane-23-radiance.bin",
+      "bytes": 6291456,
+      "sha256": "e19d8a65235ee8c234489279a14bfd061ea027bddd6d6680f82c64f69abdd601"
+    },
+    {
+      "path": "build/pcss-v1/planes-release/metal/plane-23-physical.bin",
+      "bytes": 6291456,
+      "sha256": "697db1048fc708869eee403f88dfe33c2c3b44f6a0bc105b2fb5eb3d6f36abb2"
+    },
+    {
+      "path": "build/pcss-v1/planes-release/metal/plane-23-position.bin",
+      "bytes": 6291456,
+      "sha256": "2a24577aa285c189133d64171fa4c4d4f7599febd8d53698f31a3164ca92dd47"
+    },
+    {
+      "path": "build/pcss-v1/planes-release/metal/plane-23-visibility.bin",
+      "bytes": 6291456,
+      "sha256": "6a88fa80b6253a5776c4047c52ab8e10723abde92345255a58fc59d7aa9f41bc"
+    },
+    {
+      "path": "build/pcss-v1/planes-release/metal/plane-23-pair.bin",
+      "bytes": 6291456,
+      "sha256": "8252e3864792d3c76e7d6521262b9ed06044c7c852fcca6cfe6f809cf686634e"
+    },
+    {
+      "path": "build/pcss-v1/planes-final-debug/metal/plane-23-radiance.bin",
+      "bytes": 6291456,
+      "sha256": "6388479a73a9fe188f6a713a9eff55d1d14854f701c83d22a4b9fbcac1bc5b4f"
+    },
+    {
+      "path": "build/pcss-v1/planes-final-debug/metal/plane-23-physical.bin",
+      "bytes": 6291456,
+      "sha256": "16510e873837bdcf84e6c6d17483d02e19761282608b1db5409b596ed67124cc"
+    },
+    {
+      "path": "build/pcss-v1/planes-final-debug/metal/plane-23-pcf-radiance.bin",
+      "bytes": 6291456,
+      "sha256": "28a83dc073fe4b611c534253ef432f5fe1fe3b76865f95640c019983fc3db981"
+    },
+    {
+      "path": "build/pcss-v1/planes-final-debug/metal/plane-23-position.bin",
+      "bytes": 6291456,
+      "sha256": "2a24577aa285c189133d64171fa4c4d4f7599febd8d53698f31a3164ca92dd47"
+    },
+    {
+      "path": "build/pcss-v1/planes-final-debug/metal/plane-23-visibility.bin",
+      "bytes": 6291456,
+      "sha256": "a7e3b47a6b5d75a96b935bfb6bf8403a699ff4e93265e6a5a9b12d0917c30763"
+    },
+    {
+      "path": "build/pcss-v1/planes-final-debug/metal/plane-23-pair.bin",
+      "bytes": 6291456,
+      "sha256": "8ff0499e5120807a1efb9463fb7148f9bdb28c6b915ac4bf84e6e83a71390e20"
+    },
+    {
+      "path": "build/pcss-v1/planes-final-debug/metal/plane-23-pcf-visibility.bin",
+      "bytes": 6291456,
+      "sha256": "63379b6d8ad027345cfe41a6102aa162a0e58972581b685c54dd0febc38f6da5"
+    },
+    {
+      "path": "build/pcss-v1/planes-final-release/metal/plane-23-radiance.bin",
+      "bytes": 6291456,
+      "sha256": "6388479a73a9fe188f6a713a9eff55d1d14854f701c83d22a4b9fbcac1bc5b4f"
+    },
+    {
+      "path": "build/pcss-v1/planes-final-release/metal/plane-23-physical.bin",
+      "bytes": 6291456,
+      "sha256": "16510e873837bdcf84e6c6d17483d02e19761282608b1db5409b596ed67124cc"
+    },
+    {
+      "path": "build/pcss-v1/planes-final-release/metal/plane-23-pcf-radiance.bin",
+      "bytes": 6291456,
+      "sha256": "28a83dc073fe4b611c534253ef432f5fe1fe3b76865f95640c019983fc3db981"
+    },
+    {
+      "path": "build/pcss-v1/planes-final-release/metal/plane-23-position.bin",
+      "bytes": 6291456,
+      "sha256": "2a24577aa285c189133d64171fa4c4d4f7599febd8d53698f31a3164ca92dd47"
+    },
+    {
+      "path": "build/pcss-v1/planes-final-release/metal/plane-23-visibility.bin",
+      "bytes": 6291456,
+      "sha256": "a7e3b47a6b5d75a96b935bfb6bf8403a699ff4e93265e6a5a9b12d0917c30763"
+    },
+    {
+      "path": "build/pcss-v1/planes-final-release/metal/plane-23-pair.bin",
+      "bytes": 6291456,
+      "sha256": "8ff0499e5120807a1efb9463fb7148f9bdb28c6b915ac4bf84e6e83a71390e20"
+    },
+    {
+      "path": "build/pcss-v1/planes-final-release/metal/plane-23-pcf-visibility.bin",
+      "bytes": 6291456,
+      "sha256": "63379b6d8ad027345cfe41a6102aa162a0e58972581b685c54dd0febc38f6da5"
+    },
+    {
+      "path": "build/pcss-v1/planes-strata-release/metal/plane-23-radiance.bin",
+      "bytes": 6291456,
+      "sha256": "6388479a73a9fe188f6a713a9eff55d1d14854f701c83d22a4b9fbcac1bc5b4f"
+    },
+    {
+      "path": "build/pcss-v1/planes-strata-release/metal/plane-23-physical.bin",
+      "bytes": 6291456,
+      "sha256": "16510e873837bdcf84e6c6d17483d02e19761282608b1db5409b596ed67124cc"
+    },
+    {
+      "path": "build/pcss-v1/planes-strata-release/metal/plane-23-position.bin",
+      "bytes": 6291456,
+      "sha256": "2a24577aa285c189133d64171fa4c4d4f7599febd8d53698f31a3164ca92dd47"
+    },
+    {
+      "path": "build/pcss-v1/planes-strata-release/metal/plane-23-visibility.bin",
+      "bytes": 6291456,
+      "sha256": "a7e3b47a6b5d75a96b935bfb6bf8403a699ff4e93265e6a5a9b12d0917c30763"
+    },
+    {
+      "path": "build/pcss-v1/planes-strata-release/metal/plane-23-pair.bin",
+      "bytes": 6291456,
+      "sha256": "8ff0499e5120807a1efb9463fb7148f9bdb28c6b915ac4bf84e6e83a71390e20"
+    },
+    {
+      "path": "build/pcss-v1/planes-gather-release/metal/plane-23-radiance.bin",
+      "bytes": 6291456,
+      "sha256": "6388479a73a9fe188f6a713a9eff55d1d14854f701c83d22a4b9fbcac1bc5b4f"
+    },
+    {
+      "path": "build/pcss-v1/planes-gather-release/metal/plane-23-physical.bin",
+      "bytes": 6291456,
+      "sha256": "16510e873837bdcf84e6c6d17483d02e19761282608b1db5409b596ed67124cc"
+    },
+    {
+      "path": "build/pcss-v1/planes-gather-release/metal/plane-23-position.bin",
+      "bytes": 6291456,
+      "sha256": "2a24577aa285c189133d64171fa4c4d4f7599febd8d53698f31a3164ca92dd47"
+    },
+    {
+      "path": "build/pcss-v1/planes-gather-release/metal/plane-23-visibility.bin",
+      "bytes": 6291456,
+      "sha256": "a7e3b47a6b5d75a96b935bfb6bf8403a699ff4e93265e6a5a9b12d0917c30763"
+    },
+    {
+      "path": "build/pcss-v1/planes-gather-release/metal/plane-23-pair.bin",
+      "bytes": 6291456,
+      "sha256": "8ff0499e5120807a1efb9463fb7148f9bdb28c6b915ac4bf84e6e83a71390e20"
+    }
+  ]
+}

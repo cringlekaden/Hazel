@@ -1,0 +1,82 @@
+{
+  "configuration": "Release",
+  "head": "d80bb5e9a3fcfd687b1a995980806c91748e1b8d",
+  "sourceSHA256": "0afdc1c000af39288563d0e03a2e40d3dd9997ca39f08d47e3ae8881d4c9c9f7",
+  "commands": {
+    "metal": [
+      "<repo>/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "<repo>/Hazel/Resources",
+      "<repo>/build/pcss-v1/layered-wide-cost/metal",
+      "--shadows"
+    ]
+  },
+  "backends": {
+    "metal": {
+      "status": "MEASURED; acceptance separate",
+      "warmups": 5,
+      "cases": {
+        "1920/1080/1024/1/19.0763": {
+          "shadowGPUms": {
+            "median": 0.0874375,
+            "p95": 0.163875,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 13.44575,
+            "p95": 13.9613,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 20.651600000000002,
+            "p95": 22.0463,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          }
+        },
+        "1920/1080/2048/1/19.0763": {
+          "shadowGPUms": {
+            "median": 0.33225000000000005,
+            "p95": 0.344208,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 13.4795,
+            "p95": 14.0107,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 21.4758,
+            "p95": 22.3188,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          }
+        }
+      },
+      "scope": "Fully blocked, single/overlap/single, offscreen serialized. Metal GPU atlas/forward counters; GL total SceneRenderer elapsed query where recorded, no GL pass split. Serialized CPU is not GPU timing."
+    }
+  },
+  "angled": true,
+  "casterHeight": 0.02,
+  "angularRadius": 0.03490658,
+  "status": "MEASURED; acceptance separate",
+  "candidate": {
+    "blockerLocations": 8,
+    "filterLocations": 32,
+    "filterPattern": "vogel",
+    "comparison": "native plane envelope",
+    "fusedFilter": true,
+    "smallContact": true,
+    "refineEmpty": true,
+    "productionSelected": false,
+    "integratedCandidate": true
+  },
+  "peakChildResidentBytes": 264142848
+}

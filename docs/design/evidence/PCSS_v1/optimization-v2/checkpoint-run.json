@@ -1,0 +1,340 @@
+{
+  "head": "d80bb5e9a3fcfd687b1a995980806c91748e1b8d",
+  "sourceSHA256": "0afdc1c000af39288563d0e03a2e40d3dd9997ca39f08d47e3ae8881d4c9c9f7",
+  "gates": {
+    "release-strips": {
+      "command": [
+        "python3",
+        "scripts/macos/directional_pcss.py",
+        "--config",
+        "Release",
+        "--resources",
+        "<repo>/build/pcss-v1/checkpoint/resources",
+        "--output",
+        "<repo>/build/pcss-v1/checkpoint/release-strips",
+        "--strips"
+      ],
+      "exitCode": 0,
+      "status": "PASS command"
+    },
+    "release-strips-metal": {
+      "status": "PASS scoped thin/layered depth-grid"
+    },
+    "release-strips-opengl": {
+      "status": "PASS scoped thin/layered depth-grid"
+    },
+    "release-planes": {
+      "command": [
+        "python3",
+        "scripts/macos/directional_pcss.py",
+        "--config",
+        "Release",
+        "--resources",
+        "<repo>/build/pcss-v1/checkpoint/resources",
+        "--output",
+        "<repo>/build/pcss-v1/checkpoint/release-planes"
+      ],
+      "exitCode": 0,
+      "status": "PASS command"
+    },
+    "release-motion": {
+      "command": [
+        "python3",
+        "scripts/macos/directional_pcss.py",
+        "--config",
+        "Release",
+        "--resources",
+        "<repo>/build/pcss-v1/checkpoint/resources",
+        "--output",
+        "<repo>/build/pcss-v1/checkpoint/release-motion",
+        "--motion"
+      ],
+      "exitCode": 0,
+      "status": "PASS command"
+    },
+    "release-motion-metal": {
+      "status": "PASS scoped temporal"
+    },
+    "release-motion-opengl": {
+      "status": "PASS scoped temporal"
+    },
+    "release-authored": {
+      "command": [
+        "python3",
+        "scripts/macos/directional_pcss.py",
+        "--config",
+        "Release",
+        "--resources",
+        "<repo>/build/pcss-v1/checkpoint/resources",
+        "--output",
+        "<repo>/build/pcss-v1/checkpoint/release-authored",
+        "--authored"
+      ],
+      "exitCode": 0,
+      "status": "PASS command"
+    },
+    "release-pcss--shadow-temporal-lifetime": {
+      "command": [
+        "<repo>/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+        "<repo>/build/pcss-v1/checkpoint/resources",
+        "<repo>/build/pcss-v1/checkpoint/release--shadow-temporal-lifetime",
+        "--shadow-temporal-lifetime"
+      ],
+      "exitCode": 0,
+      "status": "PASS command"
+    },
+    "release-pcss--shadow-atlas-lifetime": {
+      "command": [
+        "<repo>/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+        "<repo>/build/pcss-v1/checkpoint/resources",
+        "<repo>/build/pcss-v1/checkpoint/release--shadow-atlas-lifetime",
+        "--shadow-atlas-lifetime"
+      ],
+      "exitCode": 0,
+      "status": "PASS command"
+    },
+    "release-pcss--shadow-atlas-taa-lifetime": {
+      "command": [
+        "<repo>/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+        "<repo>/build/pcss-v1/checkpoint/resources",
+        "<repo>/build/pcss-v1/checkpoint/release--shadow-atlas-taa-lifetime",
+        "--shadow-atlas-taa-lifetime"
+      ],
+      "exitCode": 0,
+      "status": "PASS command"
+    },
+    "release-pcf-regression": {
+      "command": [
+        "python3",
+        "scripts/macos/directional_shadows.py",
+        "--config",
+        "Release",
+        "--resources",
+        "<repo>/build/pcss-v1/checkpoint/resources",
+        "--output",
+        "<repo>/build/pcss-v1/checkpoint/release-pcf-regression"
+      ],
+      "exitCode": 0,
+      "status": "PASS command"
+    },
+    "release-ggx": {
+      "command": [
+        "python3",
+        "scripts/macos/ggx_multiscattering.py",
+        "--config",
+        "Release",
+        "--project",
+        "examples/RenderingReference/RenderingReference.hproj",
+        "--output",
+        "<repo>/build/pcss-v1/checkpoint/release-ggx"
+      ],
+      "exitCode": 0,
+      "status": "PASS command"
+    },
+    "release-local": {
+      "command": [
+        "python3",
+        "scripts/macos/local_lighting.py",
+        "--config",
+        "Release",
+        "--resources",
+        "<repo>/build/pcss-v1/checkpoint/resources",
+        "--smooth-terminator",
+        "--output",
+        "<repo>/build/pcss-v1/checkpoint/release-local"
+      ],
+      "exitCode": 0,
+      "status": "PASS command"
+    },
+    "release-shaders": {
+      "command": [
+        "<repo>/bin/Release-macos-arm64/MetalShaderSmoke/MetalShaderSmoke",
+        "<repo>/build/pcss-v1/checkpoint/release-shader-resources",
+        "<repo>/build/pcss-v1/checkpoint/release-shader-profile"
+      ],
+      "exitCode": 0,
+      "status": "PASS command"
+    },
+    "debug-strips": {
+      "command": [
+        "python3",
+        "scripts/macos/directional_pcss.py",
+        "--config",
+        "Debug",
+        "--resources",
+        "<repo>/build/pcss-v1/checkpoint/resources",
+        "--output",
+        "<repo>/build/pcss-v1/checkpoint/debug-strips",
+        "--strips"
+      ],
+      "exitCode": 0,
+      "status": "PASS command"
+    },
+    "debug-strips-metal": {
+      "status": "PASS scoped thin/layered depth-grid"
+    },
+    "debug-strips-opengl": {
+      "status": "PASS scoped thin/layered depth-grid"
+    },
+    "debug-planes": {
+      "command": [
+        "python3",
+        "scripts/macos/directional_pcss.py",
+        "--config",
+        "Debug",
+        "--resources",
+        "<repo>/build/pcss-v1/checkpoint/resources",
+        "--output",
+        "<repo>/build/pcss-v1/checkpoint/debug-planes"
+      ],
+      "exitCode": 0,
+      "status": "PASS command"
+    },
+    "debug-motion": {
+      "command": [
+        "python3",
+        "scripts/macos/directional_pcss.py",
+        "--config",
+        "Debug",
+        "--resources",
+        "<repo>/build/pcss-v1/checkpoint/resources",
+        "--output",
+        "<repo>/build/pcss-v1/checkpoint/debug-motion",
+        "--motion"
+      ],
+      "exitCode": 0,
+      "status": "PASS command"
+    },
+    "debug-motion-metal": {
+      "status": "PASS scoped temporal"
+    },
+    "debug-motion-opengl": {
+      "status": "PASS scoped temporal"
+    },
+    "debug-authored": {
+      "command": [
+        "python3",
+        "scripts/macos/directional_pcss.py",
+        "--config",
+        "Debug",
+        "--resources",
+        "<repo>/build/pcss-v1/checkpoint/resources",
+        "--output",
+        "<repo>/build/pcss-v1/checkpoint/debug-authored",
+        "--authored"
+      ],
+      "exitCode": 0,
+      "status": "PASS command"
+    },
+    "debug-pcss--shadow-temporal-lifetime": {
+      "command": [
+        "<repo>/bin/Debug-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+        "<repo>/build/pcss-v1/checkpoint/resources",
+        "<repo>/build/pcss-v1/checkpoint/debug--shadow-temporal-lifetime",
+        "--shadow-temporal-lifetime"
+      ],
+      "exitCode": 0,
+      "status": "PASS command"
+    },
+    "debug-pcss--shadow-atlas-lifetime": {
+      "command": [
+        "<repo>/bin/Debug-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+        "<repo>/build/pcss-v1/checkpoint/resources",
+        "<repo>/build/pcss-v1/checkpoint/debug--shadow-atlas-lifetime",
+        "--shadow-atlas-lifetime"
+      ],
+      "exitCode": 0,
+      "status": "PASS command"
+    },
+    "debug-pcss--shadow-atlas-taa-lifetime": {
+      "command": [
+        "<repo>/bin/Debug-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+        "<repo>/build/pcss-v1/checkpoint/resources",
+        "<repo>/build/pcss-v1/checkpoint/debug--shadow-atlas-taa-lifetime",
+        "--shadow-atlas-taa-lifetime"
+      ],
+      "exitCode": 0,
+      "status": "PASS command"
+    },
+    "debug-pcf-regression": {
+      "command": [
+        "python3",
+        "scripts/macos/directional_shadows.py",
+        "--config",
+        "Debug",
+        "--resources",
+        "<repo>/build/pcss-v1/checkpoint/resources",
+        "--output",
+        "<repo>/build/pcss-v1/checkpoint/debug-pcf-regression"
+      ],
+      "exitCode": 0,
+      "status": "PASS command"
+    },
+    "debug-ggx": {
+      "command": [
+        "python3",
+        "scripts/macos/ggx_multiscattering.py",
+        "--config",
+        "Debug",
+        "--project",
+        "examples/RenderingReference/RenderingReference.hproj",
+        "--output",
+        "<repo>/build/pcss-v1/checkpoint/debug-ggx"
+      ],
+      "exitCode": 0,
+      "status": "PASS command"
+    },
+    "debug-local": {
+      "command": [
+        "python3",
+        "scripts/macos/local_lighting.py",
+        "--config",
+        "Debug",
+        "--resources",
+        "<repo>/build/pcss-v1/checkpoint/resources",
+        "--smooth-terminator",
+        "--output",
+        "<repo>/build/pcss-v1/checkpoint/debug-local"
+      ],
+      "exitCode": 0,
+      "status": "PASS command"
+    },
+    "debug-shaders": {
+      "command": [
+        "<repo>/bin/Debug-macos-arm64/MetalShaderSmoke/MetalShaderSmoke",
+        "<repo>/build/pcss-v1/checkpoint/debug-shader-resources",
+        "<repo>/build/pcss-v1/checkpoint/debug-shader-profile"
+      ],
+      "exitCode": 0,
+      "status": "PASS command"
+    },
+    "release-ao": {
+      "command": [
+        "python3",
+        "scripts/macos/xegtao.py",
+        "--config",
+        "Release",
+        "--resources",
+        "<repo>/build/pcss-v1/checkpoint/resources",
+        "--output",
+        "<repo>/build/pcss-v1/checkpoint/release-ao"
+      ],
+      "exitCode": 0,
+      "status": "PASS command"
+    },
+    "release-taa": {
+      "command": [
+        "python3",
+        "scripts/macos/taa.py",
+        "--config",
+        "Release",
+        "--resources",
+        "<repo>/build/pcss-v1/checkpoint/resources",
+        "--output",
+        "<repo>/build/pcss-v1/checkpoint/release-taa"
+      ],
+      "exitCode": 0,
+      "status": "PASS command"
+    }
+  }
+}

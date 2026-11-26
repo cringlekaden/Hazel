@@ -1,0 +1,305 @@
+{
+  "configuration": "Release",
+  "head": "d80bb5e9a3fcfd687b1a995980806c91748e1b8d",
+  "sourceSHA256": "7dcfec716f3f64883c4fb8b549ece6a090d150ccc3302f9dc43e922f61fd4570",
+  "commands": {
+    "metal": [
+      "<repo>/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "<repo>/build/pcss-v1/resources-global-control",
+      "<repo>/build/pcss-v1/comparisons/global-retina-offscreen/metal",
+      "--shadows"
+    ]
+  },
+  "backends": {
+    "metal": {
+      "status": "MEASURED; acceptance separate",
+      "warmups": 5,
+      "cases": {
+        "2560/1440/1024/0/18": {
+          "shadowGPUms": {
+            "median": 0.0560625,
+            "p95": 0.060875,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 2.696795,
+            "p95": 2.80408,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 12.68185,
+            "p95": 13.0724,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          }
+        },
+        "2560/1440/1024/0/19.0763": {
+          "shadowGPUms": {
+            "median": 0.049437499999999995,
+            "p95": 0.080375,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 3.451625,
+            "p95": 3.50454,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 13.81185,
+            "p95": 15.6062,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          }
+        },
+        "2560/1440/1024/0/21": {
+          "shadowGPUms": {
+            "median": 0.050875000000000004,
+            "p95": 0.0589167,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 2.642185,
+            "p95": 2.6795,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 13.783850000000001,
+            "p95": 14.4643,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          }
+        },
+        "2560/1440/1024/1/18": {
+          "shadowGPUms": {
+            "median": 0.0516875,
+            "p95": 0.0592917,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 3.67627,
+            "p95": 3.729,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 15.03805,
+            "p95": 15.4522,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          }
+        },
+        "2560/1440/1024/1/19.0763": {
+          "shadowGPUms": {
+            "median": 0.02985415,
+            "p95": 0.059875,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 6.546995,
+            "p95": 6.61671,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 17.247,
+            "p95": 17.3926,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          }
+        },
+        "2560/1440/1024/1/21": {
+          "shadowGPUms": {
+            "median": 0.0401667,
+            "p95": 0.0580417,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 3.6741900000000003,
+            "p95": 3.72275,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 13.744800000000001,
+            "p95": 15.1463,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          }
+        },
+        "2560/1440/2048/0/18": {
+          "shadowGPUms": {
+            "median": 0.3399375,
+            "p95": 0.36225,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 2.6401250000000003,
+            "p95": 2.68,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 13.741900000000001,
+            "p95": 13.9135,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          }
+        },
+        "2560/1440/2048/0/19.0763": {
+          "shadowGPUms": {
+            "median": 0.353875,
+            "p95": 0.36475,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 3.44254,
+            "p95": 3.50871,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 15.344750000000001,
+            "p95": 15.6575,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          }
+        },
+        "2560/1440/2048/0/21": {
+          "shadowGPUms": {
+            "median": 0.340021,
+            "p95": 0.361833,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 2.6392499999999997,
+            "p95": 2.67692,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 13.887799999999999,
+            "p95": 14.1454,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          }
+        },
+        "2560/1440/2048/1/18": {
+          "shadowGPUms": {
+            "median": 0.3549795,
+            "p95": 0.371292,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 3.6636249999999997,
+            "p95": 3.75792,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 15.6221,
+            "p95": 15.8112,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          }
+        },
+        "2560/1440/2048/1/19.0763": {
+          "shadowGPUms": {
+            "median": 0.3463125,
+            "p95": 0.359792,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 6.544565,
+            "p95": 6.67154,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 19.016,
+            "p95": 19.4972,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          }
+        },
+        "2560/1440/2048/1/21": {
+          "shadowGPUms": {
+            "median": 0.354729,
+            "p95": 0.368375,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 3.6633500000000003,
+            "p95": 3.73054,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 15.26175,
+            "p95": 15.5035,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          }
+        }
+      },
+      "scope": "Fully blocked, single/overlap/single, offscreen serialized. Metal GPU atlas/forward counters; GL total SceneRenderer elapsed query where recorded, no GL pass split. Serialized CPU is not GPU timing."
+    }
+  },
+  "angled": false,
+  "casterHeight": null,
+  "angularRadius": null,
+  "status": "MEASURED; acceptance separate",
+  "candidate": {
+    "kind": "qualified-global-search-control",
+    "blockerLocations": 8,
+    "filterLocations": 32,
+    "filterPattern": "vogel",
+    "comparison": "native plane envelope",
+    "fusedFilter": true,
+    "smallContact": true,
+    "refineEmpty": true,
+    "receiverPlaneBounds": false,
+    "productionSelected": false,
+    "sourceSHA256": "7dcfec716f3f64883c4fb8b549ece6a090d150ccc3302f9dc43e922f61fd4570",
+    "note": "Qualified416-byte algorithm with unused world-bound fields in448-byte ABI for comparison with current prototype binaries; same512-byte GPU alignment."
+  },
+  "peakChildResidentBytes": 417529856
+}

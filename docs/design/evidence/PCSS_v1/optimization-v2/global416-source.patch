@@ -1,0 +1,933 @@
+diff --git a/Hazel/Resources/shaders/ForwardPBR.glsl b/Hazel/Resources/shaders/ForwardPBR.glsl
+index c9b6b5d..8eb16cf 100644
+--- a/Hazel/Resources/shaders/ForwardPBR.glsl
++++ b/Hazel/Resources/shaders/ForwardPBR.glsl
+@@ -16,6 +16,12 @@ layout(location=4) out vec4 v_Color;
+ void main(){vec4 world=u_Model*vec4(a_Position,1);v_Position=world.xyz;v_Normal=normalize(mat3(u_NormalMatrix)*a_Normal);vec3 t=mat3(u_Model)*a_Tangent.xyz;v_Tangent=vec4(normalize(t-v_Normal*dot(t,v_Normal)),a_Tangent.w*float(u_Identity.y));v_UV=a_UV;v_Color=a_Color;gl_Position=u_VP*world;}
+ #type fragment
+ #version 450 core
++#ifndef HZ_DIRECTIONAL_PCSS
++#define HZ_DIRECTIONAL_PCSS 0
++#endif
++#ifndef HZ_SHADOW_INSPECTION
++#define HZ_SHADOW_INSPECTION 0
++#endif
+ layout(location=0) in vec3 v_Position;
+ layout(location=1) in vec3 v_Normal;
+ layout(location=2) in vec4 v_Tangent;
+@@ -29,9 +35,12 @@ layout(std140,binding=4) uniform Material {vec4 u_BaseFactor;vec4 u_EmissionCuto
+ layout(std140,binding=7) uniform LocalLights {vec4 u_LocalMeta;vec4 u_LocalLights[960];};
+ layout(std140,binding=5) uniform DirectionalShadows {
+     mat4 u_ShadowVP[4];vec4 u_ShadowSplits;vec4 u_ShadowEye;vec4 u_ShadowForward;
+-    vec4 u_ShadowParameters;vec4 u_ShadowRange;vec4 u_ShadowTexelDepth[4];
++    vec4 u_ShadowParameters;vec4 u_ShadowRange;vec4 u_ShadowTexelDepth[4];vec4 u_ShadowSoftness;
+ };
+ layout(binding=10) uniform sampler2D u_ShadowAtlas;
++#if HZ_DIRECTIONAL_PCSS
++layout(binding=11) uniform sampler2DShadow u_ShadowCompareAtlas;
++#endif
+ #ifdef HZ_METAL
+ layout(binding=9) uniform usampler2D u_LightTiles;
+ #endif
+@@ -143,7 +152,229 @@ vec3 direct(vec3 base,float metal,float rough,vec3 N,vec3 V,vec3 L,SurfaceEnergy
+         energy.diffuseScale*energy.diffuseShape*diffuseLight/(PI*energy.diffuseAverage):0;
+     return ((1-metal)*base*diffuse+D*visibility*F+multiple)*nl;
+ }
++// Fixed Vogel disks in light space, generated from sqrt((i+.5)/N) and the
++// golden angle. Search includes an explicit centre; no frame-random rotation.
++#if HZ_DIRECTIONAL_PCSS
++const vec2 shadowSearchDisk[8]=vec2[](vec2(0.000000000,0.000000000),
++    vec2(0.267261242,0.000000000),
++    vec2(-0.341335464,0.312691246),
++    vec2(0.052246864,-0.595326064),
++    vec2(0.430231245,0.561160473),
++    vec2(-0.789527247,-0.139656253),
++    vec2(0.747909132,-0.475758569),
++    vec2(-0.250160968,0.930586331));
++const vec2 shadowFilterDisk[32]=vec2[](vec2(0.125000000,0.000000000),
++    vec2(-0.159645045,0.146247939),
++    vec2(0.024436233,-0.278438271),
++    vec2(0.201222239,0.262458779),
++    vec2(-0.369267557,-0.065318231),
++    vec2(0.349802466,-0.222515696),
++    vec2(-0.117002079,0.435241902),
++    vec2(-0.223135654,-0.429634123),
++    vec2(0.484115115,0.176798064),
++    vec2(-0.503641109,0.207895728),
++    vec2(0.242788294,-0.518824483),
++    vec2(0.179414374,0.572001296),
++    vec2(-0.540757006,-0.313379738),
++    vec2(0.634369523,-0.139464360),
++    vec2(-0.387145845,0.550675126),
++    vec2(-0.089439655,-0.690199644),
++    vec2(0.549071757,0.462758258),
++    vec2(-0.738878471,0.030554945),
++    vec2(0.538955125,-0.536332334),
++    vec2(-0.036058186,0.779791515),
++    vec2(-0.512817532,-0.614526793),
++    vec2(0.812359593,0.109301834),
++    vec2(-0.688310641,0.478908616),
++    vec2(0.188086057,-0.836061382),
++    vec2(0.435033266,0.759191055),
++    vec2(-0.850448410,-0.271316239),
++    vec2(0.826102401,-0.381680263),
++    vec2(-0.357888202,0.855155562),
++    vec2(-0.319407334,-0.888033758),
++    vec2(0.849908635,0.446688159),
++    vec2(-0.944034646,0.248844503),
++    vec2(0.536595808,-0.834529771));
++float softReceiverScale(vec3 position){
++    float d=dot(position-u_ShadowEye.xyz,u_ShadowForward.xyz);
++    int c=d>u_ShadowSplits.z?3:d>u_ShadowSplits.y?2:d>u_ShadowSplits.x?1:0;
++    if(c==0)return u_ShadowTexelDepth[0].x;
++    float t=clamp((d-u_ShadowSplits[c-1])/(u_ShadowSplits[c]-u_ShadowSplits[c-1]),0,1);
++    return mix(u_ShadowTexelDepth[c-1].x,u_ShadowTexelDepth[c].x,t);
++}
++float softComparison(int cascade,vec3 p,vec2 slope,vec2 delta,float scale,float bias){
++    int r=int(u_ShadowParameters.x);ivec2 origin=ivec2(cascade%2,cascade/2)*r;
++    float tx=u_ShadowTexelDepth[cascade].x,inv=u_ShadowTexelDepth[cascade].y;
++    vec2 coordinate=p.xy*float(r)-.5+delta/tx;ivec2 cell=ivec2(floor(coordinate));vec2 f=fract(coordinate);
++    // Hardware bilinear comparison uses one reference depth. The native-plane
++    // envelope below is bypassed by softFusedFilter near geometric contact.
++    {
++        vec2 uv=(vec2(origin)+p.xy*float(r)+delta/tx)/float(2*r);
++        uv=clamp(uv,(vec2(origin)+.5)/float(2*r),(vec2(origin+r)-.5)/float(2*r));
++        vec2 extent=max(f,1-f)*tx;
++        // Conservative native bilinear-footprint envelope, not a penumbra-sized
++        // slope bias. This has an explicit contact-placement tradeoff to qualify.
++        float planeEnvelope=dot(abs(slope),extent);
++        float receiver=p.z+dot(slope,delta)*inv-(bias*u_ShadowParameters.z*scale+planeEnvelope)*inv;
++        return textureLod(u_ShadowCompareAtlas,vec3(uv,clamp(receiver,0,1)),0);
++    }
++}
++float softExactComparison(int cascade,vec3 p,vec2 slope,vec2 delta,float scale,float bias){
++    int r=int(u_ShadowParameters.x);ivec2 origin=ivec2(cascade%2,cascade/2)*r;
++    float tx=u_ShadowTexelDepth[cascade].x,inv=u_ShadowTexelDepth[cascade].y;
++    vec2 coordinate=p.xy*float(r)-.5+delta/tx;ivec2 cell=ivec2(floor(coordinate));vec2 f=fract(coordinate);
++    ivec2 low=clamp(cell,ivec2(0),ivec2(r-1)),high=clamp(cell+1,ivec2(0),ivec2(r-1));
++    vec4 depths;
++    depths=vec4(texelFetch(u_ShadowAtlas,origin+low,0).r,
++        texelFetch(u_ShadowAtlas,origin+ivec2(high.x,low.y),0).r,
++        texelFetch(u_ShadowAtlas,origin+ivec2(low.x,high.y),0).r,
++        texelFetch(u_ShadowAtlas,origin+high,0).r);
++    vec4 dx=(vec4(low.x,high.x,low.x,high.x)+.5-p.x*float(r))*tx;
++    vec4 dy=(vec4(low.y,low.y,high.y,high.y)+.5-p.y*float(r))*tx;
++    vec4 receiver=p.z+(slope.x*dx+slope.y*dy)*inv-bias*u_ShadowParameters.z*scale*inv;
++    vec4 weights=vec4((1-f.x)*(1-f.y),f.x*(1-f.y),(1-f.x)*f.y,f.x*f.y);
++    return dot(max(vec4(lessThanEqual(receiver,depths)),vec4(greaterThanEqual(depths,vec4(1)))),weights);
++}
++float softContactComparison(int cascade,vec3 p,vec2 slope,vec2 delta,float scale,float bias){
++    int r=int(u_ShadowParameters.x);ivec2 origin=ivec2(cascade%2,cascade/2)*r;
++    float tx=u_ShadowTexelDepth[cascade].x,inv=u_ShadowTexelDepth[cascade].y;
++    vec2 coordinate=p.xy*float(r)-.5;ivec2 cell=ivec2(floor(coordinate));vec2 f=fract(coordinate);
++    ivec2 low=clamp(cell,ivec2(0),ivec2(r-1)),high=clamp(cell+1,ivec2(0),ivec2(r-1));
++    vec4 depths;
++    depths=vec4(texelFetch(u_ShadowAtlas,origin+low,0).r,
++        texelFetch(u_ShadowAtlas,origin+ivec2(high.x,low.y),0).r,
++        texelFetch(u_ShadowAtlas,origin+ivec2(low.x,high.y),0).r,
++        texelFetch(u_ShadowAtlas,origin+high,0).r);
++    vec4 dx=(vec4(low.x,high.x,low.x,high.x)+.5-p.x*float(r))*tx;
++    vec4 dy=(vec4(low.y,low.y,high.y,high.y)+.5-p.y*float(r))*tx;
++    vec4 receiver=p.z+(slope.x*dx+slope.y*dy)*inv-bias*u_ShadowParameters.z*scale*inv;
++    float ax=0.004355734895*delta.x,ay=-0.015554431412*delta.x,axy=-0.010857412000*delta.x*delta.x;
++    vec4 weights=vec4((1-f.x)*(1-f.y)-(1-f.y)*ax-(1-f.x)*ay+axy,
++        f.x*(1-f.y)+(1-f.y)*ax-f.x*ay-axy,
++        (1-f.x)*f.y-f.y*ax+(1-f.x)*ay-axy,
++        f.x*f.y+f.y*ax+f.x*ay+axy);
++    return dot(max(vec4(lessThanEqual(receiver,depths)),vec4(greaterThanEqual(depths,vec4(1)))),weights);
++}
++float softSmallContact(int cascade,vec3 p,vec2 slope,float radius,float scale,float bias){
++    int r=int(u_ShadowParameters.x);ivec2 origin=ivec2(cascade%2,cascade/2)*r;
++    float tx=u_ShadowTexelDepth[cascade].x,inv=u_ShadowTexelDepth[cascade].y;
++    vec2 coordinate=p.xy*float(r)-.5;ivec2 cell=ivec2(floor(coordinate-.5));
++    vec2 f=coordinate-vec2(cell);vec3 w0=vec3(0),w1=vec3(0),w2=vec3(0);
++    for(int i=0;i<32;++i){
++        vec2 q=f+shadowFilterDisk[i]*(radius/tx);
++        vec3 x=max(1-abs(vec3(0,1,2)-q.x),0)/32;
++        vec3 y=max(1-abs(vec3(0,1,2)-q.y),0);
++        w0+=x*y.x;w1+=x*y.y;w2+=x*y.z;
++    }
++    float sum=0;
++    for(int y=0;y<3;++y){
++        vec3 w=y==0?w0:y==1?w1:w2;
++        for(int x=0;x<3;++x){
++            ivec2 tap=clamp(cell+ivec2(x,y),ivec2(0),ivec2(r-1));
++            float stored=texelFetch(u_ShadowAtlas,origin+tap,0).r;
++            vec2 delta=(vec2(tap)+.5-p.xy*float(r))*tx;
++            float receiver=p.z+(dot(slope,delta)-bias*u_ShadowParameters.z*scale)*inv;
++            sum+=w[x]*float(stored>=1||receiver<=stored);
++        }
++    }
++    return sum;
++}
++float softFusedFilter(int cascade,vec3 p,vec2 slope,float radius,float scale,float bias,float nearest){
++    float tx=u_ShadowTexelDepth[cascade].x,inv=u_ShadowTexelDepth[cascade].y;
++    float planeEnvelope=dot(abs(slope),vec2(tx));
++    vec2 f=fract(p.xy*u_ShadowParameters.x-.5);
++    if(nearest<=4*planeEnvelope){
++        if(radius==0)return softExactComparison(cascade,p,slope,vec2(0),scale,bias);
++        if(all(greaterThan(min(f,1-f),vec2(radius/tx))))return softContactComparison(cascade,p,slope,vec2(radius/tx,0),scale,bias);
++        if(radius<=.5*tx)return softSmallContact(cascade,p,slope,radius,scale,bias);
++        float sum=0;
++        for(int i=0;i<32;++i)sum+=softExactComparison(cascade,p,slope,shadowFilterDisk[i]*radius,scale,bias)/32;
++        return sum;
++    }
++    int r=int(u_ShadowParameters.x);ivec2 origin=ivec2(cascade%2,cascade/2)*r;
++    vec2 uv=(vec2(origin)+p.xy*float(r))/float(2*r),uvRadius=vec2(radius/(2*tx*float(r)));
++    vec2 margin=vec2((radius+tx)/(tx*float(r)));
++    if(any(lessThan(p.xy,margin))||any(greaterThan(p.xy,1-margin))){
++        float sum=0;
++        for(int i=0;i<32;++i)sum+=softComparison(cascade,p,slope,shadowFilterDisk[i]*radius,scale,bias)/32;
++        return sum;
++    }
++    float receiver=p.z-(bias*u_ShadowParameters.z*scale+planeEnvelope)*inv;
++    vec2 receiverRadius=slope*(radius*inv);float sum=0;
++    for(int i=0;i<32;++i){
++        vec2 sampleOffset=shadowFilterDisk[i];
++        sum+=textureLod(u_ShadowCompareAtlas,vec3(uv+sampleOffset*uvRadius,clamp(receiver+dot(receiverRadius,sampleOffset),0,1)),0)/32;
++    }
++    return sum;
++}
++// Returns visibility, physical radius, mean light-direction separation, blocker fraction.
++vec4 softShadow(int cascade,vec3 position,vec3 Ng,vec3 L){
++    float texel=u_ShadowTexelDepth[cascade].x,inverseDepth=u_ShadowTexelDepth[cascade].y;
++    float scale=softReceiverScale(position),cosine=dot(Ng,L),bias=1;
++#if HZ_SHADOW_INSPECTION
++    bias=u_ShadowRange.w==10?0:1;
++#endif
++    vec3 normal=cosine<0?-Ng:Ng;
++    vec3 offset=normal*(bias*u_ShadowParameters.y*scale*sqrt(max(1-cosine*cosine,0)));
++    mat4 matrix=u_ShadowVP[cascade];
++    vec3 base=(matrix*vec4(position,1)).xyz*.5+.5;
++    vec3 p=(matrix*vec4(position+offset,1)).xyz*.5+.5;
++    if(any(lessThan(p,vec3(0)))||any(greaterThan(p,vec3(1))))return vec4(1,0,0,0);
++    vec3 right=normalize(vec3(matrix[0][0],matrix[1][0],matrix[2][0]));
++    vec3 up=normalize(vec3(matrix[0][1],matrix[1][1],matrix[2][1]));
++    float denominator=abs(cosine)>.05?cosine:(cosine<0?-.05:.05);
++    vec2 slope=clamp(vec2(dot(Ng,right),dot(Ng,up))/denominator,vec2(-8),vec2(8));
++    if(u_ShadowSoftness.x==0)return vec4(softExactComparison(cascade,p,slope,vec2(0),scale,bias),0,0,0);
++    // Common world-height bound; account conservatively for bounded receiver-plane
++    // slope over the search cone. Alpha<=2 degrees keeps this denominator positive.
++    float search=min(u_ShadowSoftness.y,max(u_ShadowSoftness.z-dot(L,position),0)*u_ShadowSoftness.x/(1-11.3137085*u_ShadowSoftness.x));
++    int resolution=int(u_ShadowParameters.x);
++    ivec2 origin=ivec2(cascade%2,cascade/2)*resolution;
++    float separation=0,count=0,nearest=1e30;
++    for(int i=0;i<8;++i){
++        // One centre sample protects the umbra of small resolved blockers.
++        vec2 delta=shadowSearchDisk[i]*search;
++        ivec2 tap=clamp(ivec2(floor(p.xy*float(resolution)+delta/texel)),ivec2(0),ivec2(resolution-1));
++        float stored=texelFetch(u_ShadowAtlas,origin+tap,0).r;
++        vec2 displacement=(vec2(tap)+.5-p.xy*float(resolution))*texel;
++        float receiver=p.z+dot(slope,displacement)*inverseDepth;
++        if(stored<1 && stored<receiver-bias*u_ShadowParameters.z*scale*inverseDepth){
++            // Physical plane, before normal/depth bias; never average across spans.
++            vec2 actualDisplacement=(vec2(tap)+.5-base.xy*float(resolution))*texel;
++            float actual=base.z+dot(slope,actualDisplacement)*inverseDepth;
++            float physical=max((actual-stored)/inverseDepth,0);separation+=physical;nearest=min(nearest,physical);count+=1;
++        }
++    }
++    // Point search can miss the finite bilinear coverage of an otherwise resolved
++    // edge, especially as the physical radius tends to zero. Inspect its exact
++    // native footprint before accepting an empty search; do not invent blockers.
++    if(count==0){
++        vec2 coordinate=p.xy*float(resolution)-.5;
++        ivec2 cell=ivec2(floor(coordinate));vec2 f=fract(coordinate);
++        for(int y=0;y<2;++y)for(int x=0;x<2;++x){
++            float weight=(x==0?1-f.x:f.x)*(y==0?1-f.y:f.y);
++            ivec2 tap=clamp(cell+ivec2(x,y),ivec2(0),ivec2(resolution-1));
++            float stored=texelFetch(u_ShadowAtlas,origin+tap,0).r;
++            vec2 delta=(vec2(tap)+.5-p.xy*float(resolution))*texel;
++            float receiver=p.z+dot(slope,delta)*inverseDepth;
++            if(weight>0&&stored<1&&stored<receiver-bias*u_ShadowParameters.z*scale*inverseDepth){
++                vec2 actualDelta=(vec2(tap)+.5-base.xy*float(resolution))*texel;
++                float physical=max((base.z+dot(slope,actualDelta)*inverseDepth-stored)/inverseDepth,0);
++                separation+=physical*weight;count+=weight;nearest=min(nearest,physical);
++            }
++        }
++        if(count==0)return vec4(1,0,0,0);
++    }
++    separation/=count;
++    float radius=min(separation*u_ShadowSoftness.x,u_ShadowSoftness.y);
++    float visibility=softFusedFilter(cascade,p,slope,radius,scale,bias,nearest);
++    return vec4(visibility,radius,separation,count/8);
++}
++#endif
+ float cascadeVisibility(int cascade,vec3 position,vec3 Ng,vec3 L){
++#if HZ_DIRECTIONAL_PCSS
++    return softShadow(cascade,position,Ng,L).x;
++#else
+     float texel=u_ShadowTexelDepth[cascade].x, inverseDepth=u_ShadowTexelDepth[cascade].y;
+     float cosine=dot(Ng,L);
+     float bias=u_ShadowRange.w==10?0:1;
+@@ -176,6 +407,7 @@ float cascadeVisibility(int cascade,vec3 position,vec3 Ng,vec3 L){
+         visibility+=(receiver<=texelFetch(u_ShadowAtlas,origin+tap,0).r?1:0)*weight.x*weight.y;
+     }
+     return visibility;
++#endif
+ }
+ float directionalVisibility(vec3 position,vec3 Ng,vec3 L){
+     if(u_ShadowRange.z<.5)return 1;
+@@ -189,6 +421,7 @@ float directionalVisibility(vec3 position,vec3 Ng,vec3 L){
+     if(blend>0)visibility=mix(visibility,cascade==3?1:cascadeVisibility(cascade+1,position,Ng,L),blend);
+     return visibility;
+ }
++#if !HZ_DIRECTIONAL_PCSS || HZ_SHADOW_INSPECTION
+ vec3 shadowInspection(vec3 position,vec3 Ng,vec3 L){
+     if(u_ShadowRange.z<.5)return vec3(1);
+     float depth=dot(position-u_ShadowEye.xyz,u_ShadowForward.xyz);
+@@ -201,9 +434,15 @@ vec3 shadowInspection(vec3 position,vec3 Ng,vec3 L){
+     if(mode==2){vec3 colors[4]=vec3[](vec3(1,.15,.1),vec3(.1,1,.15),vec3(.1,.2,1),vec3(1,.8,.1));return mix(colors[cascade],vec3(1),blend*.6);}
+     if(mode>=3&&mode<=6)return vec3(cascadeVisibility(mode-3,position,Ng,L));
+     if(mode==7||mode==10)return vec3(cascadeVisibility(cascade,position,Ng,L),cascade==3?1:cascadeVisibility(cascade+1,position,Ng,L),blend);
++#if HZ_DIRECTIONAL_PCSS
++    if(mode==11)return softShadow(cascade,position,Ng,L).zyw;
++    if(mode==12)return vec3(softShadow(cascade,position,Ng,L).y,cascade==3?0:softShadow(cascade+1,position,Ng,L).y,blend);
++    if(mode==13)return vec3(min(u_ShadowSoftness.y,max(u_ShadowSoftness.z-dot(L,position),0)*u_ShadowSoftness.x/(1-11.3137085*u_ShadowSoftness.x)),softReceiverScale(position),depth);
++#endif
+     if(mode==8)return vec3(u_ShadowTexelDepth[cascade].x,cascade==3?u_ShadowTexelDepth[cascade].x:u_ShadowTexelDepth[cascade+1].x,depth);
+     float cosine=dot(Ng,L);return vec3(u_ShadowParameters.y*scale*sqrt(max(1-cosine*cosine,0)),u_ShadowParameters.z*scale,depth);
+ }
++#endif
+ void main(){
+     // Evaluate geometric derivatives before a potentially nonuniform mask discard.
+     vec3 geometricNormal=normalize(cross(dFdx(v_Position),dFdy(v_Position)));
+@@ -214,6 +453,13 @@ void main(){
+     vec3 prefilteredProbe=vec3(0),brdfProbe=vec3(0),surfaceProbe=vec3(0),localProbe=vec3(0);
+     vec3 view=u_Eye.w>.5?u_ToCamera.xyz:u_Eye.xyz-v_Position;vec3 V=dot(view,view)>1e-12?normalize(view):N;
+     vec3 horizonProbe=vec3(dot(N,V),dot(geometricNormal,V),dot(N,V));
++#if HZ_DIRECTIONAL_PCSS
++    vec3 L=normalize(u_Light.xyz);
++    vec3 shadowSurface=baseNormal;
++    if(u_Options.w>.5&&!gl_FrontFacing)shadowSurface=-shadowSurface;
++    bool directionalGate=u_Options.x<.5&&dot(shadowSurface,V)>0&&dot(shadowSurface,L)>0;
++    float keyVisibility=directionalGate?directionalVisibility(v_Position,geometricNormal,L):0;
++#endif
+     vec3 T=normalize(v_Tangent.xyz-N*dot(v_Tangent.xyz,N));vec3 B=cross(N,T)*v_Tangent.w;
+     float metal=clamp(u_Surface.x*texture(u_MetalRough,v_UV).b,0,1),rough=clamp(u_Surface.y*texture(u_MetalRough,v_UV).g,0,1);
+     if(u_Options.x<.5){
+@@ -230,10 +476,19 @@ void main(){
+         horizonProbe.z=dot(N,V);
+         float r=max(rough,.045);
+         vec3 f0=mix(vec3(.04),base.rgb,metal);
++#if HZ_DIRECTIONAL_PCSS
++        // Keep BRDF intermediates out of the shadow loop's live range. Visibility
++        // zero skips only directional direct BRDF work, preserving locals/IBL.
++        SurfaceEnergy directEnergy;
++        if(keyVisibility>0||u_LocalMeta.x>0)directEnergy=surfaceEnergy(f0,sampleBRDF(clamp(dot(directNormal,V),0,1),r));
++        if(directionalGate&&keyVisibility>0)
++            directTerm=direct(base.rgb,metal,rough,directNormal,V,L,directEnergy)*(u_Incident.rgb*keyVisibility)*((maps&4)!=0?surfaceVisibility(surfaceNormal,directNormal,L):1);
++#else
+         SurfaceEnergy directEnergy=surfaceEnergy(f0,sampleBRDF(clamp(dot(directNormal,V),0,1),r));
+         vec3 L=normalize(u_Light.xyz);
+         if(dot(surfaceNormal,V)>0&&dot(surfaceNormal,L)>0)
+             directTerm=direct(base.rgb,metal,rough,directNormal,V,L,directEnergy)*(u_Incident.rgb*directionalVisibility(v_Position,geometricNormal,L))*((maps&4)!=0?surfaceVisibility(surfaceNormal,directNormal,L):1);
++#endif
+         vec3 directionalTerm=directTerm;
+         int localCount=int(u_LocalMeta.x),listCount=localCount;
+ #ifdef HZ_METAL
+@@ -324,6 +579,8 @@ void main(){
+     }
+ #endif
+     if(u_LocalMeta.y>0)result=localProbe;
++#if !HZ_DIRECTIONAL_PCSS || HZ_SHADOW_INSPECTION
+     if(u_ShadowRange.w>0)result=shadowInspection(v_Position,geometricNormal,normalize(u_Light.xyz));
++#endif
+     o_Color=vec4(result,1);o_Entity=u_Identity.x;
+ }
+diff --git a/Hazel/src/Hazel/Core/DocumentSchema.cpp b/Hazel/src/Hazel/Core/DocumentSchema.cpp
+index b4160ad..3144b22 100644
+--- a/Hazel/src/Hazel/Core/DocumentSchema.cpp
++++ b/Hazel/src/Hazel/Core/DocumentSchema.cpp
+@@ -176,7 +176,7 @@ bool Scene(const YAML::Node& root, bool prefabDocument)
+         }
+         if (auto n = entity["DirectionalLightComponent"])
+         {
+-            Keys(n, {"Color", "Intensity", "Enabled"}, "DirectionalLightComponent");
++            Keys(n, {"Color", "Intensity", "Enabled", "AngularHalfRadius"}, "DirectionalLightComponent");
+             if (!n["Color"].IsSequence() || n["Color"].size() != 3)
+                 throw std::runtime_error("Directional color requires three linear values");
+             DirectionalLight l;
+@@ -184,6 +184,7 @@ bool Scene(const YAML::Node& root, bool prefabDocument)
+                 l.Color[i] = n["Color"][i].as<float>();
+             l.Intensity = n["Intensity"].as<float>();
+             l.Enabled = n["Enabled"].as<bool>();
++            if(auto angle=n["AngularHalfRadius"])l.AngularHalfRadius=angle.as<float>();
+             l.Validate();
+         }
+         for(const char *name:{"PointLightComponent","SpotLightComponent"})if(auto n=entity[name]) {
+diff --git a/Hazel/src/Hazel/Renderer/Drawing/Renderer3D.cpp b/Hazel/src/Hazel/Renderer/Drawing/Renderer3D.cpp
+index 17e0bda..826c778 100644
+--- a/Hazel/src/Hazel/Renderer/Drawing/Renderer3D.cpp
++++ b/Hazel/src/Hazel/Renderer/Drawing/Renderer3D.cpp
+@@ -17,7 +17,7 @@ namespace Hazel
+ namespace
+ {
+ using namespace Renderer3DUniforms;
+-Ref<Shader> shader, skyShader, depthShader, motionShader;
++Ref<Shader> shader, softShadowShader, softShadowInspection, skyShader, depthShader, motionShader;
+ Ref<UniformBuffer> motionBuffer, shadowBuffer;
+ Ref<UniformBuffer> environmentBuffer;
+ Ref<VertexArray> skyTriangle;
+@@ -95,6 +95,8 @@ void Renderer3D::Shutdown()
+     localLightBuffer.reset();
+     objectBuffer.reset();
+     cameraBuffer.reset();
++    softShadowInspection.reset();
++    softShadowShader.reset();
+     shader.reset();
+     depthShader.reset();
+     motionShader.reset();
+@@ -195,16 +197,24 @@ void Renderer3D::Render(const SceneSubmission &frame, bool drawBackground, bool
+                 frame.LocalMetrics->Count=unsigned(frame.LocalLights.size());frame.LocalMetrics->LightBytes=sizeof(locals);
+             }
+         }
+-        auto activeShader=motionOnly?motionShader:depthOnly?depthShader:shader;
++        auto forwardShader=shader;
++        if(!depthOnly && !motionOnly && frame.Shadows.Softness.w>.5f) {
++            if(RenderCommand::GetCapabilities().MaxTextureSlots<12)throw std::runtime_error("Directional PCSS requires twelve texture slots");
++            auto& selected=frame.ShadowView?softShadowInspection:softShadowShader;
++            if(!selected)selected=Shader::Create((Resources::Get().Root/(frame.ShadowView?"shaders/ForwardPBR_PCSSInspect.glsl":"shaders/ForwardPBR_PCSS.glsl")).generic_u8string());
++            forwardShader=selected;
++        }
++        auto activeShader=motionOnly?motionShader:depthOnly?depthShader:forwardShader;
+         activeShader->Bind();
+         const char *names[]{"u_Base", "u_MetalRough", "u_Normal", "u_Occlusion", "u_Emissive"};
+         for (int i = 0; i < 5; ++i)
+             if((!depthOnly && !motionOnly) || i==0) activeShader->SetInt(names[i], i);
+         if(!depthOnly && !motionOnly) {
+-            shader->SetInt("u_Irradiance", 5);
+-            shader->SetInt("u_Specular", 6);
+-            shader->SetInt("u_BRDF", 7);
+-            shader->SetInt("u_ShadowAtlas", 10);
++            activeShader->SetInt("u_Irradiance", 5);
++            activeShader->SetInt("u_Specular", 6);
++            activeShader->SetInt("u_BRDF", 7);
++            activeShader->SetInt("u_ShadowAtlas", 10);
++            activeShader->SetInt("u_ShadowCompareAtlas", 11);
+         }
+         for (auto &draw : frame.Meshes)
+         {
+diff --git a/Hazel/src/Hazel/Renderer/Scene/DirectionalShadows.cpp b/Hazel/src/Hazel/Renderer/Scene/DirectionalShadows.cpp
+index 6e6000b..65d965e 100644
+--- a/Hazel/src/Hazel/Renderer/Scene/DirectionalShadows.cpp
++++ b/Hazel/src/Hazel/Renderer/Scene/DirectionalShadows.cpp
+@@ -16,6 +16,9 @@ void DirectionalShadowSettings::Validate() const
+        !std::isfinite(DepthBias) || DepthBias<0 || DepthBias>1 ||
+        !std::isfinite(Blend) || Blend<.01f || Blend>.25f)
+         throw std::runtime_error("CSM requires resolution 256/512/1024/2048, distance .1..10000, split 0..1, normal bias 0..2, depth bias 0..1 texels and blend .01...25");
++    if((Filter!=DirectionalShadowFilter::PCF && Filter!=DirectionalShadowFilter::PCSS) ||
++       !std::isfinite(MaxPenumbra) || MaxPenumbra<.001f || MaxPenumbra>4)
++        throw std::runtime_error("Directional shadows require PCF/PCSS and maximum penumbra radius .001..4 world units");
+ }
+ bool ShadowCasterVisible(const glm::vec3& minimum,const glm::vec3& maximum,const glm::mat4& clip)
+ {
+@@ -34,6 +37,12 @@ DirectionalShadowData FitDirectionalShadows(const SceneSubmission& frame)
+     const auto& settings=frame.Presentation.Shadows;settings.Validate();
+     DirectionalShadowData result;
+     if(!settings.Enabled || !frame.Light)return result;
++    const float angle=frame.Light->AngularHalfRadius;
++    if(!std::isfinite(angle) || angle<0 || angle>.034906586f)
++        throw std::runtime_error("Directional angular half-radius requires [0,2 degrees] in radians");
++    const bool soft=settings.Filter==DirectionalShadowFilter::PCSS;
++    const double support=soft && angle>0?settings.MaxPenumbra:0;
++    result.Softness={soft?std::tan(angle):0,settings.MaxPenumbra,std::numeric_limits<float>::lowest(),soft?1:0};
+     const glm::dmat4 vp(frame.Camera.ViewProjection);
+     const auto determinant=glm::determinant(vp);
+     const glm::dvec3 eye(frame.Camera.Position),forward=-glm::dvec3(frame.Camera.ToCamera);
+@@ -91,6 +100,9 @@ DirectionalShadowData FitDirectionalShadows(const SceneSubmission& frame)
+         for(const auto& p:corners)radius=std::max(radius,glm::length(p-centre));
+         // Two texels for filtering, half for snap, plus maximum receiver offset.
+         radius=std::ceil(radius*16)/16;
++        // World support is independent of resolution/angle. Reserve the complete
++        // bounded search/filter disk before native bilinear/snap/bias margins.
++        radius+=support;
+         radius/=1-2*(2.5+settings.NormalBias)/double(settings.Resolution);
+         const double texel=2*radius/settings.Resolution;
+         const double x=std::round(glm::dot(centre,right)/texel)*texel;
+@@ -110,15 +122,19 @@ DirectionalShadowData FitDirectionalShadows(const SceneSubmission& frame)
+             }
+             if(maximum.x<x-radius || minimum.x>x+radius || maximum.y<y-radius || minimum.y>y+radius)continue;
+             lo=std::min(lo,minimum.z);hi=std::max(hi,maximum.z);
++            result.Softness.z=std::max(result.Softness.z,std::nextafter(float(maximum.z),std::numeric_limits<float>::infinity()));
+         }
+-        lo=std::floor(lo-texel*(1+settings.NormalBias));
+-        hi=std::ceil(hi+texel*(1+settings.NormalBias));
++        // A disk contributes |slope|_2 * support. Native bilinear texel centres
++        // add at most one texel per axis, including the zero-angle limit.
++        const double planeMargin=support*8*std::sqrt(2.)+(soft?2*8*texel:0);
++        lo=std::floor(lo-texel*(1+settings.NormalBias)-planeMargin);
++        hi=std::ceil(hi+texel*(1+settings.NormalBias)+planeMargin);
+         const double span=hi-lo;
+         glm::dmat4 matrix(1);
+         for(unsigned c=0;c<3;++c){matrix[c][0]=right[c]/radius;matrix[c][1]=up[c]/radius;matrix[c][2]=-2*light[c]/span;}
+         matrix[3]={-x/radius,-y/radius,(hi+lo)/span,1};
+         result.VP[cascade]=glm::mat4(matrix);
+-        result.TexelDepth[cascade]={float(texel),float(1/span),0,0};
++        result.TexelDepth[cascade]={float(texel),float(1/span),float(hi),0};
+     }
+     result.Eye=glm::vec4(eye,1);result.Forward=glm::vec4(forward,0);
+     result.Parameters={float(settings.Resolution),settings.NormalBias,settings.DepthBias,settings.Blend};
+diff --git a/Hazel/src/Hazel/Renderer/Scene/DirectionalShadows.h b/Hazel/src/Hazel/Renderer/Scene/DirectionalShadows.h
+index e1175e7..eb54a0f 100644
+--- a/Hazel/src/Hazel/Renderer/Scene/DirectionalShadows.h
++++ b/Hazel/src/Hazel/Renderer/Scene/DirectionalShadows.h
+@@ -4,6 +4,7 @@
+ 
+ namespace Hazel {
+ struct SceneSubmission;
++enum class DirectionalShadowFilter { PCF, PCSS };
+ struct DirectionalShadowSettings
+ {
+     bool Enabled = false;
+@@ -11,10 +12,13 @@ struct DirectionalShadowSettings
+     float Distance = 100, SplitLambda = .65f;
+     float NormalBias = .2f, DepthBias = .05f; // World texels, independent of depth span.
+     float Blend = .1f; // Fraction of each interval, including final distance fade.
++    DirectionalShadowFilter Filter = DirectionalShadowFilter::PCF;
++    float MaxPenumbra = 1; // World-space radius cap; also bounds PCSS search/support.
+     void Validate() const;
+     bool operator==(const DirectionalShadowSettings& b) const {
+         return Enabled==b.Enabled && Resolution==b.Resolution && Distance==b.Distance &&
+-            SplitLambda==b.SplitLambda && NormalBias==b.NormalBias && DepthBias==b.DepthBias && Blend==b.Blend;
++            SplitLambda==b.SplitLambda && NormalBias==b.NormalBias && DepthBias==b.DepthBias && Blend==b.Blend &&
++            Filter==b.Filter && MaxPenumbra==b.MaxPenumbra;
+     }
+ };
+ // std140 binding 5 in forward shading; motion uses this binding in a separate pass.
+@@ -23,8 +27,9 @@ struct alignas(16) DirectionalShadowData
+     std::array<glm::mat4,4> VP{};
+     glm::vec4 Splits{0}, Eye{0}, Forward{0}, Parameters{0}, Range{0};
+     std::array<glm::vec4,4> TexelDepth{}; // world texel width, inverse light-depth span.
++    glm::vec4 Softness{0}; // tan(angular half-radius), world cap, common light-height bound, PCSS enabled.
+ };
+-static_assert(sizeof(DirectionalShadowData)==400,"Directional shadow std140 ABI");
++static_assert(sizeof(DirectionalShadowData)==416,"Directional shadow std140 ABI");
+ DirectionalShadowData FitDirectionalShadows(const SceneSubmission& frame);
+ bool ShadowCasterVisible(const glm::vec3& minimum, const glm::vec3& maximum,
+                          const glm::mat4& clip);
+diff --git a/Hazel/src/Hazel/Renderer/Scene/Lighting.h b/Hazel/src/Hazel/Renderer/Scene/Lighting.h
+index 084d5c6..865c6cc 100644
+--- a/Hazel/src/Hazel/Renderer/Scene/Lighting.h
++++ b/Hazel/src/Hazel/Renderer/Scene/Lighting.h
+@@ -19,7 +19,16 @@ struct LightParameters
+             throw std::runtime_error("Light intensity requires [0,1000]");
+     }
+ };
+-struct DirectionalLight : LightParameters {};
++struct DirectionalLight : LightParameters
++{
++    float AngularHalfRadius = .00465f; // Radians; independent of shadow resolution.
++    void Validate() const
++    {
++        LightParameters::Validate();
++        if (!std::isfinite(AngularHalfRadius) || AngularHalfRadius < 0 || AngularHalfRadius > .034906586f)
++            throw std::runtime_error("Directional angular half-radius requires [0,2 degrees] in radians");
++    }
++};
+ // Shared portable storage bound: 16 + 320 * 48 fits the GL 4.1 16 KiB UBO guarantee.
+ inline constexpr unsigned MaxLocalLights = 320;
+ struct PointLight : LightParameters
+diff --git a/Hazel/src/Hazel/Renderer/Scene/SceneCollection.cpp b/Hazel/src/Hazel/Renderer/Scene/SceneCollection.cpp
+index 495c164..a143066 100644
+--- a/Hazel/src/Hazel/Renderer/Scene/SceneCollection.cpp
++++ b/Hazel/src/Hazel/Renderer/Scene/SceneCollection.cpp
+@@ -78,7 +78,7 @@ SceneSubmission SceneRenderer::Collect(Scene &scene, const SceneCameraView &came
+             throw std::runtime_error(
+                 "Only one enabled directional light is supported");
+         frame.Light = SubmittedDirectional{-DirectionalTravel(scene.GetWorldTransform(e)),
+-                                           light.Color * light.Intensity};
++                                           light.Color * light.Intensity, light.AngularHalfRadius};
+     }
+     const auto localStart=std::chrono::steady_clock::now();
+     auto collectLocal = [&](auto component) {
+diff --git a/Hazel/src/Hazel/Renderer/Scene/SceneRenderer.cpp b/Hazel/src/Hazel/Renderer/Scene/SceneRenderer.cpp
+index b58e66a..abc198b 100644
+--- a/Hazel/src/Hazel/Renderer/Scene/SceneRenderer.cpp
++++ b/Hazel/src/Hazel/Renderer/Scene/SceneRenderer.cpp
+@@ -69,7 +69,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
+         if(view.NativeDevice.lock()!=device){view.Reset();view.NativeDevice=device;}
+     } else if(!view.NativeDevice.expired()){view.Reset();view.NativeDevice.reset();}
+ #endif
+-    if(input.ShadowView>10)throw std::runtime_error("Unsupported directional shadow inspection");
++    if(input.ShadowView>13)throw std::runtime_error("Unsupported directional shadow inspection");
+     const bool shadows=input.Presentation.Shadows.Enabled && input.Light.has_value();
+     SceneSubmission shadowed;
+     if(shadows) {
+@@ -124,7 +124,10 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
+         const auto& extent=display->GetSpecification();auto& state=view.Temporal;
+         historyValid=state.Submitted && state.Submitted->load() && state.Width==extent.Width && state.Height==extent.Height &&
+             state.Previous.SceneIdentity==frame.SceneIdentity && state.Previous.Assets==frame.Assets &&
+-            state.Previous.Presentation==frame.Presentation && !CameraCut(frame,state.Previous.Camera);
++            state.Previous.Presentation==frame.Presentation &&
++            (frame.Presentation.Shadows.Filter!=DirectionalShadowFilter::PCSS || !frame.Light ||
++             (state.Previous.Light && state.Previous.Light->AngularHalfRadius==frame.Light->AngularHalfRadius)) &&
++            !CameraCut(frame,state.Previous.Camera);
+         if(!historyValid)state.Phase=0;
+         jitter={Halton(state.Phase%64+1,2)-.5f,Halton(state.Phase%64+1,3)-.5f};
+         glm::mat4 offset(1);offset[3][0]=2*jitter.x/float(extent.Width);offset[3][1]=2*jitter.y/float(extent.Height);
+diff --git a/Hazel/src/Hazel/Renderer/Scene/SceneSubmission.h b/Hazel/src/Hazel/Renderer/Scene/SceneSubmission.h
+index 4f67a84..5d6a58d 100644
+--- a/Hazel/src/Hazel/Renderer/Scene/SceneSubmission.h
++++ b/Hazel/src/Hazel/Renderer/Scene/SceneSubmission.h
+@@ -51,6 +51,7 @@ struct SubmittedMesh
+ struct SubmittedDirectional
+ {
+     glm::vec3 ToLight{}, Incident{};
++    float AngularHalfRadius = .00465f; // Radians; zero is a directional point source.
+ };
+ struct LocalLightingMetrics
+ {
+diff --git a/Hazel/src/Hazel/Scene/AuthoredState.cpp b/Hazel/src/Hazel/Scene/AuthoredState.cpp
+index 1ad9a84..248b7b6 100644
+--- a/Hazel/src/Hazel/Scene/AuthoredState.cpp
++++ b/Hazel/src/Hazel/Scene/AuthoredState.cpp
+@@ -175,6 +175,7 @@ std::string SceneSerializer::CaptureAuthoredState(Entity only, const std::type_i
+             state.Value(c.Color);
+             state.Value(c.Intensity);
+             state.Value(c.Enabled);
++            state.Value(c.AngularHalfRadius);
+         });
+         auto localLight = [&](auto &c) {
+             state.Value(c.Color);state.Value(c.Intensity);state.Value(c.Enabled);state.Value(c.Range);
+diff --git a/Hazel/src/Hazel/Scene/SceneDefaults.cpp b/Hazel/src/Hazel/Scene/SceneDefaults.cpp
+index 4553f01..0b116d4 100644
+--- a/Hazel/src/Hazel/Scene/SceneDefaults.cpp
++++ b/Hazel/src/Hazel/Scene/SceneDefaults.cpp
+@@ -68,6 +68,8 @@ YAML::Node Encode(const ScenePresentation& value) {
+         auto a=n["Shadows"];const auto& v=value.Shadows;
+         a["Enabled"]=v.Enabled;a["Resolution"]=v.Resolution;a["Distance"]=v.Distance;
+         a["SplitLambda"]=v.SplitLambda;a["NormalBias"]=v.NormalBias;a["DepthBias"]=v.DepthBias;a["Blend"]=v.Blend;
++        if(v.Filter!=DirectionalShadowFilter::PCF)a["Filter"]="PCSS";
++        if(v.MaxPenumbra!=1)a["MaxPenumbra"]=v.MaxPenumbra;
+     }
+     return n;
+ }
+@@ -99,10 +101,16 @@ ScenePresentation ReadPresentation(const YAML::Node& n) {
+         v.Radius=a["Radius"].as<float>();v.Strength=a["Strength"].as<float>();v.Falloff=a["Falloff"].as<float>();
+     }
+     if(auto a=n["Shadows"]) {
+-        DocumentSchema::Keys(a,{"Enabled","Resolution","Distance","SplitLambda","NormalBias","DepthBias","Blend"},"directional shadows");
++        DocumentSchema::Keys(a,{"Enabled","Resolution","Distance","SplitLambda","NormalBias","DepthBias","Blend","Filter","MaxPenumbra"},"directional shadows");
+         auto& v=result.Shadows;v.Enabled=a["Enabled"].as<bool>();v.Resolution=a["Resolution"].as<unsigned>();
+         v.Distance=a["Distance"].as<float>();v.SplitLambda=a["SplitLambda"].as<float>();
+         v.NormalBias=a["NormalBias"].as<float>();v.DepthBias=a["DepthBias"].as<float>();v.Blend=a["Blend"].as<float>();
++        if(auto filter=a["Filter"]) {
++            const auto value=filter.as<std::string>();
++            if(value!="PCF" && value!="PCSS")throw std::runtime_error("Directional shadow Filter requires PCF or PCSS");
++            v.Filter=value=="PCSS"?DirectionalShadowFilter::PCSS:DirectionalShadowFilter::PCF;
++        }
++        if(auto radius=a["MaxPenumbra"])v.MaxPenumbra=radius.as<float>();
+     }
+     result.Validate();
+     return result;
+diff --git a/Hazel/src/Hazel/Scene/SceneSerializer.cpp b/Hazel/src/Hazel/Scene/SceneSerializer.cpp
+index 89e5351..3682afe 100644
+--- a/Hazel/src/Hazel/Scene/SceneSerializer.cpp
++++ b/Hazel/src/Hazel/Scene/SceneSerializer.cpp
+@@ -349,7 +349,10 @@ namespace Hazel {
+             out << YAML::Key << "DirectionalLightComponent" << YAML::Value << YAML::BeginMap
+                 << YAML::Key << "Color" << YAML::Value << light.Color << YAML::Key << "Intensity"
+                 << YAML::Value << light.Intensity << YAML::Key << "Enabled" << YAML::Value
+-                << light.Enabled << YAML::EndMap;
++                << light.Enabled;
++            if(light.AngularHalfRadius!=DirectionalLight{}.AngularHalfRadius)
++                out << YAML::Key << "AngularHalfRadius" << YAML::Value << light.AngularHalfRadius;
++            out << YAML::EndMap;
+         }
+         auto writeLocal = [&](auto component, const char *name) {
+             using T = decltype(component);
+@@ -683,6 +686,7 @@ namespace Hazel {
+                     light.Color = node["Color"].as<glm::vec3>();
+                     light.Intensity = node["Intensity"].as<float>();
+                     light.Enabled = node["Enabled"].as<bool>();
++                    if(auto angle=node["AngularHalfRadius"])light.AngularHalfRadius=angle.as<float>();
+                     light.Validate();
+                 }
+                 auto readLocal = [&](auto component, const char *name) {
+diff --git a/Hazel/src/Platform/OpenGL/OpenGLFramebuffer.cpp b/Hazel/src/Platform/OpenGL/OpenGLFramebuffer.cpp
+index 09aa5b2..89882dd 100644
+--- a/Hazel/src/Platform/OpenGL/OpenGLFramebuffer.cpp
++++ b/Hazel/src/Platform/OpenGL/OpenGLFramebuffer.cpp
+@@ -108,7 +108,7 @@ void OpenGLFramebuffer::Release()
+     m_RendererID=m_ResolveRendererID=m_DepthAttachment=0;
+     m_ColorAttachments.clear(); m_ResolveColorAttachments.clear();
+ }
+-OpenGLFramebuffer::~OpenGLFramebuffer() { Release(); glDeleteVertexArrays(1,&m_OutputVAO); }
++OpenGLFramebuffer::~OpenGLFramebuffer() { Release(); glDeleteSamplers(1,&m_ShadowCompareSampler); glDeleteVertexArrays(1,&m_OutputVAO); }
+ 
+ void OpenGLFramebuffer::Invalidate()
+ {
+@@ -491,6 +491,16 @@ void OpenGLFramebuffer::PrepareDirectionalShadows(const Ref<Framebuffer>& depth)
+         throw std::logic_error("Directional shadows require a distinct depth-only producer and bound lighting view");
+     GLint active=0;glGetIntegerv(GL_ACTIVE_TEXTURE,&active);
+     glActiveTexture(GL_TEXTURE10);glBindTexture(GL_TEXTURE_2D,source->m_DepthAttachment);glBindSampler(10,0);
++    if(!m_ShadowCompareSampler) {
++        glGenSamplers(1,&m_ShadowCompareSampler);
++        glSamplerParameteri(m_ShadowCompareSampler,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
++        glSamplerParameteri(m_ShadowCompareSampler,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
++        glSamplerParameteri(m_ShadowCompareSampler,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
++        glSamplerParameteri(m_ShadowCompareSampler,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
++        glSamplerParameteri(m_ShadowCompareSampler,GL_TEXTURE_COMPARE_MODE,GL_COMPARE_REF_TO_TEXTURE);
++        glSamplerParameteri(m_ShadowCompareSampler,GL_TEXTURE_COMPARE_FUNC,GL_LEQUAL);
++    }
++    glActiveTexture(GL_TEXTURE11);glBindTexture(GL_TEXTURE_2D,source->m_DepthAttachment);glBindSampler(11,m_ShadowCompareSampler);
+     glActiveTexture(active);
+ }
+ }
+diff --git a/Hazel/src/Platform/OpenGL/OpenGLFramebuffer.h b/Hazel/src/Platform/OpenGL/OpenGLFramebuffer.h
+index d3ea9c1..b1894e2 100644
+--- a/Hazel/src/Platform/OpenGL/OpenGLFramebuffer.h
++++ b/Hazel/src/Platform/OpenGL/OpenGLFramebuffer.h
+@@ -52,6 +52,7 @@ namespace Hazel {
+ 
+       std::vector<uint32_t> m_ColorAttachments;
+       uint32_t m_DepthAttachment = 0;
++      uint32_t m_ShadowCompareSampler = 0;
+ 	};
+ 
+ }
+diff --git a/Hazel/src/Platform/OpenGL/OpenGLShader.cpp b/Hazel/src/Platform/OpenGL/OpenGLShader.cpp
+index a4f7ccb..8a2b7a3 100644
+--- a/Hazel/src/Platform/OpenGL/OpenGLShader.cpp
++++ b/Hazel/src/Platform/OpenGL/OpenGLShader.cpp
+@@ -169,7 +169,9 @@ OpenGLShader::OpenGLShader(const std::string& filepath):m_FilePath(filepath)
+ {
+     HZ_PROFILE_FUNCTION();
+     m_Name=std::filesystem::u8path(filepath).stem().u8string();
+-    CompilePipeline(PreProcess(ReadFile(filepath)));
++    const bool pcss=m_Name=="ForwardPBR_PCSS" || m_Name=="ForwardPBR_PCSSInspect";
++    const auto source=pcss?std::filesystem::u8path(filepath).parent_path()/"ForwardPBR.glsl":std::filesystem::u8path(filepath);
++    CompilePipeline(PreProcess(ReadFile(source.u8string())));
+ }
+ OpenGLShader::OpenGLShader(const std::string& name,const std::string& vertexSrc,const std::string& fragmentSrc)
+     :m_FilePath(name),m_Name(name)
+@@ -196,6 +198,12 @@ void OpenGLShader::CompilePipeline(const std::unordered_map<GLenum,std::string>&
+     // capacity here before shaderc/cache hashing, matching the renderer's limit.
+     const std::string declaration="#define HZ_MAX_TEXTURE_SLOTS 32";
+     for (auto& [stage,source]:specialized) {
++        if(m_Name=="ForwardPBR_PCSS" || m_Name=="ForwardPBR_PCSSInspect") {
++            const std::string flag="#define HZ_DIRECTIONAL_PCSS 0";
++            if(const auto p=source.find(flag);p!=std::string::npos)source.replace(p,flag.size(),"#define HZ_DIRECTIONAL_PCSS 1");
++            const std::string inspect="#define HZ_SHADOW_INSPECTION 0";
++            if(m_Name=="ForwardPBR_PCSSInspect")if(const auto p=source.find(inspect);p!=std::string::npos)source.replace(p,inspect.size(),"#define HZ_SHADOW_INSPECTION 1");
++        }
+         const auto position=source.find(declaration);
+         if (position!=std::string::npos) {
+             const auto limit=OpenGLCapabilities::GetSettings().TextureSlots;
+diff --git a/Hazel/src/Platform/macOS/Metal/MetalDeviceRenderer2D.cpp b/Hazel/src/Platform/macOS/Metal/MetalDeviceRenderer2D.cpp
+index 4eb0a0e..80d190a 100644
+--- a/Hazel/src/Platform/macOS/Metal/MetalDeviceRenderer2D.cpp
++++ b/Hazel/src/Platform/macOS/Metal/MetalDeviceRenderer2D.cpp
+@@ -236,7 +236,7 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
+     quad->Buffers.push_back(AcquireRenderer2DBuffer(indices.size() * sizeof(uint32_t), indices.data()));
+     auto args = NS::TransferPtr(MTL4::ArgumentTableDescriptor::alloc()->init());
+     args->setInitializeBindings(true); args->setMaxBufferBindCount(17);
+-    args->setMaxTextureBindCount(11); args->setMaxSamplerStateBindCount(11);
++    args->setMaxTextureBindCount(12); args->setMaxSamplerStateBindCount(12);
+     for (auto &pass:quad->LocalLights) {
+         pass->Shadowed=bool(quad->ShadowSource);
+         const auto lightStart=std::chrono::steady_clock::now();
+@@ -320,6 +320,19 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
+                 auto shadow=quad->ShadowSource?quad->ShadowSource->Attachments->Targets[2]:draw.Textures[0]->Texture;
+                 fragment->setTexture(shadow->gpuResourceID(),10);
+                 fragment->setSamplerState(draw.Textures[0]->Sampler->gpuResourceID(),10);
++                if(quad->ShadowSource && (draw.Shader->GetName()=="ForwardPBR_PCSS" || draw.Shader->GetName()=="ForwardPBR_PCSSInspect")) {
++                    if(!quad->ShadowCompareSampler) {
++                        auto sampler=NS::TransferPtr(MTL::SamplerDescriptor::alloc()->init());
++                        sampler->setSupportArgumentBuffers(true);
++                        sampler->setMinFilter(MTL::SamplerMinMagFilterLinear);sampler->setMagFilter(MTL::SamplerMinMagFilterLinear);
++                        sampler->setSAddressMode(MTL::SamplerAddressModeClampToEdge);sampler->setTAddressMode(MTL::SamplerAddressModeClampToEdge);
++                        sampler->setCompareFunction(MTL::CompareFunctionLessEqual);
++                        quad->ShadowCompareSampler=NS::TransferPtr(m_Device->newSamplerState(sampler.get()));
++                        Check(bool(quad->ShadowCompareSampler),"Cannot allocate directional comparison sampler");
++                    }
++                    fragment->setTexture(shadow->gpuResourceID(),11);
++                    fragment->setSamplerState(quad->ShadowCompareSampler->gpuResourceID(),11);
++                }
+                 if(quad->ShadowSource)quad->Residency->addAllocation(shadow.get());
+             }
+             if(draw.MeshVertices && draw.Textures[0]) {
+diff --git a/Hazel/src/Platform/macOS/Metal/MetalRenderer2DFrame.h b/Hazel/src/Platform/macOS/Metal/MetalRenderer2DFrame.h
+index e480589..6d1f24a 100644
+--- a/Hazel/src/Platform/macOS/Metal/MetalRenderer2DFrame.h
++++ b/Hazel/src/Platform/macOS/Metal/MetalRenderer2DFrame.h
+@@ -70,6 +70,7 @@ struct MetalRenderer2DFrame
+     float Exposure = 0;
+     std::shared_ptr<MetalRenderer2DFrame> AOSource;
+     std::shared_ptr<MetalRenderer2DFrame> ShadowSource;
++    NS::SharedPtr<MTL::SamplerState> ShadowCompareSampler;
+     std::shared_ptr<MetalAOPass> AO;
+     std::shared_ptr<MetalTemporalPass> Temporal;
+     std::shared_ptr<MetalRenderer2DFrame> TemporalSource, MotionSource;
+diff --git a/Hazel/src/Platform/macOS/Metal/MetalRendererAPI.cpp b/Hazel/src/Platform/macOS/Metal/MetalRendererAPI.cpp
+index c27145e..dc6ade1 100644
+--- a/Hazel/src/Platform/macOS/Metal/MetalRendererAPI.cpp
++++ b/Hazel/src/Platform/macOS/Metal/MetalRendererAPI.cpp
+@@ -106,7 +106,7 @@ void MetalRendererAPI::BindTexture(uint32_t slot, std::shared_ptr<const MetalTex
+ void MetalRendererAPI::BindShader(const std::string& name)
+ {
+     if (m_Stopped) throw std::logic_error("Cannot bind Metal shader after backend shutdown");
+-    if (name != "ForwardPBR" && name != "DepthPBR" && name != "MotionPBR" && name != "EnvironmentSky") throw std::logic_error("Metal indexed drawing does not support this shader");
++    if (name != "ForwardPBR" && name != "ForwardPBR_PCSS" && name != "ForwardPBR_PCSSInspect" && name != "DepthPBR" && name != "MotionPBR" && name != "EnvironmentSky") throw std::logic_error("Metal indexed drawing does not support this shader");
+     m_BoundShader = name;
+ }
+ void MetalRendererAPI::DrawIndexed(const Ref<VertexArray>& array, uint32_t count, uint32_t first)
+@@ -124,7 +124,7 @@ void MetalRendererAPI::DrawIndexed(const Ref<VertexArray>& array, uint32_t count
+     for (size_t i = 0; i < m_Uniforms.size(); ++i)
+         if (i!=7) if (auto bytes = m_Uniforms[i].lock()) draw.Uniforms[i] = *bytes;
+     for (size_t i = 0; i < m_Textures.size(); ++i) draw.Textures[i] = m_Textures[i];
+-    if (m_BoundShader=="ForwardPBR") {
++    if (m_BoundShader=="ForwardPBR" || m_BoundShader=="ForwardPBR_PCSS" || m_BoundShader=="ForwardPBR_PCSSInspect") {
+         auto bytes=m_LocalLights;
+         if (!bytes || bytes->size()!=sizeof(Renderer3DUniforms::LocalLightData))
+             throw std::logic_error("Missing local light uniform block");
+@@ -154,7 +154,7 @@ void MetalRendererAPI::DrawIndexed(const Ref<VertexArray>& array, uint32_t count
+         for(size_t i=0;i<draw.Uniforms.size();++i)if(i<2 || i>5)draw.Uniforms[i].clear();
+         for(size_t i=1;i<draw.Textures.size();++i)draw.Textures[i].reset();
+     }
+-    if ((m_BoundShader == "ForwardPBR" || m_BoundShader == "DepthPBR" || m_BoundShader == "MotionPBR")) {
++    if ((m_BoundShader == "ForwardPBR" || m_BoundShader == "ForwardPBR_PCSS" || m_BoundShader == "ForwardPBR_PCSSInspect" || m_BoundShader == "DepthPBR" || m_BoundShader == "MotionPBR")) {
+         if (array->GetVertexBuffers().size() != 1) throw std::invalid_argument("PBR requires one native vertex stream");
+         auto vertices = std::dynamic_pointer_cast<MetalVertexBuffer>(array->GetVertexBuffers()[0]);
+         if (!vertices || vertices->GetLayout().GetStride() != 64) throw std::invalid_argument("Invalid PBR vertex layout");
+diff --git a/Hazel/src/Platform/macOS/Metal/MetalShader.cpp b/Hazel/src/Platform/macOS/Metal/MetalShader.cpp
+index e35fb2d..c0d6638 100644
+--- a/Hazel/src/Platform/macOS/Metal/MetalShader.cpp
++++ b/Hazel/src/Platform/macOS/Metal/MetalShader.cpp
+@@ -125,7 +125,8 @@ MetalShader::MetalShader(std::shared_ptr<MetalDevice> deviceOwner, const std::st
+         const auto bytes = ReadMetalShaderFile(packaged);
+         auto artifact = MetalShaderArtifact::Decode(bytes);
+         Check(artifact.Name == shaderName && artifact.TextureSlots == slots, "Packaged shader/variant identity mismatch");
+-        const auto source = Resources::Resolve("shaders/" + shaderName + ".glsl");
++        const auto sourceName=(shaderName=="ForwardPBR_PCSS" || shaderName=="ForwardPBR_PCSSInspect")?"ForwardPBR":shaderName;
++        const auto source = Resources::Resolve("shaders/" + sourceName + ".glsl");
+         if (std::filesystem::exists(source))
+             Check(artifact.SourceIdentity == MetalShaderArtifact::SourceKey(shaderName, ReadMetalShaderFile(source), slots),
+                 "Packaged shader is stale; rebuild with scripts/macos/metal_shaders.py");
+@@ -206,6 +207,8 @@ MetalShader::MetalShader(std::shared_ptr<MetalDevice> deviceOwner, const std::st
+             {"DepthPBR", {MTL::VertexFormatFloat3, MTL::VertexFormatFloat3, MTL::VertexFormatFloat4, MTL::VertexFormatFloat2, MTL::VertexFormatFloat4}},
+             {"MotionPBR", {MTL::VertexFormatFloat3, MTL::VertexFormatFloat3, MTL::VertexFormatFloat4, MTL::VertexFormatFloat2, MTL::VertexFormatFloat4}},
+             {"ForwardPBR", {MTL::VertexFormatFloat3, MTL::VertexFormatFloat3, MTL::VertexFormatFloat4, MTL::VertexFormatFloat2, MTL::VertexFormatFloat4}},
++            {"ForwardPBR_PCSS", {MTL::VertexFormatFloat3, MTL::VertexFormatFloat3, MTL::VertexFormatFloat4, MTL::VertexFormatFloat2, MTL::VertexFormatFloat4}},
++            {"ForwardPBR_PCSSInspect", {MTL::VertexFormatFloat3, MTL::VertexFormatFloat3, MTL::VertexFormatFloat4, MTL::VertexFormatFloat2, MTL::VertexFormatFloat4}},
+             {"Renderer2D_Line", {MTL::VertexFormatFloat3, MTL::VertexFormatFloat4, MTL::VertexFormatFloat4, MTL::VertexFormatFloat4, MTL::VertexFormatInt, MTL::VertexFormatFloat4}},
+             {"Renderer2D_Circle", {MTL::VertexFormatFloat3, MTL::VertexFormatFloat3, MTL::VertexFormatFloat4, MTL::VertexFormatFloat, MTL::VertexFormatFloat, MTL::VertexFormatInt, MTL::VertexFormatFloat4}},
+             {"Renderer2D_Quad", {MTL::VertexFormatFloat3, MTL::VertexFormatFloat4, MTL::VertexFormatFloat2, MTL::VertexFormatFloat, MTL::VertexFormatFloat, MTL::VertexFormatInt, MTL::VertexFormatFloat4}},
+@@ -230,7 +233,7 @@ MetalShader::MetalShader(std::shared_ptr<MetalDevice> deviceOwner, const std::st
+             m_Stride += type.vecsize * 4;
+         }
+         vertices->layouts()->object(16)->setStride(m_Stride);
+-        const std::map<std::string, size_t> strides = {{"MotionPBR", 64}, {"DepthPBR", 64}, {"ForwardPBR", 64}, {"Renderer2D_Line", 80},
++        const std::map<std::string, size_t> strides = {{"MotionPBR", 64}, {"DepthPBR", 64}, {"ForwardPBR", 64}, {"ForwardPBR_PCSS", 64}, {"ForwardPBR_PCSSInspect", 64}, {"Renderer2D_Line", 80},
+             {"Renderer2D_Quad-16", 64}, {"Renderer2D_Quad-32", 64}, {"Renderer2D_Circle", 68}, {"Renderer2D_Text", 56}};
+         Check(m_Stride == (strides.count(name) ? strides.at(name) : 0), "Reflected CPU vertex stream size differs");
+         descriptor->setVertexDescriptor(vertices.get());
+@@ -259,7 +262,7 @@ void MetalShader::Unbind() const {}
+ void MetalShader::SetInt(const std::string& name, int value)
+ {
+     static const std::map<std::string, int> bindings = {{"u_Base",0},{"u_MetalRough",1},{"u_Normal",2},{"u_Occlusion",3},
+-        {"u_ShadowAtlas",10},{"u_Emissive",4},{"u_Irradiance",5},{"u_Specular",6},{"u_BRDF",7},{"u_Sky",5}};
++        {"u_ShadowAtlas",10},{"u_ShadowCompareAtlas",11},{"u_Emissive",4},{"u_Irradiance",5},{"u_Specular",6},{"u_BRDF",7},{"u_Sky",5}};
+     auto found = bindings.find(name);
+     if (found == bindings.end() || found->second != value) throw std::invalid_argument("Metal loose uniform unavailable or sampler differs from reflected GLSL binding");
+ }
+diff --git a/Hazel/src/Platform/macOS/Metal/MetalShaderArtifact.cpp b/Hazel/src/Platform/macOS/Metal/MetalShaderArtifact.cpp
+index 410f95e..79184f0 100644
+--- a/Hazel/src/Platform/macOS/Metal/MetalShaderArtifact.cpp
++++ b/Hazel/src/Platform/macOS/Metal/MetalShaderArtifact.cpp
+@@ -49,7 +49,7 @@ std::string MetalShaderArtifact::Digest(const std::string& bytes)
+ }
+ void MetalShaderArtifact::ValidateName(const std::string& name, uint32_t slots)
+ {
+-    const std::set<std::string> names = {"DisplayOutput", "EntityOutline", "EnvironmentSky", "ForwardPBR", "DepthPBR", "MotionPBR",
++    const std::set<std::string> names = {"DisplayOutput", "EntityOutline", "EnvironmentSky", "ForwardPBR", "ForwardPBR_PCSS", "ForwardPBR_PCSSInspect", "DepthPBR", "MotionPBR",
+         "Renderer2D_Circle", "Renderer2D_Line", "Renderer2D_Quad", "Renderer2D_Text", "WorldPresentation"};
+     Check(names.count(name) == 1 && (slots == 32 || (name == "Renderer2D_Quad" && slots == 16)), "unsupported shader/variant " + name);
+ }
+diff --git a/Hazel/src/Platform/macOS/Metal/MetalShaderCompiler.cpp b/Hazel/src/Platform/macOS/Metal/MetalShaderCompiler.cpp
+index 379909d..f93ddd0 100644
+--- a/Hazel/src/Platform/macOS/Metal/MetalShaderCompiler.cpp
++++ b/Hazel/src/Platform/macOS/Metal/MetalShaderCompiler.cpp
+@@ -30,7 +30,7 @@ Layout CPUContract(const std::string& name)
+     if (name == "Camera") return {sizeof(glm::mat4), {0}};
+     if (name == "DirectionalShadows") return {sizeof(DirectionalShadowData), {offsetof(DirectionalShadowData,VP), offsetof(DirectionalShadowData,Splits),
+         offsetof(DirectionalShadowData,Eye), offsetof(DirectionalShadowData,Forward), offsetof(DirectionalShadowData,Parameters),
+-        offsetof(DirectionalShadowData,Range), offsetof(DirectionalShadowData,TexelDepth)}};
++        offsetof(DirectionalShadowData,Range), offsetof(DirectionalShadowData,TexelDepth), offsetof(DirectionalShadowData,Softness)}};
+     if (name == "LocalLights") return {sizeof(Renderer3DUniforms::LocalLightData), {0, 16}};
+     if (name == "Presentation") return {sizeof(glm::vec4), {0}};
+     if (name == "Outline") return {32, {0, 4, 8, 16}}; // Explicit declaration-only legacy adaptation.
+@@ -158,6 +158,8 @@ MetalShaderArtifact CompileMetalShader(const std::string& name, const std::strin
+             }
+             shaderc::CompileOptions options;
+             options.AddMacroDefinition("HZ_METAL", "1");
++            if(name=="ForwardPBR_PCSS" || name=="ForwardPBR_PCSSInspect")options.AddMacroDefinition("HZ_DIRECTIONAL_PCSS","1");
++            if(name=="ForwardPBR_PCSSInspect")options.AddMacroDefinition("HZ_SHADOW_INSPECTION","1");
+             options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_2);
+             options.SetGenerateDebugInfo();
+             options.SetOptimizationLevel(shaderc_optimization_level_performance);
+diff --git a/Hazelnut/src/Authoring/RenderingSettings.cpp b/Hazelnut/src/Authoring/RenderingSettings.cpp
+index 20d0ff0..d4c192d 100644
+--- a/Hazelnut/src/Authoring/RenderingSettings.cpp
++++ b/Hazelnut/src/Authoring/RenderingSettings.cpp
+@@ -95,13 +95,17 @@ namespace Hazel {
+         PropertyUI::Checkbox("shadows-enable","Cascaded shadows",shadows.Enabled);
+         int shadowResolution=shadows.Resolution==256?0:shadows.Resolution==512?1:shadows.Resolution==1024?2:3;
+         if(PropertyUI::Combo("shadow-resolution","Cascade resolution",shadowResolution,"256\0 512\0 1024\0 2048 (Ultra)\0"))shadows.Resolution=256u<<shadowResolution;
++        int shadowFilter=shadows.Filter==DirectionalShadowFilter::PCSS?1:0;
++        if(PropertyUI::Combo("shadow-filter","Filtering",shadowFilter,"PCF\0PCSS (contact hardening)\0"))
++            shadows.Filter=shadowFilter?DirectionalShadowFilter::PCSS:DirectionalShadowFilter::PCF;
++        if(shadowFilter)PropertyUI::DragFloat("shadow-penumbra","Maximum soft radius (world)",shadows.MaxPenumbra,.01f,.001f,4);
+         PropertyUI::DragFloat("shadow-distance","Shadow distance",shadows.Distance,.1f,.1f,10000);
+         PropertyUI::SliderFloat("shadow-split","Split distribution",shadows.SplitLambda,0,1);
+         PropertyUI::SliderFloat("shadow-normal","Normal bias (texels)",shadows.NormalBias,0,2);
+         PropertyUI::SliderFloat("shadow-depth","Depth bias (texels)",shadows.DepthBias,0,1);
+         ImGui::TextWrapped("Ultra uses four 2048 maps in a 64 MiB depth atlas. Bias values use each cascade's world texel size.");
+         PropertyUI::SliderFloat("shadow-blend","Cascade blend / fade",shadows.Blend,.01f,.25f);
+-        ImGui::TextWrapped("Four cascades with fixed PCF for the directional key. Static opaque and masked meshes cast and receive shadows on Metal and OpenGL.");
++        ImGui::TextWrapped("Four cascades for the directional key. PCSS adds contact hardening using the light's angular half-radius; PCF retains fixed filtering. Ultra changes resolution independently of physical softness.");
+         ImGui::SeparatorText("Screen-space ambient occlusion");
+         auto& ao=m_ScenePresentationDraft.AmbientOcclusion;
+         PropertyUI::Checkbox("ao-enable","XeGTAO (Metal 4)",ao.Enabled);
+diff --git a/Hazelnut/src/Panels/SceneHierarchyPanel.cpp b/Hazelnut/src/Panels/SceneHierarchyPanel.cpp
+index de127ba..9b364d9 100644
+--- a/Hazelnut/src/Panels/SceneHierarchyPanel.cpp
++++ b/Hazelnut/src/Panels/SceneHierarchyPanel.cpp
+@@ -1341,6 +1341,9 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
+             if (PropertyUI::Color("light-color", "Color", &color.x, {}, false))
+                 light.Color = glm::vec3(color);
+             PropertyUI::SliderFloat("intensity", "Intensity", light.Intensity, 0, 1000);
++            float angularRadius=glm::degrees(light.AngularHalfRadius);
++            if(PropertyUI::SliderFloat("angular-radius","Angular half-radius (degrees)",angularRadius,0,2))
++                light.AngularHalfRadius=glm::radians(angularRadius);
+             ImGui::TextWrapped("Linear RGB irradiance, relative units. Local -Z points along light "
+                                "travel. One enabled directional key; image lighting is selected in Scene Settings.");
+         });
+diff --git a/scripts/macos/metal_shaders.py b/scripts/macos/metal_shaders.py
+index dc6495b..0ffb9fd 100644
+--- a/scripts/macos/metal_shaders.py
++++ b/scripts/macos/metal_shaders.py
+@@ -29,9 +29,10 @@ def produce(configuration, destination, sources=None, force=False):
+     # Compare producer metadata before publishing it; --check uses this fingerprint.
+     (destination / 'producer.txt').write_text(producer)
+     results = {}
+-    for source in sorted(sources.glob('*.glsl')):
++    inputs=[(source.stem,source) for source in sorted(sources.glob('*.glsl'))]
++    inputs.extend((name,sources/'ForwardPBR.glsl') for name in ('ForwardPBR_PCSS','ForwardPBR_PCSSInspect'))
++    for name,source in inputs:
+         for slots in ([16, 32] if source.stem == 'Renderer2D_Quad' else [32]):
+-            name = source.stem
+             variant = name + (f'-{slots}' if name == 'Renderer2D_Quad' else '')
+             args = [name, str(slots), str(source.resolve())]
+             check = subprocess.run([str(tool), '--check', *args, str(destination.resolve())], env=env, capture_output=True, text=True)
+@@ -56,8 +57,8 @@ def produce(configuration, destination, sources=None, force=False):
+                 # second same-filesystem rename publishes the completed package.
+                 (work / (variant + '.hzmetal')).replace(destination / (variant + '.hzmetal'))
+             results[variant] = 'REBUILT'
+-    if len(results) != 12:
+-        raise RuntimeError('Expected eleven raster shaders (twelve variant packages)')
++    if len(results) != 14:
++        raise RuntimeError('Expected eleven raster sources (fourteen variant packages)')
+     # Dear ImGui uses its upstream MSL directly; no shader source is compiled at runtime.
+     source = hz.ROOT / 'Hazel/Resources/shaders/ImGui.metal'
+     identity = hashlib.sha256(source.read_bytes() + producer.encode()).hexdigest()

@@ -1,0 +1,182 @@
+{
+  "release-planes": {
+    "command": [
+      "python3",
+      "scripts/macos/directional_pcss.py",
+      "--config",
+      "Release",
+      "--resources",
+      "<repo>/Hazel/Resources",
+      "--output",
+      "<repo>/build/pcss-v1/final-support/release-planes"
+    ],
+    "exitCode": 0
+  },
+  "release-strips": {
+    "command": [
+      "python3",
+      "scripts/macos/directional_pcss.py",
+      "--config",
+      "Release",
+      "--resources",
+      "<repo>/Hazel/Resources",
+      "--output",
+      "<repo>/build/pcss-v1/final-support/release-strips",
+      "--strips"
+    ],
+    "exitCode": 0,
+    "backends": {
+      "metal": "PASS scoped thin/layered depth-grid",
+      "opengl": "PASS scoped thin/layered depth-grid"
+    }
+  },
+  "release-motion": {
+    "command": [
+      "python3",
+      "scripts/macos/directional_pcss.py",
+      "--config",
+      "Release",
+      "--resources",
+      "<repo>/Hazel/Resources",
+      "--output",
+      "<repo>/build/pcss-v1/final-support/release-motion",
+      "--motion"
+    ],
+    "exitCode": 0,
+    "backends": {
+      "metal": "PASS scoped temporal",
+      "opengl": "PASS scoped temporal"
+    }
+  },
+  "release-authored": {
+    "command": [
+      "python3",
+      "scripts/macos/directional_pcss.py",
+      "--config",
+      "Release",
+      "--resources",
+      "<repo>/Hazel/Resources",
+      "--output",
+      "<repo>/build/pcss-v1/final-support/release-authored",
+      "--authored"
+    ],
+    "exitCode": 0
+  },
+  "release--shadow-temporal-lifetime": {
+    "command": [
+      "<repo>/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "<repo>/Hazel/Resources",
+      "<repo>/build/pcss-v1/final-support/release--shadow-temporal-lifetime",
+      "--shadow-temporal-lifetime"
+    ],
+    "exitCode": 0
+  },
+  "release--shadow-atlas-lifetime": {
+    "command": [
+      "<repo>/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "<repo>/Hazel/Resources",
+      "<repo>/build/pcss-v1/final-support/release--shadow-atlas-lifetime",
+      "--shadow-atlas-lifetime"
+    ],
+    "exitCode": 0
+  },
+  "release--shadow-atlas-taa-lifetime": {
+    "command": [
+      "<repo>/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "<repo>/Hazel/Resources",
+      "<repo>/build/pcss-v1/final-support/release--shadow-atlas-taa-lifetime",
+      "--shadow-atlas-taa-lifetime"
+    ],
+    "exitCode": 0
+  },
+  "debug-planes": {
+    "command": [
+      "python3",
+      "scripts/macos/directional_pcss.py",
+      "--config",
+      "Debug",
+      "--resources",
+      "<repo>/Hazel/Resources",
+      "--output",
+      "<repo>/build/pcss-v1/final-support/debug-planes"
+    ],
+    "exitCode": 0
+  },
+  "debug-strips": {
+    "command": [
+      "python3",
+      "scripts/macos/directional_pcss.py",
+      "--config",
+      "Debug",
+      "--resources",
+      "<repo>/Hazel/Resources",
+      "--output",
+      "<repo>/build/pcss-v1/final-support/debug-strips",
+      "--strips"
+    ],
+    "exitCode": 0,
+    "backends": {
+      "metal": "PASS scoped thin/layered depth-grid",
+      "opengl": "PASS scoped thin/layered depth-grid"
+    }
+  },
+  "debug-motion": {
+    "command": [
+      "python3",
+      "scripts/macos/directional_pcss.py",
+      "--config",
+      "Debug",
+      "--resources",
+      "<repo>/Hazel/Resources",
+      "--output",
+      "<repo>/build/pcss-v1/final-support/debug-motion",
+      "--motion"
+    ],
+    "exitCode": 0,
+    "backends": {
+      "metal": "PASS scoped temporal",
+      "opengl": "PASS scoped temporal"
+    }
+  },
+  "debug-authored": {
+    "command": [
+      "python3",
+      "scripts/macos/directional_pcss.py",
+      "--config",
+      "Debug",
+      "--resources",
+      "<repo>/Hazel/Resources",
+      "--output",
+      "<repo>/build/pcss-v1/final-support/debug-authored",
+      "--authored"
+    ],
+    "exitCode": 0
+  },
+  "debug--shadow-temporal-lifetime": {
+    "command": [
+      "<repo>/bin/Debug-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "<repo>/Hazel/Resources",
+      "<repo>/build/pcss-v1/final-support/debug--shadow-temporal-lifetime",
+      "--shadow-temporal-lifetime"
+    ],
+    "exitCode": 0
+  },
+  "debug--shadow-atlas-lifetime": {
+    "command": [
+      "<repo>/bin/Debug-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "<repo>/Hazel/Resources",
+      "<repo>/build/pcss-v1/final-support/debug--shadow-atlas-lifetime",
+      "--shadow-atlas-lifetime"
+    ],
+    "exitCode": 0
+  },
+  "debug--shadow-atlas-taa-lifetime": {
+    "command": [
+      "<repo>/bin/Debug-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "<repo>/Hazel/Resources",
+      "<repo>/build/pcss-v1/final-support/debug--shadow-atlas-taa-lifetime",
+      "--shadow-atlas-taa-lifetime"
+    ],
+    "exitCode": 0
+  }
+}

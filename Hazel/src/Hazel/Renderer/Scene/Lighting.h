@@ -36,9 +36,17 @@ struct SpotLight : PointLight
 {
     // Half angles in radians. A strictly positive penumbra avoids undefined smoothstep.
     float InnerCone = .34906585f, OuterCone = .52359878f;
+    bool CastShadows = false;
+    unsigned ShadowResolution = 512;
+    static void ValidateShadowResolution(unsigned resolution)
+    {
+        if (resolution != 256 && resolution != 512 && resolution != 1024)
+            throw std::runtime_error("Spot shadow resolution requires 256, 512 or 1024");
+    }
     void Validate() const
     {
         PointLight::Validate();
+        ValidateShadowResolution(ShadowResolution);
         if (!std::isfinite(InnerCone) || !std::isfinite(OuterCone) ||
             InnerCone < 0 || OuterCone > 1.553343f || OuterCone - InnerCone < .001f)
             throw std::runtime_error("Spot half angles require 0 <= inner < outer <= 89 degrees and .001 rad penumbra");

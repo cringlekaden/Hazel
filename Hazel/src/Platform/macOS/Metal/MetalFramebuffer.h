@@ -40,7 +40,7 @@ public:
         const std::shared_ptr<std::atomic<bool>>& submitted, const std::shared_ptr<TemporalTiming>& timing);
     void Bind() override;
     void Unbind() override;
-    void PrepareDirectionalShadows(const Ref<Framebuffer>& depth) override;
+    void PrepareShadowDepth(const Ref<Framebuffer>& depth, ShadowMapKind kind) override;
     // Resume an unsubmitted CPU packet after a narrow producer pass.
     void Resume();
     void Resume(glm::vec4 clearColor); // Inspection color override preserves picking/depth clears.

@@ -1,0 +1,85 @@
+{
+  "configuration": "Release",
+  "head": "d80bb5e9a3fcfd687b1a995980806c91748e1b8d",
+  "sourceSHA256": "3f7a7dafac006eda4d516db97e5be6ded753007bf7381ae2f5e07607fa1bb3f4",
+  "commands": {
+    "metal": [
+      "<repo>/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "<repo>/build/pcss-v1/resources-fused-exact-scalar",
+      "<repo>/build/pcss-v1/fused-exact-scalar-wide-cost/metal",
+      "--shadows"
+    ]
+  },
+  "backends": {
+    "metal": {
+      "status": "MEASURED; acceptance separate",
+      "warmups": 5,
+      "cases": {
+        "1920/1080/1024/1/19.0763": {
+          "shadowGPUms": {
+            "median": 0.06827085,
+            "p95": 0.14675,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 13.049900000000001,
+            "p95": 13.2815,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 20.229599999999998,
+            "p95": 20.4857,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          }
+        },
+        "1920/1080/2048/1/19.0763": {
+          "shadowGPUms": {
+            "median": 0.3343335,
+            "p95": 0.352583,
+            "samples": 20
+          },
+          "forwardGPUms": {
+            "median": 13.007750000000001,
+            "p95": 13.4199,
+            "samples": 20
+          },
+          "serializedMs": {
+            "median": 20.19845,
+            "p95": 20.3805,
+            "samples": 20
+          },
+          "totalGPUms": {
+            "median": 0.0,
+            "p95": 0.0,
+            "samples": 20
+          }
+        }
+      },
+      "scope": "Fully blocked, single/overlap/single, offscreen serialized. Metal GPU atlas/forward counters; GL total SceneRenderer elapsed query where recorded, no GL pass split. Serialized CPU is not GPU timing."
+    }
+  },
+  "angled": true,
+  "casterHeight": 0.02,
+  "angularRadius": 0.03490658,
+  "status": "MEASURED; acceptance separate",
+  "candidate": {
+    "kind": "fused-exact-scalar",
+    "blockerLocations": 8,
+    "filterLocations": 32,
+    "filterPattern": "vogel",
+    "comparison": "native plane envelope",
+    "fusedFilter": true,
+    "smallContact": true,
+    "refineEmpty": true,
+    "receiverPlaneBounds": true,
+    "baseShaderSHA256": "a628968fd02b92549008143e4286559bc605df5aaddd9c516e194dcda16ad0c8",
+    "sourceSHA256": "3f7a7dafac006eda4d516db97e5be6ded753007bf7381ae2f5e07607fa1bb3f4",
+    "productionSelected": false
+  },
+  "peakChildResidentBytes": 264208384
+}

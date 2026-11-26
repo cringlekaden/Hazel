@@ -98,6 +98,9 @@ SceneSubmission SceneRenderer::Collect(Scene &scene, const SceneCameraView &came
                 submitted.Direction = DirectionalTravel(world);
                 submitted.InnerCos = std::cos(light.InnerCone);
                 submitted.OuterCos = std::cos(light.OuterCone);
+                submitted.CastShadows = light.CastShadows;
+                submitted.ShadowResolution = light.ShadowResolution;
+                submitted.ShadowUp = glm::vec3(world[1]);
             }
             frame.LocalLights.push_back(submitted);
         }
@@ -110,6 +113,10 @@ SceneSubmission SceneRenderer::Collect(Scene &scene, const SceneCameraView &came
         return a.Identity!=b.Identity?a.Identity<b.Identity:a.OuterCos<b.OuterCos;
     });
     frame.LightCollectionMilliseconds=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-localStart).count();
+    const bool collectCasters = (frame.Presentation.Shadows.Enabled && frame.Light) ||
+        std::any_of(frame.LocalLights.begin(), frame.LocalLights.end(), [](const auto& light) {
+            return light.CastShadows && glm::any(glm::greaterThan(light.Incident, glm::vec3(0)));
+        });
     for (auto h : scene.GetAllEntitiesWith<MeshRendererComponent>())
     {
         Entity e(h, &scene);
@@ -142,7 +149,7 @@ SceneSubmission SceneRenderer::Collect(Scene &scene, const SceneCameraView &came
         // Half-pixel maximum jitter requires one pixel of total NDC guard.
         const auto guard=frame.Presentation.TemporalAA && physicalExtent.x && physicalExtent.y?
             glm::vec2(1)/glm::vec2(physicalExtent):glm::vec2(0);
-        if(frame.Presentation.Shadows.Enabled && frame.Light)frame.ShadowCasters.push_back(draw);
+        if (collectCasters) frame.ShadowCasters.push_back(draw);
         if (Visible(draw.Geometry->Geometry.Bounds, camera.ViewProjection * draw.World,guard))
             frame.Meshes.push_back(std::move(draw));
     }

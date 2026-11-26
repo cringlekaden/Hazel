@@ -1,0 +1,17 @@
+{
+  "windowVisible": true,
+  "framebufferWidth": 1280,
+  "framebufferHeight": 720,
+  "logicalWidth": 1280,
+  "logicalHeight": 720,
+  "glfwMonitors": [
+    {
+      "logicalHeight": 1440,
+      "scaleY": 1,
+      "refreshHz": 180,
+      "name": "VG272U V3",
+      "scaleX": 1,
+      "logicalWidth": 2560
+    }
+  ]
+}

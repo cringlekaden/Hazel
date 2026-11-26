@@ -2,6 +2,7 @@
 #include "MetalShaderArtifact.h"
 #include "Hazel/Renderer/Drawing/Renderer3DUniforms.h"
 #include "Hazel/Renderer/Scene/DirectionalShadows.h"
+#include "Hazel/Renderer/Scene/SpotShadows.h"
 #include <shaderc/shaderc.hpp>
 #include <spirv-tools/libspirv.hpp>
 #include <spirv_cross/spirv_msl.hpp>
@@ -31,6 +32,8 @@ Layout CPUContract(const std::string& name)
     if (name == "DirectionalShadows") return {sizeof(DirectionalShadowData), {offsetof(DirectionalShadowData,VP), offsetof(DirectionalShadowData,Splits),
         offsetof(DirectionalShadowData,Eye), offsetof(DirectionalShadowData,Forward), offsetof(DirectionalShadowData,Parameters),
         offsetof(DirectionalShadowData,Range), offsetof(DirectionalShadowData,TexelDepth)}};
+    if (name == "SpotShadows") return {sizeof(SpotShadowData), {offsetof(SpotShadowData, VP),
+        offsetof(SpotShadowData, Tiles), offsetof(SpotShadowData, LightIndices)}};
     if (name == "LocalLights") return {sizeof(Renderer3DUniforms::LocalLightData), {0, 16}};
     if (name == "Presentation") return {sizeof(glm::vec4), {0}};
     if (name == "Outline") return {32, {0, 4, 8, 16}}; // Explicit declaration-only legacy adaptation.

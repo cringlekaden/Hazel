@@ -1,0 +1,30 @@
+[07:53:57] HAZEL: Renderer launch: requested Automatic, active OpenGL (selected before window initialization)
+[07:53:57] HAZEL: Creating window Migration Missing Shader (1280, 720)
+[07:53:57] HAZEL: Initializing GLFW
+2026-11-26 07:53:57.966 MigrationRenderer2DSmoke[95060:4228779] Metal API Validation Enabled
+2026-11-26 07:53:57.966 MigrationRenderer2DSmoke[95060:4228779] Metal GPU Validation Enabled
+[07:53:58] HAZEL: OpenGL Info: Apple / Apple M4 / 4.1 Metal - 91.7
+[07:53:58] HAZEL: Main-window requested swap interval: 1 (submitted; driver/compositor timing unmeasured)
+[07:53:58] HAZEL: Renderer requests/effective:
+Texture batch: requested 32, effective 16 (Limited by device texture units and the engine's 32-slot batch)
+Shader loading: requested Automatic, resolution: SPIR-V specialization unavailable; Auto uses GLSL 410
+GL debug output: requested On, effective Off (Core 4.3 debug functions unavailable; request retained)
+[07:53:58] HAZEL: Renderer paths: bind-based OpenGL 4.1 resources; shaderc/Cross to GLSL 410; 16 texture slots (device 16); debug output false
+[07:53:58] HAZEL: Framebuffer limits: size 16384; color attachments 8; draw buffers 8; samples color/integer/depth 4/1/4
+[07:53:58] HAZEL: Renderer2D texture slots: 16
+[07:53:58] HAZEL: Terminating GLFW
+[07:53:58] HAZEL: Renderer launch: requested Automatic, active OpenGL (selected before window initialization)
+[07:53:58] HAZEL: Creating window Migration Renderer2D (1280, 720)
+[07:53:58] HAZEL: Initializing GLFW
+[07:53:58] HAZEL: OpenGL Info: Apple / Apple M4 / 4.1 Metal - 91.7
+[07:53:58] HAZEL: Main-window requested swap interval: 1 (submitted; driver/compositor timing unmeasured)
+[07:53:58] HAZEL: Renderer requests/effective:
+Texture batch: requested 4, effective 4
+Shader loading: requested Automatic, resolution: SPIR-V specialization unavailable; Auto uses GLSL 410
+GL debug output: requested On, effective Off (Core 4.3 debug functions unavailable; request retained)
+[07:53:58] HAZEL: Renderer paths: bind-based OpenGL 4.1 resources; shaderc/Cross to GLSL 410; 4 texture slots (device 16); debug output false
+[07:53:58] HAZEL: Framebuffer limits: size 16384; color attachments 8; draw buffers 8; samples color/integer/depth 4/1/4
+[07:53:58] HAZEL: Renderer2D texture slots: 4
+Renderer: Apple M4; Version: 4.1 Metal - 91.7
+CAPTURED directional PCSS planes=24; independent gates evaluated by runner
+[07:54:08] HAZEL: Terminating GLFW

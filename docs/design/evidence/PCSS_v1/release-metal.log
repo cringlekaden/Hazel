@@ -1,0 +1,7 @@
+2026-11-26 07:54:13.068 MetalRenderer2DQuadSmoke[95154:4229586] Metal API Validation Enabled
+2026-11-26 07:54:13.068 MetalRenderer2DQuadSmoke[95154:4229586] Metal GPU Validation Enabled
+[07:54:13] HAZEL: Metal 4 device: Apple M4; one MTL4CommandQueue, three allocators; OpenGL not initialized
+[07:54:13] HAZEL: Renderer2D texture slots: 4
+CAPTURED directional PCSS planes=24; independent gates evaluated by runner
+PASS gated mesh/material/object versions, three pending frames, cache-owner retention and retirement
+CSM_RESOURCES peak=93969424 attachments=90890496 final=0

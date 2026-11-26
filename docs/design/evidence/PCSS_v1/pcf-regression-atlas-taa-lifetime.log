@@ -1,0 +1,5 @@
+2026-11-26 07:50:19.923 MetalRenderer2DQuadSmoke[94398:4222435] Metal API Validation Enabled
+2026-11-26 07:50:19.924 MetalRenderer2DQuadSmoke[94398:4222435] Metal GPU Validation Enabled
+[07:50:19] HAZEL: Metal 4 device: Apple M4; one MTL4CommandQueue, three allocators; OpenGL not initialized
+[07:50:19] HAZEL: Renderer2D texture slots: 4
+PASS lit moving-shadow serialized/three-slot equivalence, shared Ultra storage, resolution replacement, busy cancellation and view destruction/retirement TAA=1

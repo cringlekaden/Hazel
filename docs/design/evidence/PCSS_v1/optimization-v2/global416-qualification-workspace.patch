@@ -1,0 +1,217 @@
+diff --git a/tests/macos/DirectionalShadowQualification.h b/tests/macos/DirectionalShadowQualification.h
+index 17218e0..2ab307b 100644
+--- a/tests/macos/DirectionalShadowQualification.h
++++ b/tests/macos/DirectionalShadowQualification.h
+@@ -1,6 +1,7 @@
+ #pragma once
+ #include "Renderer3DParity.h"
+ #include "ShadowContinuityChecks.h"
++#include "DirectionalPCSSChecks.h"
+ #include "Hazel/Scene/SceneDefaults.h"
+ #include "Hazel/Renderer/Cameras/NavigationCamera.h"
+ #include "Hazel/Renderer/Drawing/Renderer2D.h"
+@@ -85,6 +86,7 @@ inline void DirectionalShadowQualification(const std::filesystem::path& output,
+     const std::function<Hazel::Ref<const Hazel::FramebufferReadback>(const Hazel::Ref<Hazel::Framebuffer>&)>& capture)
+ {
+     using namespace Hazel;
++    if(!FileSystem::GetEnvironmentPath("HAZEL_PCSS_QUALIFY").empty()){DirectionalPCSSChecks(output,capture);return;}
+     if(!FileSystem::GetEnvironmentPath("HAZEL_SHADOW_CONTINUITY").empty()){ShadowContinuityChecks(output,capture);return;}
+     DirectionalShadowCPUChecks();std::filesystem::create_directories(output);
+     auto selected=FileSystem::GetEnvironmentPath("HAZEL_RENDERING_REFERENCE_PROJECT");
+@@ -100,6 +102,7 @@ inline void DirectionalShadowQualification(const std::filesystem::path& output,
+     auto target=Framebuffer::Create(spec);SceneRenderView view;
+     SceneSubmission frame;frame.Assets=assets;frame.Presentation.SceneReferred=true;frame.LocalMetrics=view.LocalMetrics;
+     frame.Presentation.Shadows.Distance=80;
++    if(!FileSystem::GetEnvironmentPath("HAZEL_PCSS_FILTER").empty())frame.Presentation.Shadows.Filter=DirectionalShadowFilter::PCSS;
+     auto render=[&](SurfaceView debug,bool shadows) {
+         frame.Debug=debug;frame.LinearLightingInspection=true;frame.Presentation.Shadows.Enabled=shadows;
+         target->Bind();if(RendererAPI::GetAPI()==RendererAPI::API::Metal)target->Clear({0,0,0,1});
+@@ -119,6 +122,8 @@ inline void DirectionalShadowQualification(const std::filesystem::path& output,
+         frame.ShadowCasters=frame.Meshes;
+         std::ofstream timing(output/"benchmark.csv");timing<<"width,height,resolution,enabled,sample,shadowGPUms,forwardGPUms,serializedFrameMs\n";
+         for(auto extent:{glm::uvec2(1280,720),glm::uvec2(1920,1080)})for(unsigned resolution:{512u,1024u,2048u})for(bool enabled:{false,true}) {
++            const auto selected=FileSystem::GetEnvironmentPath("HAZEL_CSM_RESOLUTION");
++            if(!selected.empty() && resolution!=std::stoul(selected.string()))continue;
+             target->Resize(extent.x,extent.y);frame.Presentation.Shadows.Resolution=resolution;
+             frame.Camera.ViewProjection=glm::perspective(glm::radians(55.f),float(extent.x)/float(extent.y),.1f,100.f)*
+                 glm::lookAt(frame.Camera.Position,glm::vec3(0),glm::vec3(0,1,0));
+diff --git a/tests/macos/MetalRenderer2DQuadSmoke.cpp b/tests/macos/MetalRenderer2DQuadSmoke.cpp
+index 8a5c186..1b35080 100644
+--- a/tests/macos/MetalRenderer2DQuadSmoke.cpp
++++ b/tests/macos/MetalRenderer2DQuadSmoke.cpp
+@@ -170,6 +170,7 @@ void TemporalLifetime(Hazel::MetalRendererAPI& backend, bool shadows=false) {
+     auto target=Framebuffer::Create(TargetSpecification());SceneRenderView view;
+     SceneSubmission frame;frame.Presentation.SceneReferred=true;frame.Presentation.TemporalAA=true;
+     frame.Presentation.Shadows.Enabled=shadows;
++    if(!FileSystem::GetEnvironmentPath("HAZEL_PCSS_FILTER").empty())frame.Presentation.Shadows.Filter=DirectionalShadowFilter::PCSS;
+     if(shadows)frame.Light=SubmittedDirectional{glm::vec3(0,0,1),glm::vec3(1)};
+     auto project=Project::LoadCandidate(std::filesystem::absolute("examples/RenderingReference/RenderingReference-Direct-PerspectivePBR.hproj"));
+     frame.Assets=CreateRef<ProjectAssets>(project->GetAssetRoot());auto mesh=frame.Assets->Mesh("Native/Direct_v1/UnitCube.hmesh");
+@@ -233,6 +234,7 @@ void ShadowAtlasLifetime(Hazel::MetalRendererAPI& backend, bool temporal=false)
+     ground.SetWorld(glm::translate(glm::mat4(1),{0,-.05f,0})*glm::scale(glm::mat4(1),{5,.1f,5}));
+     SubmittedMesh caster=ground;caster.Identity=12;caster.Picking=12;
+     frame.Presentation.SceneReferred=true;frame.Presentation.Shadows.Enabled=true;frame.Presentation.Shadows.Distance=20;
++    if(!FileSystem::GetEnvironmentPath("HAZEL_PCSS_FILTER").empty())frame.Presentation.Shadows.Filter=DirectionalShadowFilter::PCSS;
+     frame.Presentation.TemporalAA=temporal;frame.Debug=temporal?SurfaceView::Shaded:SurfaceView::Direct;frame.LinearLightingInspection=!temporal;
+     frame.Light=SubmittedDirectional{glm::normalize(glm::vec3(1,1,0)),glm::vec3(2)};
+     frame.Camera.Orthographic=true;frame.Camera.Position={0,10,0};frame.Camera.ToCamera={0,1,0};
+@@ -287,6 +289,7 @@ void MeshLifetime(Hazel::MetalRendererAPI& backend, bool ambientOcclusion=false,
+     SceneSubmission frame;frame.Assets=assets;frame.Camera.Orthographic=true;
+     frame.Presentation.AmbientOcclusion.Enabled=ambientOcclusion;
+     frame.Presentation.Shadows.Enabled=shadows;
++    if(!FileSystem::GetEnvironmentPath("HAZEL_PCSS_FILTER").empty())frame.Presentation.Shadows.Filter=DirectionalShadowFilter::PCSS;
+     if(shadows)frame.Light=SubmittedDirectional{glm::vec3(0,0,1),glm::vec3(1)};
+     frame.Camera.Position={0,0,3};frame.Camera.ViewProjection=glm::ortho(-1.f,1.f,-1.f,1.f,-1.f,1.f);
+     SubmittedMesh draw;draw.Geometry=mesh.Accepted;draw.Materials={material};draw.Picking=-2000000003;
+@@ -387,6 +390,7 @@ int main(int argc, char** argv)
+             }
+             framebuffer.reset();Hazel::Renderer2D::Shutdown();Hazel::RenderCommand::Shutdown();
+             Check(observer->Snapshot().Errors==0 && observer->Snapshot().ResourceBytes==0 && observer->Snapshot().AttachmentGenerations==0,"GGX retirement failed");
++            if(shadows)std::cout<<"CSM_RESOURCES peak="<<observer->Snapshot().PeakResourceBytes<<" attachments="<<observer->Snapshot().PeakAttachmentBytes<<" final="<<observer->Snapshot().ResourceBytes<<'\n';
+             return 0;
+         }
+         if (renderer3D) {
+diff --git a/tests/macos/MetalShaderSmoke.cpp b/tests/macos/MetalShaderSmoke.cpp
+index 51524b4..fdbeada 100644
+--- a/tests/macos/MetalShaderSmoke.cpp
++++ b/tests/macos/MetalShaderSmoke.cpp
+@@ -95,7 +95,7 @@ int main(int argc, char** argv)
+         first.join(); second.join();
+         for (auto& error : errors) if (error) std::rethrow_exception(error);
+         Check(concurrent[0] == concurrent[1] && concurrent[0], "Concurrent loads published duplicate resources");
+-        for (const auto& name : {"DisplayOutput", "EntityOutline", "EnvironmentSky", "ForwardPBR", "DepthPBR", "MotionPBR", "Renderer2D_Circle", "Renderer2D_Text", "WorldPresentation"})
++        for (const auto& name : {"DisplayOutput", "EntityOutline", "EnvironmentSky", "ForwardPBR", "ForwardPBR_PCSS", "ForwardPBR_PCSSInspect", "DepthPBR", "MotionPBR", "Renderer2D_Circle", "Renderer2D_Text", "WorldPresentation"})
+             Check(bool(Hazel::Shader::Create((root / (std::string("shaders/") + name + ".glsl")).u8string())), "Production corpus loading failed");
+         Check(bool(backend.LoadShader("Renderer2D_Quad", 16)), "16-slot variant unavailable");
+         std::weak_ptr<Hazel::Shader> retained = line;
+diff --git a/tests/macos/ShadowContinuityChecks.h b/tests/macos/ShadowContinuityChecks.h
+index 9bed50e..6665476 100644
+--- a/tests/macos/ShadowContinuityChecks.h
++++ b/tests/macos/ShadowContinuityChecks.h
+@@ -4,19 +4,29 @@
+ #include <cmath>
+ #include <fstream>
+ #include <stdexcept>
++#include <glad/glad.h>
+ 
+ inline void ShadowContinuityChecks(const std::filesystem::path& output,
+     const std::function<Hazel::Ref<const Hazel::FramebufferReadback>(const Hazel::Ref<Hazel::Framebuffer>&)>& capture)
+ {
+     using namespace Hazel;std::filesystem::create_directories(output);
+     auto project=Project::LoadCandidate(FileSystem::GetEnvironmentPath("HAZEL_RENDERING_REFERENCE_PROJECT"));
++    if(!project)throw std::runtime_error("Set HAZEL_RENDERING_REFERENCE_PROJECT for CSM captures");
++    const bool decision=!FileSystem::GetEnvironmentPath("HAZEL_CSM_DECISION").empty();
++    const auto selected=FileSystem::GetEnvironmentPath("HAZEL_CSM_RESOLUTION");
++    const unsigned selectedResolution=selected.empty()?0:unsigned(std::stoul(selected.string()));
++    if(selectedResolution && selectedResolution!=1024 && selectedResolution!=2048)throw std::runtime_error("CSM decision resolution requires 1024 or 2048");
+     auto assets=CreateRef<ProjectAssets>(project->GetAssetRoot());auto mesh=assets->Mesh("Native/Direct_v1/UnitCube.hmesh");
+     if(!mesh.Accepted)throw std::runtime_error(mesh.Error);
+     auto material=CreateRef<MaterialDefinition>();material->BaseColor={.5f,.5f,.5f,1};material->Roughness=.8f;
+     FramebufferSpecification spec;spec.Width=1024;spec.Height=512;
+     spec.Attachments={FramebufferTextureFormat::RGBA32F,FramebufferTextureFormat::RED_INTEGER,
+-        RendererAPI::GetAPI()==RendererAPI::API::Metal?FramebufferTextureFormat::DEPTH32F:FramebufferTextureFormat::Depth};
++        (RendererAPI::GetAPI()==RendererAPI::API::Metal || !FileSystem::GetEnvironmentPath("HAZEL_CSM_FLOAT_DEPTH").empty())?FramebufferTextureFormat::DEPTH32F:FramebufferTextureFormat::Depth};
+     auto target=Framebuffer::Create(spec);SceneRenderView view;
++    if(RendererAPI::GetAPI()==RendererAPI::API::OpenGL) {
++        GLint bits=0;glGetIntegerv(GL_SUBPIXEL_BITS,&bits);
++        std::ofstream(output/"raster.txt")<<"GL_SUBPIXEL_BITS="<<bits<<'\n';
++    }
+     SceneSubmission frame;frame.Assets=assets;frame.Presentation.SceneReferred=true;
+     frame.Presentation.Shadows.Enabled=true;frame.Presentation.Shadows.Distance=80;
+     frame.Camera.Position={8,10,18};frame.Camera.ToCamera=glm::normalize(frame.Camera.Position-glm::vec3(0,0,-20));
+@@ -35,12 +45,34 @@ inline void ShadowContinuityChecks(const std::filesystem::path& output,
+         if(!image || !image->Completed || !image->Error.empty())throw std::runtime_error("CSM continuity capture failed");
+         return image;
+     };
++    if(!FileSystem::GetEnvironmentPath("HAZEL_CSM_OVERLAP_BENCHMARK").empty()) {
++        target->Resize(1920,1080);frame.Camera.Orthographic=true;
++        ground.SetWorld(glm::translate(glm::mat4(1),{0,-.05f,0})*glm::scale(glm::mat4(1),{30,.1f,30}));
++        wall.SetWorld(glm::translate(glm::mat4(1),{5,5,0}));
++        frame.Meshes={ground};frame.ShadowCasters={ground,wall};
++        frame.Light=SubmittedDirectional{glm::normalize(glm::vec3(1,1,0)),glm::vec3(2)};
++        std::ofstream times(output/"overlap.csv");times<<"resolution,depth,sample,shadowGPUms,forwardGPUms\n";
++        for(unsigned resolution:{1024u,2048u})for(float depth:{18.f,19.07625f,21.f}) {
++            if(selectedResolution && selectedResolution!=resolution)continue;
++            frame.Presentation.Shadows.Resolution=resolution;
++            frame.Camera.Position={0,depth,0};frame.Camera.ToCamera={0,1,0};
++            frame.Camera.ViewProjection=glm::ortho(-3.f,3.f,-2.f,2.f,.1f,100.f)*glm::lookAt(frame.Camera.Position,glm::vec3(0),glm::vec3(0,0,-1));
++            frame.LocalMetrics=view.LocalMetrics;
++            for(unsigned sample=0;sample<25;++sample) {
++                frame.LocalMetrics->Valid=false;render(0);
++                if(RendererAPI::GetAPI()==RendererAPI::API::Metal && (!frame.LocalMetrics->Valid || frame.LocalMetrics->ForwardMilliseconds<=0))throw std::runtime_error("Missing overlap GPU timestamps");
++                if(sample>=5)times<<resolution<<','<<depth<<','<<sample-5<<','<<frame.LocalMetrics->ShadowMilliseconds<<','<<frame.LocalMetrics->ForwardMilliseconds<<'\n';
++            }
++        }
++        view.Reset();return;
++    }
+     std::ofstream metadata(output/"cascades.csv");metadata<<std::setprecision(12)<<"case,resolution,slope,lightY,pose,distance,cascade,split,texel,depthSpan,normalBias,depthBias\n";
+     std::ofstream projections(output/"projections.csv");projections<<std::setprecision(12)<<"case,cascade";
+     for(unsigned i=0;i<16;++i)projections<<",m"<<i;
+     projections<<'\n';
+     unsigned number=0;
+     for(unsigned resolution:{512u,1024u,2048u})for(float lightY:{1.f,.2f})for(float slope:{0.f,.3f})for(unsigned pose:{0u,1u}) {
++        if(selectedResolution && resolution!=selectedResolution)continue;
+         frame.Presentation.Shadows.Resolution=resolution;
+         frame.Presentation.Shadows.Distance=pose?40.f:80.f;
+         const auto rotation=glm::rotate(glm::mat4(1),slope,glm::vec3(0,0,1));
+@@ -63,8 +95,47 @@ inline void ShadowContinuityChecks(const std::filesystem::path& output,
+         save(prefix+"-unbiased",render(10));
+     }
+     std::cout<<"CSM continuity diagnostic captures="<<number<<" (metrics evaluated independently by runner)\n";
++    if(!FileSystem::GetEnvironmentPath("HAZEL_CSM_AUDIT").empty())return;
++    if(decision) {
++        ground.SetWorld(glm::translate(glm::mat4(1),{0,-.05f,-35})*glm::scale(glm::mat4(1),{100,.1f,180}));
++        wall.SetWorld(glm::translate(glm::mat4(1),{0,2,-35})*glm::scale(glm::mat4(1),{.2f,4,180}));
++        frame.Light=SubmittedDirectional{glm::normalize(glm::vec3(-.6f,1,.2f)),glm::vec3(2)};
++        frame.Presentation.Shadows.Distance=80;frame.Meshes=frame.ShadowCasters={ground,wall};
++        std::ofstream sequence(output/"sequence.csv");sequence<<"name,resolution,motion,step\n";
++        for(unsigned resolution:{1024u,2048u})for(unsigned motion:{0u,1u})for(unsigned step=0;step<16;++step) {
++            if(selectedResolution && resolution!=selectedResolution)continue;
++            frame.Presentation.Shadows.Resolution=resolution;
++            const float t=float(step)-7.5f;
++            frame.Camera.Position={8,10,18+(motion?0.f:t*.08f)};
++            const auto forward=glm::vec3(glm::rotate(glm::mat4(1),motion?t*.0016f:0.f,glm::vec3(0,1,0))*glm::vec4(glm::normalize(glm::vec3(-8,-10,-38)),0));
++            frame.Camera.ToCamera=-forward;
++            frame.Camera.ViewProjection=glm::perspective(glm::radians(60.f),2.f,.1f,130.f)*glm::lookAt(frame.Camera.Position,frame.Camera.Position+forward,glm::vec3(0,1,0));
++            const auto name="motion-"+std::to_string(resolution)+"-"+std::to_string(motion)+"-"+std::to_string(step);
++            sequence<<name<<','<<resolution<<','<<motion<<','<<step<<'\n';
++            save(name+"-position",render(0,SurfaceView::WorldPosition));save(name,render(1));
++            if(step==0) {
++                const auto repeated=render(1);save(name+"-repeat",repeated);
++            }
++        }
++        auto sphere=assets->Mesh("Reference/Direct_v1/Sphere.hmesh");
++        auto mask=assets->Material("Reference/Direct_v1/Surfaces/Mask.hmat");
++        if(!sphere.Accepted || !mask.Accepted)throw std::runtime_error("CSM geometry probes missing authored assets");
++        frame.Camera.Position={8,10,18};frame.Camera.ToCamera=glm::normalize(frame.Camera.Position-glm::vec3(0,0,-20));
++        frame.Camera.ViewProjection=glm::perspective(glm::radians(60.f),2.f,.1f,130.f)*glm::lookAt(frame.Camera.Position,glm::vec3(0,0,-20),glm::vec3(0,1,0));
++        for(unsigned resolution:{1024u,2048u})for(unsigned geometry=0;geometry<6;++geometry) {
++            if(selectedResolution && resolution!=selectedResolution)continue;
++            frame.Presentation.Shadows.Resolution=resolution;auto caster=wall;
++            caster.Geometry=geometry==3?sphere.Accepted:mesh.Accepted;
++            caster.Materials={geometry==5?mask.Accepted:material};
++            const glm::vec3 scale=geometry<2?glm::vec3(geometry?.2f:.05f,4,geometry?.2f:.05f):geometry==3?glm::vec3(2):glm::vec3(geometry==4?-2:2,4,2);
++            caster.SetWorld(glm::translate(glm::mat4(1),{0,geometry==3?1.f:2.f,-20})*glm::scale(glm::mat4(1),scale));
++            frame.Meshes=frame.ShadowCasters={ground,caster};
++            const auto name="geometry-"+std::to_string(resolution)+"-"+std::to_string(geometry);
++            save(name+"-position",render(0,SurfaceView::WorldPosition));save(name,render(1));save(name+"-pair",render(7));
++        }
++    }
+     auto study=project->LoadScene("Scenes/DirectionalShadows_v1.hazel");study->OnViewportResize(1280,720);
+-    study->Presentation().Exposure=0;study->Presentation().Shadows.Resolution=2048;
++    study->Presentation().Exposure=0;study->Presentation().Shadows.Resolution=selectedResolution?selectedResolution:2048;
+     auto cameraEntity=study->GetPrimaryCameraEntity();
+     if(!cameraEntity)throw std::runtime_error("CSM continuity study camera missing");
+     const auto cameraWorld=study->GetWorldTransform(cameraEntity);
+diff --git a/tests/migration/Renderer2DSmoke.cpp b/tests/migration/Renderer2DSmoke.cpp
+index bdf2c58..40d21c8 100644
+--- a/tests/migration/Renderer2DSmoke.cpp
++++ b/tests/migration/Renderer2DSmoke.cpp
+@@ -272,6 +272,7 @@ int main(int argc,char** argv) {
+                     const auto& spec = framebuffer->GetSpecification();
+                     auto result = CreateRef<FramebufferReadback>(); result->Width=spec.Width; result->Height=spec.Height;
+                     result->Color.resize(size_t(spec.Width)*spec.Height);result->Entity.resize(result->Color.size());result->Depth.resize(result->Color.size());
++                    Check(glGetError()==GL_NO_ERROR,"GL render error before shadow readback");
+                     glReadBuffer(GL_COLOR_ATTACHMENT0);glReadPixels(0,0,spec.Width,spec.Height,GL_RGBA,GL_FLOAT,result->Color.data());
+                     glReadBuffer(GL_COLOR_ATTACHMENT1);glReadPixels(0,0,spec.Width,spec.Height,GL_RED_INTEGER,GL_INT,result->Entity.data());
+                     glReadPixels(0,0,spec.Width,spec.Height,GL_DEPTH_COMPONENT,GL_FLOAT,result->Depth.data());

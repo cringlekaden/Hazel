@@ -1,0 +1,498 @@
+--- a/Hazel/Resources/shaders/ForwardPBR.glsl
++++ b/Hazel/Resources/shaders/ForwardPBR.glsl
+@@ -29,7 +29,7 @@
+ layout(std140,binding=7) uniform LocalLights {vec4 u_LocalMeta;vec4 u_LocalLights[960];};
+ layout(std140,binding=5) uniform DirectionalShadows {
+     mat4 u_ShadowVP[4];vec4 u_ShadowSplits;vec4 u_ShadowEye;vec4 u_ShadowForward;
+-    vec4 u_ShadowParameters;vec4 u_ShadowRange;vec4 u_ShadowTexelDepth[4];
++    vec4 u_ShadowParameters;vec4 u_ShadowRange;vec4 u_ShadowTexelDepth[4];vec4 u_ShadowSoftness;
+ };
+ layout(binding=10) uniform sampler2D u_ShadowAtlas;
+ #ifdef HZ_METAL
+@@ -143,7 +143,92 @@
+         energy.diffuseScale*energy.diffuseShape*diffuseLight/(PI*energy.diffuseAverage):0;
+     return ((1-metal)*base*diffuse+D*visibility*F+multiple)*nl;
+ }
++// Equal-area concentric 4x4 disk strata, fixed in light space. No temporal noise.
++const vec2 shadowDisk[16]=vec2[](
++    vec2(-0.530330086,-0.530330086),
++    vec2(-0.194114284,-0.724444370),
++    vec2(0.194114284,-0.724444370),
++    vec2(0.530330086,-0.530330086),
++    vec2(-0.724444370,-0.194114284),
++    vec2(-0.176776695,-0.176776695),
++    vec2(0.176776695,-0.176776695),
++    vec2(0.724444370,-0.194114284),
++    vec2(-0.724444370,0.194114284),
++    vec2(-0.176776695,0.176776695),
++    vec2(0.176776695,0.176776695),
++    vec2(0.724444370,0.194114284),
++    vec2(-0.530330086,0.530330086),
++    vec2(-0.194114284,0.724444370),
++    vec2(0.194114284,0.724444370),
++    vec2(0.530330086,0.530330086));
++float softReceiverScale(vec3 position){
++    float d=dot(position-u_ShadowEye.xyz,u_ShadowForward.xyz);
++    int c=d>u_ShadowSplits.z?3:d>u_ShadowSplits.y?2:d>u_ShadowSplits.x?1:0;
++    if(c==0)return u_ShadowTexelDepth[0].x;
++    float t=clamp((d-u_ShadowSplits[c-1])/(u_ShadowSplits[c]-u_ShadowSplits[c-1]),0,1);
++    return mix(u_ShadowTexelDepth[c-1].x,u_ShadowTexelDepth[c].x,t);
++}
++float softComparison(int cascade,vec3 p,vec2 slope,vec2 delta,float scale,float bias){
++    int resolution=int(u_ShadowParameters.x);
++    ivec2 origin=ivec2(cascade%2,cascade/2)*resolution;
++    float texel=u_ShadowTexelDepth[cascade].x,inverseDepth=u_ShadowTexelDepth[cascade].y;
++    vec2 coordinate=p.xy*float(resolution)-.5+delta/texel;
++    ivec2 centre=ivec2(floor(coordinate));vec2 fraction=fract(coordinate);
++    float visibility=0;
++    for(int j=0;j<2;++j)for(int i=0;i<2;++i){
++        ivec2 tap=clamp(centre+ivec2(i,j),ivec2(0),ivec2(resolution-1));
++        float stored=texelFetch(u_ShadowAtlas,origin+tap,0).r;
++        vec2 displacement=(vec2(tap)+.5-p.xy*float(resolution))*texel;
++        float receiver=p.z+dot(slope,displacement)*inverseDepth-bias*u_ShadowParameters.z*scale*inverseDepth;
++        float weight=(i==0?1-fraction.x:fraction.x)*(j==0?1-fraction.y:fraction.y);
++        visibility+=(stored>=1||receiver<=stored?1:0)*weight;
++    }
++    return visibility;
++}
++// Returns visibility, physical radius, mean light-direction separation, blocker fraction.
++vec4 softShadow(int cascade,vec3 position,vec3 Ng,vec3 L){
++    float texel=u_ShadowTexelDepth[cascade].x,inverseDepth=u_ShadowTexelDepth[cascade].y;
++    float scale=softReceiverScale(position),cosine=dot(Ng,L),bias=u_ShadowRange.w==10?0:1;
++    vec3 normal=cosine<0?-Ng:Ng;
++    vec3 offset=normal*(bias*u_ShadowParameters.y*scale*sqrt(max(1-cosine*cosine,0)));
++    mat4 matrix=u_ShadowVP[cascade];
++    vec3 base=(matrix*vec4(position,1)).xyz*.5+.5;
++    vec3 p=(matrix*vec4(position+offset,1)).xyz*.5+.5;
++    if(any(lessThan(p,vec3(0)))||any(greaterThan(p,vec3(1))))return vec4(1,0,0,0);
++    vec3 right=normalize(vec3(matrix[0][0],matrix[1][0],matrix[2][0]));
++    vec3 up=normalize(vec3(matrix[0][1],matrix[1][1],matrix[2][1]));
++    float denominator=abs(cosine)>.05?cosine:(cosine<0?-.05:.05);
++    vec2 slope=clamp(vec2(dot(Ng,right),dot(Ng,up))/denominator,vec2(-8),vec2(8));
++    if(u_ShadowSoftness.x==0)return vec4(softComparison(cascade,p,slope,vec2(0),scale,bias),0,0,0);
++    // Common world-height bound; account conservatively for bounded receiver-plane
++    // slope over the search cone. Alpha<=2 degrees keeps this denominator positive.
++    float search=min(u_ShadowSoftness.y,max(u_ShadowSoftness.z-dot(L,position),0)*u_ShadowSoftness.x/(1-11.3137085*u_ShadowSoftness.x));
++    int resolution=int(u_ShadowParameters.x);
++    ivec2 origin=ivec2(cascade%2,cascade/2)*resolution;
++    float separation=0,count=0;
++    for(int i=0;i<16;++i){
++        // One centre sample protects the umbra of small resolved blockers.
++        vec2 delta=(i==5?vec2(0):shadowDisk[i])*search;
++        ivec2 tap=clamp(ivec2(floor(p.xy*float(resolution)+delta/texel)),ivec2(0),ivec2(resolution-1));
++        float stored=texelFetch(u_ShadowAtlas,origin+tap,0).r;
++        vec2 displacement=(vec2(tap)+.5-p.xy*float(resolution))*texel;
++        float receiver=p.z+dot(slope,displacement)*inverseDepth;
++        if(stored<1 && stored<receiver-bias*u_ShadowParameters.z*scale*inverseDepth){
++            // Physical plane, before normal/depth bias; never average across spans.
++            vec2 actualDisplacement=(vec2(tap)+.5-base.xy*float(resolution))*texel;
++            float actual=base.z+dot(slope,actualDisplacement)*inverseDepth;
++            separation+=max((actual-stored)/inverseDepth,0);count+=1;
++        }
++    }
++    if(count==0)return vec4(1,0,0,0);
++    separation/=count;
++    float radius=min(separation*u_ShadowSoftness.x,u_ShadowSoftness.y);
++    float visibility=0;
++    for(int i=0;i<16;++i)visibility+=softComparison(cascade,p,slope,shadowDisk[i]*radius,scale,bias)/16;
++    return vec4(visibility,radius,separation,count/16);
++}
+ float cascadeVisibility(int cascade,vec3 position,vec3 Ng,vec3 L){
++    if(u_ShadowSoftness.w>.5)return softShadow(cascade,position,Ng,L).x;
+     float texel=u_ShadowTexelDepth[cascade].x, inverseDepth=u_ShadowTexelDepth[cascade].y;
+     float cosine=dot(Ng,L);
+     float bias=u_ShadowRange.w==10?0:1;
+@@ -201,6 +286,9 @@
+     if(mode==2){vec3 colors[4]=vec3[](vec3(1,.15,.1),vec3(.1,1,.15),vec3(.1,.2,1),vec3(1,.8,.1));return mix(colors[cascade],vec3(1),blend*.6);}
+     if(mode>=3&&mode<=6)return vec3(cascadeVisibility(mode-3,position,Ng,L));
+     if(mode==7||mode==10)return vec3(cascadeVisibility(cascade,position,Ng,L),cascade==3?1:cascadeVisibility(cascade+1,position,Ng,L),blend);
++    if(mode==11)return softShadow(cascade,position,Ng,L).zyw;
++    if(mode==12)return vec3(softShadow(cascade,position,Ng,L).y,cascade==3?0:softShadow(cascade+1,position,Ng,L).y,blend);
++    if(mode==13)return vec3(min(u_ShadowSoftness.y,max(u_ShadowSoftness.z-dot(L,position),0)*u_ShadowSoftness.x/(1-11.3137085*u_ShadowSoftness.x)),softReceiverScale(position),depth);
+     if(mode==8)return vec3(u_ShadowTexelDepth[cascade].x,cascade==3?u_ShadowTexelDepth[cascade].x:u_ShadowTexelDepth[cascade+1].x,depth);
+     float cosine=dot(Ng,L);return vec3(u_ShadowParameters.y*scale*sqrt(max(1-cosine*cosine,0)),u_ShadowParameters.z*scale,depth);
+ }
+--- a/Hazel/src/Hazel/Core/DocumentSchema.cpp
++++ b/Hazel/src/Hazel/Core/DocumentSchema.cpp
+@@ -176,7 +176,7 @@
+         }
+         if (auto n = entity["DirectionalLightComponent"])
+         {
+-            Keys(n, {"Color", "Intensity", "Enabled"}, "DirectionalLightComponent");
++            Keys(n, {"Color", "Intensity", "Enabled", "AngularHalfRadius"}, "DirectionalLightComponent");
+             if (!n["Color"].IsSequence() || n["Color"].size() != 3)
+                 throw std::runtime_error("Directional color requires three linear values");
+             DirectionalLight l;
+@@ -184,6 +184,7 @@
+                 l.Color[i] = n["Color"][i].as<float>();
+             l.Intensity = n["Intensity"].as<float>();
+             l.Enabled = n["Enabled"].as<bool>();
++            if(auto angle=n["AngularHalfRadius"])l.AngularHalfRadius=angle.as<float>();
+             l.Validate();
+         }
+         for(const char *name:{"PointLightComponent","SpotLightComponent"})if(auto n=entity[name]) {
+--- a/Hazel/src/Hazel/Renderer/Scene/DirectionalShadows.cpp
++++ b/Hazel/src/Hazel/Renderer/Scene/DirectionalShadows.cpp
+@@ -16,6 +16,9 @@
+        !std::isfinite(DepthBias) || DepthBias<0 || DepthBias>1 ||
+        !std::isfinite(Blend) || Blend<.01f || Blend>.25f)
+         throw std::runtime_error("CSM requires resolution 256/512/1024/2048, distance .1..10000, split 0..1, normal bias 0..2, depth bias 0..1 texels and blend .01...25");
++    if((Filter!=DirectionalShadowFilter::PCF && Filter!=DirectionalShadowFilter::PCSS) ||
++       !std::isfinite(MaxPenumbra) || MaxPenumbra<.001f || MaxPenumbra>4)
++        throw std::runtime_error("Directional shadows require PCF/PCSS and maximum penumbra radius .001..4 world units");
+ }
+ bool ShadowCasterVisible(const glm::vec3& minimum,const glm::vec3& maximum,const glm::mat4& clip)
+ {
+@@ -34,6 +37,12 @@
+     const auto& settings=frame.Presentation.Shadows;settings.Validate();
+     DirectionalShadowData result;
+     if(!settings.Enabled || !frame.Light)return result;
++    const float angle=frame.Light->AngularHalfRadius;
++    if(!std::isfinite(angle) || angle<0 || angle>.034906586f)
++        throw std::runtime_error("Directional angular half-radius requires [0,2 degrees] in radians");
++    const bool soft=settings.Filter==DirectionalShadowFilter::PCSS;
++    const double support=soft && angle>0?settings.MaxPenumbra:0;
++    result.Softness={soft?std::tan(angle):0,settings.MaxPenumbra,std::numeric_limits<float>::lowest(),soft?1:0};
+     const glm::dmat4 vp(frame.Camera.ViewProjection);
+     const auto determinant=glm::determinant(vp);
+     const glm::dvec3 eye(frame.Camera.Position),forward=-glm::dvec3(frame.Camera.ToCamera);
+@@ -91,6 +100,9 @@
+         for(const auto& p:corners)radius=std::max(radius,glm::length(p-centre));
+         // Two texels for filtering, half for snap, plus maximum receiver offset.
+         radius=std::ceil(radius*16)/16;
++        // World support is independent of resolution/angle. Reserve the complete
++        // bounded search/filter disk before native bilinear/snap/bias margins.
++        radius+=support;
+         radius/=1-2*(2.5+settings.NormalBias)/double(settings.Resolution);
+         const double texel=2*radius/settings.Resolution;
+         const double x=std::round(glm::dot(centre,right)/texel)*texel;
+@@ -110,15 +122,17 @@
+             }
+             if(maximum.x<x-radius || minimum.x>x+radius || maximum.y<y-radius || minimum.y>y+radius)continue;
+             lo=std::min(lo,minimum.z);hi=std::max(hi,maximum.z);
++            result.Softness.z=std::max(result.Softness.z,std::nextafter(float(maximum.z),std::numeric_limits<float>::infinity()));
+         }
+-        lo=std::floor(lo-texel*(1+settings.NormalBias));
+-        hi=std::ceil(hi+texel*(1+settings.NormalBias));
++        const double planeMargin=support*8*std::sqrt(2.); // Shader's bounded geometric-plane slope.
++        lo=std::floor(lo-texel*(1+settings.NormalBias)-planeMargin);
++        hi=std::ceil(hi+texel*(1+settings.NormalBias)+planeMargin);
+         const double span=hi-lo;
+         glm::dmat4 matrix(1);
+         for(unsigned c=0;c<3;++c){matrix[c][0]=right[c]/radius;matrix[c][1]=up[c]/radius;matrix[c][2]=-2*light[c]/span;}
+         matrix[3]={-x/radius,-y/radius,(hi+lo)/span,1};
+         result.VP[cascade]=glm::mat4(matrix);
+-        result.TexelDepth[cascade]={float(texel),float(1/span),0,0};
++        result.TexelDepth[cascade]={float(texel),float(1/span),float(hi),0};
+     }
+     result.Eye=glm::vec4(eye,1);result.Forward=glm::vec4(forward,0);
+     result.Parameters={float(settings.Resolution),settings.NormalBias,settings.DepthBias,settings.Blend};
+--- a/Hazel/src/Hazel/Renderer/Scene/DirectionalShadows.h
++++ b/Hazel/src/Hazel/Renderer/Scene/DirectionalShadows.h
+@@ -4,6 +4,7 @@
+ 
+ namespace Hazel {
+ struct SceneSubmission;
++enum class DirectionalShadowFilter { PCF, PCSS };
+ struct DirectionalShadowSettings
+ {
+     bool Enabled = false;
+@@ -11,10 +12,13 @@
+     float Distance = 100, SplitLambda = .65f;
+     float NormalBias = .2f, DepthBias = .05f; // World texels, independent of depth span.
+     float Blend = .1f; // Fraction of each interval, including final distance fade.
++    DirectionalShadowFilter Filter = DirectionalShadowFilter::PCF;
++    float MaxPenumbra = 1; // World-space radius cap; also bounds PCSS search/support.
+     void Validate() const;
+     bool operator==(const DirectionalShadowSettings& b) const {
+         return Enabled==b.Enabled && Resolution==b.Resolution && Distance==b.Distance &&
+-            SplitLambda==b.SplitLambda && NormalBias==b.NormalBias && DepthBias==b.DepthBias && Blend==b.Blend;
++            SplitLambda==b.SplitLambda && NormalBias==b.NormalBias && DepthBias==b.DepthBias && Blend==b.Blend &&
++            Filter==b.Filter && MaxPenumbra==b.MaxPenumbra;
+     }
+ };
+ // std140 binding 5 in forward shading; motion uses this binding in a separate pass.
+@@ -23,8 +27,9 @@
+     std::array<glm::mat4,4> VP{};
+     glm::vec4 Splits{0}, Eye{0}, Forward{0}, Parameters{0}, Range{0};
+     std::array<glm::vec4,4> TexelDepth{}; // world texel width, inverse light-depth span.
++    glm::vec4 Softness{0}; // tan(angular half-radius), world cap, common light-height bound, PCSS enabled.
+ };
+-static_assert(sizeof(DirectionalShadowData)==400,"Directional shadow std140 ABI");
++static_assert(sizeof(DirectionalShadowData)==416,"Directional shadow std140 ABI");
+ DirectionalShadowData FitDirectionalShadows(const SceneSubmission& frame);
+ bool ShadowCasterVisible(const glm::vec3& minimum, const glm::vec3& maximum,
+                          const glm::mat4& clip);
+--- a/Hazel/src/Hazel/Renderer/Scene/Lighting.h
++++ b/Hazel/src/Hazel/Renderer/Scene/Lighting.h
+@@ -19,7 +19,16 @@
+             throw std::runtime_error("Light intensity requires [0,1000]");
+     }
+ };
+-struct DirectionalLight : LightParameters {};
++struct DirectionalLight : LightParameters
++{
++    float AngularHalfRadius = .00465f; // Radians; independent of shadow resolution.
++    void Validate() const
++    {
++        LightParameters::Validate();
++        if (!std::isfinite(AngularHalfRadius) || AngularHalfRadius < 0 || AngularHalfRadius > .034906586f)
++            throw std::runtime_error("Directional angular half-radius requires [0,2 degrees] in radians");
++    }
++};
+ // Shared portable storage bound: 16 + 320 * 48 fits the GL 4.1 16 KiB UBO guarantee.
+ inline constexpr unsigned MaxLocalLights = 320;
+ struct PointLight : LightParameters
+--- a/Hazel/src/Hazel/Renderer/Scene/SceneCollection.cpp
++++ b/Hazel/src/Hazel/Renderer/Scene/SceneCollection.cpp
+@@ -78,7 +78,7 @@
+             throw std::runtime_error(
+                 "Only one enabled directional light is supported");
+         frame.Light = SubmittedDirectional{-DirectionalTravel(scene.GetWorldTransform(e)),
+-                                           light.Color * light.Intensity};
++                                           light.Color * light.Intensity, light.AngularHalfRadius};
+     }
+     const auto localStart=std::chrono::steady_clock::now();
+     auto collectLocal = [&](auto component) {
+--- a/Hazel/src/Hazel/Renderer/Scene/SceneRenderer.cpp
++++ b/Hazel/src/Hazel/Renderer/Scene/SceneRenderer.cpp
+@@ -69,7 +69,7 @@
+         if(view.NativeDevice.lock()!=device){view.Reset();view.NativeDevice=device;}
+     } else if(!view.NativeDevice.expired()){view.Reset();view.NativeDevice.reset();}
+ #endif
+-    if(input.ShadowView>10)throw std::runtime_error("Unsupported directional shadow inspection");
++    if(input.ShadowView>13)throw std::runtime_error("Unsupported directional shadow inspection");
+     const bool shadows=input.Presentation.Shadows.Enabled && input.Light.has_value();
+     SceneSubmission shadowed;
+     if(shadows) {
+@@ -124,7 +124,10 @@
+         const auto& extent=display->GetSpecification();auto& state=view.Temporal;
+         historyValid=state.Submitted && state.Submitted->load() && state.Width==extent.Width && state.Height==extent.Height &&
+             state.Previous.SceneIdentity==frame.SceneIdentity && state.Previous.Assets==frame.Assets &&
+-            state.Previous.Presentation==frame.Presentation && !CameraCut(frame,state.Previous.Camera);
++            state.Previous.Presentation==frame.Presentation &&
++            (frame.Presentation.Shadows.Filter!=DirectionalShadowFilter::PCSS || !frame.Light ||
++             (state.Previous.Light && state.Previous.Light->AngularHalfRadius==frame.Light->AngularHalfRadius)) &&
++            !CameraCut(frame,state.Previous.Camera);
+         if(!historyValid)state.Phase=0;
+         jitter={Halton(state.Phase%64+1,2)-.5f,Halton(state.Phase%64+1,3)-.5f};
+         glm::mat4 offset(1);offset[3][0]=2*jitter.x/float(extent.Width);offset[3][1]=2*jitter.y/float(extent.Height);
+--- a/Hazel/src/Hazel/Renderer/Scene/SceneSubmission.h
++++ b/Hazel/src/Hazel/Renderer/Scene/SceneSubmission.h
+@@ -51,6 +51,7 @@
+ struct SubmittedDirectional
+ {
+     glm::vec3 ToLight{}, Incident{};
++    float AngularHalfRadius = .00465f; // Radians; zero is a directional point source.
+ };
+ struct LocalLightingMetrics
+ {
+--- a/Hazel/src/Hazel/Scene/AuthoredState.cpp
++++ b/Hazel/src/Hazel/Scene/AuthoredState.cpp
+@@ -175,6 +175,7 @@
+             state.Value(c.Color);
+             state.Value(c.Intensity);
+             state.Value(c.Enabled);
++            state.Value(c.AngularHalfRadius);
+         });
+         auto localLight = [&](auto &c) {
+             state.Value(c.Color);state.Value(c.Intensity);state.Value(c.Enabled);state.Value(c.Range);
+--- a/Hazel/src/Hazel/Scene/SceneDefaults.cpp
++++ b/Hazel/src/Hazel/Scene/SceneDefaults.cpp
+@@ -68,6 +68,8 @@
+         auto a=n["Shadows"];const auto& v=value.Shadows;
+         a["Enabled"]=v.Enabled;a["Resolution"]=v.Resolution;a["Distance"]=v.Distance;
+         a["SplitLambda"]=v.SplitLambda;a["NormalBias"]=v.NormalBias;a["DepthBias"]=v.DepthBias;a["Blend"]=v.Blend;
++        if(v.Filter!=DirectionalShadowFilter::PCF)a["Filter"]="PCSS";
++        if(v.MaxPenumbra!=1)a["MaxPenumbra"]=v.MaxPenumbra;
+     }
+     return n;
+ }
+@@ -99,10 +101,16 @@
+         v.Radius=a["Radius"].as<float>();v.Strength=a["Strength"].as<float>();v.Falloff=a["Falloff"].as<float>();
+     }
+     if(auto a=n["Shadows"]) {
+-        DocumentSchema::Keys(a,{"Enabled","Resolution","Distance","SplitLambda","NormalBias","DepthBias","Blend"},"directional shadows");
++        DocumentSchema::Keys(a,{"Enabled","Resolution","Distance","SplitLambda","NormalBias","DepthBias","Blend","Filter","MaxPenumbra"},"directional shadows");
+         auto& v=result.Shadows;v.Enabled=a["Enabled"].as<bool>();v.Resolution=a["Resolution"].as<unsigned>();
+         v.Distance=a["Distance"].as<float>();v.SplitLambda=a["SplitLambda"].as<float>();
+         v.NormalBias=a["NormalBias"].as<float>();v.DepthBias=a["DepthBias"].as<float>();v.Blend=a["Blend"].as<float>();
++        if(auto filter=a["Filter"]) {
++            const auto value=filter.as<std::string>();
++            if(value!="PCF" && value!="PCSS")throw std::runtime_error("Directional shadow Filter requires PCF or PCSS");
++            v.Filter=value=="PCSS"?DirectionalShadowFilter::PCSS:DirectionalShadowFilter::PCF;
++        }
++        if(auto radius=a["MaxPenumbra"])v.MaxPenumbra=radius.as<float>();
+     }
+     result.Validate();
+     return result;
+--- a/Hazel/src/Hazel/Scene/SceneSerializer.cpp
++++ b/Hazel/src/Hazel/Scene/SceneSerializer.cpp
+@@ -349,7 +349,10 @@
+             out << YAML::Key << "DirectionalLightComponent" << YAML::Value << YAML::BeginMap
+                 << YAML::Key << "Color" << YAML::Value << light.Color << YAML::Key << "Intensity"
+                 << YAML::Value << light.Intensity << YAML::Key << "Enabled" << YAML::Value
+-                << light.Enabled << YAML::EndMap;
++                << light.Enabled;
++            if(light.AngularHalfRadius!=DirectionalLight{}.AngularHalfRadius)
++                out << YAML::Key << "AngularHalfRadius" << YAML::Value << light.AngularHalfRadius;
++            out << YAML::EndMap;
+         }
+         auto writeLocal = [&](auto component, const char *name) {
+             using T = decltype(component);
+@@ -683,6 +686,7 @@
+                     light.Color = node["Color"].as<glm::vec3>();
+                     light.Intensity = node["Intensity"].as<float>();
+                     light.Enabled = node["Enabled"].as<bool>();
++                    if(auto angle=node["AngularHalfRadius"])light.AngularHalfRadius=angle.as<float>();
+                     light.Validate();
+                 }
+                 auto readLocal = [&](auto component, const char *name) {
+--- a/Hazel/src/Platform/macOS/Metal/MetalShaderCompiler.cpp
++++ b/Hazel/src/Platform/macOS/Metal/MetalShaderCompiler.cpp
+@@ -30,7 +30,7 @@
+     if (name == "Camera") return {sizeof(glm::mat4), {0}};
+     if (name == "DirectionalShadows") return {sizeof(DirectionalShadowData), {offsetof(DirectionalShadowData,VP), offsetof(DirectionalShadowData,Splits),
+         offsetof(DirectionalShadowData,Eye), offsetof(DirectionalShadowData,Forward), offsetof(DirectionalShadowData,Parameters),
+-        offsetof(DirectionalShadowData,Range), offsetof(DirectionalShadowData,TexelDepth)}};
++        offsetof(DirectionalShadowData,Range), offsetof(DirectionalShadowData,TexelDepth), offsetof(DirectionalShadowData,Softness)}};
+     if (name == "LocalLights") return {sizeof(Renderer3DUniforms::LocalLightData), {0, 16}};
+     if (name == "Presentation") return {sizeof(glm::vec4), {0}};
+     if (name == "Outline") return {32, {0, 4, 8, 16}}; // Explicit declaration-only legacy adaptation.
+--- a/tests/macos/DirectionalShadowQualification.h
++++ b/tests/macos/DirectionalShadowQualification.h
+@@ -1,6 +1,7 @@
+ #pragma once
+ #include "Renderer3DParity.h"
+ #include "ShadowContinuityChecks.h"
++#include "DirectionalPCSSChecks.h"
+ #include "Hazel/Scene/SceneDefaults.h"
+ #include "Hazel/Renderer/Cameras/NavigationCamera.h"
+ #include "Hazel/Renderer/Drawing/Renderer2D.h"
+@@ -85,6 +86,7 @@
+     const std::function<Hazel::Ref<const Hazel::FramebufferReadback>(const Hazel::Ref<Hazel::Framebuffer>&)>& capture)
+ {
+     using namespace Hazel;
++    if(!FileSystem::GetEnvironmentPath("HAZEL_PCSS_QUALIFY").empty()){DirectionalPCSSChecks(output,capture);return;}
+     if(!FileSystem::GetEnvironmentPath("HAZEL_SHADOW_CONTINUITY").empty()){ShadowContinuityChecks(output,capture);return;}
+     DirectionalShadowCPUChecks();std::filesystem::create_directories(output);
+     auto selected=FileSystem::GetEnvironmentPath("HAZEL_RENDERING_REFERENCE_PROJECT");
+@@ -100,6 +102,7 @@
+     auto target=Framebuffer::Create(spec);SceneRenderView view;
+     SceneSubmission frame;frame.Assets=assets;frame.Presentation.SceneReferred=true;frame.LocalMetrics=view.LocalMetrics;
+     frame.Presentation.Shadows.Distance=80;
++    if(!FileSystem::GetEnvironmentPath("HAZEL_PCSS_FILTER").empty())frame.Presentation.Shadows.Filter=DirectionalShadowFilter::PCSS;
+     auto render=[&](SurfaceView debug,bool shadows) {
+         frame.Debug=debug;frame.LinearLightingInspection=true;frame.Presentation.Shadows.Enabled=shadows;
+         target->Bind();if(RendererAPI::GetAPI()==RendererAPI::API::Metal)target->Clear({0,0,0,1});
+--- /dev/null
++++ b/tests/macos/DirectionalPCSSChecks.h
+@@ -0,0 +1,108 @@
++#pragma once
++#include "Renderer3DParity.h"
++#include "Hazel/Renderer/Scene/Lighting.h"
++#include "Hazel/Scene/SceneSerializer.h"
++#include <cmath>
++#include <chrono>
++#include <fstream>
++#include <iomanip>
++#include <iostream>
++#include <stdexcept>
++
++// Caster-only planes deliberately isolate the shadow signal from camera occlusion.
++// Authored scenes separately qualify visible geometry/AO/TAA and resource lifetime.
++inline void DirectionalPCSSChecks(const std::filesystem::path& output,
++    const std::function<Hazel::Ref<const Hazel::FramebufferReadback>(const Hazel::Ref<Hazel::Framebuffer>&)>& capture)
++{
++    using namespace Hazel;std::filesystem::create_directories(output);
++    auto project=Project::LoadCandidate(FileSystem::GetEnvironmentPath("HAZEL_RENDERING_REFERENCE_PROJECT"));
++    if(!project)throw std::runtime_error("PCSS fixtures require the rendering reference project");
++    auto assets=CreateRef<ProjectAssets>(project->GetAssetRoot());auto mesh=assets->Mesh("Native/Direct_v1/UnitCube.hmesh");
++    if(!mesh.Accepted)throw std::runtime_error(mesh.Error);
++    auto material=CreateRef<MaterialDefinition>();material->BaseColor={.5f,.5f,.5f,1};material->Roughness=.8f;
++    FramebufferSpecification spec;spec.Width=1024;spec.Height=256;
++    spec.Attachments={FramebufferTextureFormat::RGBA32F,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::DEPTH32F};
++    auto target=Framebuffer::Create(spec);SceneRenderView view;
++    SceneSubmission frame;frame.Assets=assets;frame.Presentation.SceneReferred=true;frame.Presentation.Exposure=0;
++    auto& settings=frame.Presentation.Shadows;settings.Enabled=true;settings.Distance=80;
++    settings.Filter=DirectionalShadowFilter::PCSS;settings.NormalBias=0;settings.DepthBias=.05f;
++    frame.Camera.Orthographic=true;frame.Camera.ToCamera={0,1,0};frame.Light=SubmittedDirectional{{0,1,0},{2,2,2}};
++    SubmittedMesh ground;ground.Geometry=mesh.Accepted;ground.Materials={material};ground.Picking=11;ground.Identity=11;
++    ground.SetWorld(glm::translate(glm::mat4(1),{0,-.1f,-20})*glm::scale(glm::mat4(1),{80,.2f,80}));
++    SubmittedMesh wall=ground;wall.Picking=12;wall.Identity=12;
++    auto render=[&](unsigned mode,SurfaceView debug=SurfaceView::Direct) {
++        frame.ShadowView=mode;frame.Debug=debug;frame.LinearLightingInspection=true;
++        target->Bind();target->ClearEditor({0,0,0,1});target->ClearAttachment(1,-1);
++        SceneRenderer::Render(frame,view,target,[]{},[]{});auto image=capture(target);
++        if(!image || !image->Completed || !image->Error.empty())throw std::runtime_error("PCSS capture incomplete");
++        return image;
++    };
++    auto save=[&](const std::string& name,const auto& image) {
++        std::ofstream file(output/(name+".bin"),std::ios::binary);
++        for(size_t i=0;i<image->Color.size();++i) {
++            if(!std::isfinite(glm::length(image->Color[i])))throw std::runtime_error("Nonfinite PCSS result");
++            file.write(reinterpret_cast<const char*>(&image->Color[i]),16);file.write(reinterpret_cast<const char*>(&image->Entity[i]),4);file.write(reinterpret_cast<const char*>(&image->Depth[i]),4);
++        }
++    };
++    auto require=[](bool condition,const char* error){if(!condition)throw std::runtime_error(error);};
++    auto authored=CreateRef<Scene>();auto entity=authored->CreateEntityWithUUID(901,"PCSS angular key");
++    auto& light=entity.AddComponent<DirectionalLightComponent>();
++    SceneSerializer serializer(authored);const auto original=serializer.CaptureAuthoredState(entity);
++    light.AngularHalfRadius=.02f;
++    require(original!=serializer.CaptureAuthoredState(entity),"Angular radius missing from authored state");
++    auto loaded=CreateRef<Scene>();require(SceneSerializer(loaded).DeserializeText(serializer.SerializeText()),"Angular light scene roundtrip failed");
++    require(loaded->GetEntityByUUID(901).GetComponent<DirectionalLightComponent>().AngularHalfRadius==.02f,"Angular light radius lost on load");
++    if(!FileSystem::GetEnvironmentPath("HAZEL_PCSS_BENCHMARK").empty()) {
++        frame.LocalMetrics=view.LocalMetrics;wall.SetWorld(glm::translate(glm::mat4(1),{0,8,-20})*glm::scale(glm::mat4(1),{40,.05f,40}));
++        frame.Meshes={ground};frame.ShadowCasters={ground,wall};
++        std::ofstream times(output/"overlap.csv");times<<"width,height,resolution,filter,depth,sample,shadowGPUms,forwardGPUms,serializedMs\n";
++        for(auto extent:{glm::uvec2(1280,720),glm::uvec2(1920,1080)})for(unsigned resolution:{1024u,2048u})
++            for(bool soft:{false,true})for(float depth:{18.f,19.07625f,21.f}) {
++                target->Resize(extent.x,extent.y);settings.Resolution=resolution;settings.Filter=soft?DirectionalShadowFilter::PCSS:DirectionalShadowFilter::PCF;
++                frame.Camera.Position={0,depth,-20};frame.Camera.ViewProjection=glm::ortho(-2.f,2.f,-.5f,.5f,.1f,100.f)*
++                    glm::lookAt(frame.Camera.Position,glm::vec3(0,0,-20),glm::vec3(0,0,-1));
++                for(unsigned sample=0;sample<25;++sample) {
++                    frame.LocalMetrics->Valid=false;const auto start=std::chrono::steady_clock::now();render(0);
++                    const double whole=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();
++                    if(RendererAPI::GetAPI()==RendererAPI::API::Metal)require(frame.LocalMetrics->Valid && frame.LocalMetrics->ForwardMilliseconds>0,"Missing PCSS GPU timestamp");
++                    if(sample>=5)times<<extent.x<<','<<extent.y<<','<<resolution<<','<<soft<<','<<depth<<','<<sample-5<<','<<frame.LocalMetrics->ShadowMilliseconds<<','<<frame.LocalMetrics->ForwardMilliseconds<<','<<whole<<'\n';
++                }
++            }
++        view.Reset();return;
++    }
++    auto roundtrip=SceneDefaults::ReadPresentation(SceneDefaults::Encode(frame.Presentation));
++    require(roundtrip==frame.Presentation,"PCSS settings roundtrip failed");
++    auto old=SceneDefaults::Encode(frame.Presentation);old["Shadows"].remove("Filter");old["Shadows"].remove("MaxPenumbra");
++    require(SceneDefaults::ReadPresentation(old).Shadows.Filter==DirectionalShadowFilter::PCF,"Legacy scene no longer defaults to PCF");
++    std::ofstream metadata(output/"planes.csv");metadata<<std::setprecision(12)<<"case,resolution,height,angle,cameraDepth,cascade,texel,span,hi,searchHi\n";
++    std::ofstream projections(output/"projections.csv");projections<<std::setprecision(12)<<"case,cascade";
++    for(unsigned i=0;i<16;++i)projections<<",m"<<i;
++    projections<<'\n';
++    unsigned number=0;
++    for(unsigned resolution:{1024u,2048u})for(float angle:{0.f,.00465f,.03490658f})for(float height:{.025f,1.f,4.f,8.f}) {
++        settings.Resolution=resolution;frame.Light->AngularHalfRadius=angle;
++        frame.Camera.Position={0,15,-20};frame.Camera.ViewProjection=glm::ortho(-2.f,2.f,-.5f,.5f,.1f,100.f)*
++            glm::lookAt(frame.Camera.Position,glm::vec3(0,0,-20),glm::vec3(0,0,-1));
++        wall.SetWorld(glm::translate(glm::mat4(1),{-10,height,-20})*glm::scale(glm::mat4(1),{20,.05f,80}));
++        frame.Meshes={ground};frame.ShadowCasters={ground,wall};
++        const auto fit=FitDirectionalShadows(frame);
++        for(unsigned c=0;c<4;++c) {
++            metadata<<number<<','<<resolution<<','<<height+.025f<<','<<angle<<",15,"<<c<<','<<fit.TexelDepth[c].x<<','<<1/fit.TexelDepth[c].y<<','<<fit.TexelDepth[c].z<<','<<fit.Softness.z<<'\n';
++            projections<<number<<','<<c;
++            for(unsigned col=0;col<4;++col)for(unsigned row=0;row<4;++row)projections<<','<<fit.VP[c][col][row];
++            projections<<'\n';
++        }
++        const auto name="plane-"+std::to_string(number++);
++        save(name+"-position",render(0,SurfaceView::WorldPosition));save(name+"-visibility",render(1));
++        save(name+"-physical",render(11));save(name+"-pair",render(12));
++        save(name+"-radiance",render(0));
++        if(number==1)save(name+"-repeat",render(1));
++        settings.Filter=DirectionalShadowFilter::PCF;
++        save(name+"-pcf-visibility",render(1));save(name+"-pcf-radiance",render(0));
++        settings.Filter=DirectionalShadowFilter::PCSS;
++    }
++    frame.ShadowCasters.clear();
++    const auto clear=render(1);for(const auto& color:clear->Color)require(std::abs(color.x-1)<1e-6f,"Clear atlas was interpreted as a PCSS blocker");
++    save("clear-visibility",clear);save("clear-physical",render(11));
++    view.Reset();std::cout<<"CAPTURED directional PCSS planes="<<number<<"; independent gates evaluated by runner\n";
++}

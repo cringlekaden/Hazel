@@ -2,6 +2,7 @@
 #include "Hazel/Assets/ImportedAsset.h"
 #include "Hazel/Assets/Environment.h"
 #include "Hazel/Scene/SceneDefaults.h"
+#include "SpotShadows.h"
 #include <optional>
 #include <cstdint>
 #include <memory>
@@ -57,6 +58,9 @@ struct LocalLightingMetrics
     double CollectionMilliseconds=0, UploadMilliseconds=0, CullMilliseconds=0, ForwardMilliseconds=0, ShadowMilliseconds=0;
     uint64_t LightBytes=0, TileBytes=0, Candidates=0, OverflowTiles=0;
     unsigned Count=0, Tiles=0;
+    double SpotShadowMilliseconds=0;
+    uint64_t SpotShadowBytes=0;
+    unsigned SpotShadows=0, RequestedSpotShadows=0;
     bool Valid=false;
 };
 struct SubmittedLocalLight
@@ -64,6 +68,9 @@ struct SubmittedLocalLight
     uint64_t Identity = 0;
     glm::vec3 Position{}, Incident{}, Direction{0,0,-1};
     float Range = 10, InnerCos = 1, OuterCos = -1; // OuterCos=-1 denotes a point.
+    bool CastShadows = false;
+    unsigned ShadowResolution = 512;
+    glm::vec3 ShadowUp{0}; // Authored local +Y keeps the filter aligned as the light rotates.
 };
 // Accepted semantic CPU inputs, independent of the forward backend and importers.
 struct SceneSubmission
@@ -85,6 +92,7 @@ struct SceneSubmission
     std::vector<SubmittedMesh> Meshes;
     std::vector<SubmittedMesh> ShadowCasters; // Same collection; never camera-frustum culled.
     DirectionalShadowData Shadows;
+    SpotShadowData SpotShadows;
     std::optional<SubmittedDirectional> Light;
     std::vector<SubmittedLocalLight> LocalLights;
     double LightCollectionMilliseconds=0;

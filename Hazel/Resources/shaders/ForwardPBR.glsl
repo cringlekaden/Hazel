@@ -32,6 +32,12 @@ layout(std140,binding=5) uniform DirectionalShadows {
     vec4 u_ShadowParameters;vec4 u_ShadowRange;vec4 u_ShadowTexelDepth[4];
 };
 layout(binding=10) uniform sampler2D u_ShadowAtlas;
+layout(std140,binding=1) uniform SpotShadows {
+    mat4 u_SpotVP[4];
+    vec4 u_SpotTiles[4];
+    ivec4 u_SpotLightIndices;
+};
+layout(binding=11) uniform sampler2D u_SpotShadowAtlas;
 #ifdef HZ_METAL
 layout(binding=9) uniform usampler2D u_LightTiles;
 #endif
@@ -204,6 +210,52 @@ vec3 shadowInspection(vec3 position,vec3 Ng,vec3 L){
     if(mode==8)return vec3(u_ShadowTexelDepth[cascade].x,cascade==3?u_ShadowTexelDepth[cascade].x:u_ShadowTexelDepth[cascade+1].x,depth);
     float cosine=dot(Ng,L);return vec3(u_ShadowParameters.y*scale*sqrt(max(1-cosine*cosine,0)),u_ShadowParameters.z*scale,depth);
 }
+float spotVisibility(int slot, vec3 lightRelativePosition, vec3 Ng, vec3 L, vec3 forward, float farDepth) {
+    mat4 matrix = u_SpotVP[slot];
+    vec4 tile = u_SpotTiles[slot];
+    int resolution = int(tile.y);
+    vec4 clip = matrix * vec4(lightRelativePosition, 1);
+    if (clip.w <= tile.z || clip.w >= farDepth) return 1;
+
+    // World-space texel size grows linearly with axial distance. Offset towards
+    // the light-facing side of the actual receiver plane.
+    float texel = 2 * clip.w * tile.w / tile.y;
+    float coneCosine = dot(-L, forward);
+    float cosine = dot(Ng, L);
+    vec3 normal = cosine < 0 ? -Ng : Ng;
+    vec3 offset = normal * (.2 * texel * coneCosine * sqrt(max(1 - cosine * cosine, 0)));
+    clip += matrix * vec4(offset, 0);
+    if (clip.w <= tile.z) return 1;
+    vec2 uv = clip.xy / clip.w * .5 + .5;
+    if (any(lessThan(uv, vec2(0))) || any(greaterThan(uv, vec2(1)))) return 1;
+
+    vec3 right = vec3(matrix[0][0], matrix[1][0], matrix[2][0]) * tile.w;
+    vec3 up = vec3(matrix[0][1], matrix[1][1], matrix[2][1]) * tile.w;
+    vec2 coordinate = uv * tile.y - .5;
+    ivec2 centre = ivec2(floor(coordinate));
+    vec2 fraction = fract(coordinate);
+    vec2 planeSlope = vec2(dot(normal, right), dot(normal, up));
+    float centreDot = dot(normal, forward) + tile.w * dot(planeSlope, 2 * uv - 1);
+    float grazingLimit = -.05 / max(coneCosine, .01);
+    float rayStep = 2 * tile.w / tile.y;
+    float slopeLimit = 8 * texel;
+    float depthScale = farDepth / (farDepth - tile.z);
+    float visibility = 0;
+    // Each of 16 taps intersects a perspective ray with the geometric plane.
+    // Bound the correction near grazing incidence and contain reads in this tile.
+    for (int y = -1; y <= 2; ++y) for (int x = -1; x <= 2; ++x) {
+        ivec2 tap = clamp(centre + ivec2(x, y), ivec2(0), ivec2(resolution - 1));
+        float rayDelta = dot(planeSlope, vec2(tap) - coordinate) * rayStep;
+        float correction = -clip.w * rayDelta / min(centreDot + rayDelta, grazingLimit);
+        float receiverDepth = max(tile.z, clip.w + clamp(correction, -slopeLimit, slopeLimit) - .05 * texel);
+        float receiver = depthScale * (1 - tile.z / receiverDepth);
+        vec2 weight = vec2(x == -1 ? 1 - fraction.x : x == 2 ? fraction.x : 1,
+                           y == -1 ? 1 - fraction.y : y == 2 ? fraction.y : 1) / 3;
+        visibility += (receiver <= texelFetch(u_SpotShadowAtlas, ivec2(int(tile.x), 0) + tap, 0).r ? 1 : 0)
+                      * weight.x * weight.y;
+    }
+    return mix(1, visibility, smoothstep(tile.z, 2 * tile.z, clip.w));
+}
 void main(){
     // Evaluate geometric derivatives before a potentially nonuniform mask discard.
     vec3 geometricNormal=normalize(cross(dFdx(v_Position),dFdy(v_Position)));
@@ -266,6 +318,15 @@ void main(){
                 attenuation*=cone*cone*(3-2*cone);
             }
             if(attenuation<=0)continue;
+            if (u_SpotLightIndices.x != 0 && directionOuter.w >= 0) {
+                int light = index + 1;
+                for (int slot = 0; slot < 4; ++slot) {
+                    if (u_SpotLightIndices[slot] == light) {
+                        attenuation *= spotVisibility(slot, -delta, geometricNormal, localL, directionOuter.xyz, positionRange.w);
+                        break;
+                    }
+                }
+            }
             directTerm+=direct(base.rgb,metal,rough,directNormal,V,localL,directEnergy)*incidentInner.rgb*attenuation*((maps&4)!=0?surfaceVisibility(surfaceNormal,directNormal,localL):1);
         }
         localProbe=directTerm-directionalTerm;

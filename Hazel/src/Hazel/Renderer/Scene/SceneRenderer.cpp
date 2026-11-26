@@ -70,41 +70,100 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
     } else if(!view.NativeDevice.expired()){view.Reset();view.NativeDevice.reset();}
 #endif
     if(input.ShadowView>10)throw std::runtime_error("Unsupported directional shadow inspection");
-    const bool shadows=input.Presentation.Shadows.Enabled && input.Light.has_value();
+    const bool shadows = input.Presentation.Shadows.Enabled && input.Light.has_value();
+    SpotShadowLayout spotLayout;
     SceneSubmission shadowed;
-    if(shadows) {
+    try {
+        if (input.LocalLights.size() > MaxLocalLights)
+            throw std::runtime_error("Submission exceeds 320 local lights; no lights were truncated");
+        spotLayout = FitSpotShadows(input);
+        if (shadows || spotLayout.Count) {
+            if (!display) throw std::runtime_error("Shadows require an explicit view target");
+            shadowed = input;
+            if (shadows) {
+                shadowed.Shadows = FitDirectionalShadows(input);
+                shadowed.Shadows.Range.w = float(input.ShadowView);
+            }
+            shadowed.SpotShadows = spotLayout.Data;
+        }
+    } catch (...) {
+        view.Temporal = {};
+        if (display && RendererAPI::GetAPI() == RendererAPI::API::Metal) display->Cancel();
+        throw;
+    }
+    const bool spotShadows = spotLayout.Count != 0;
+    const bool anyShadows = shadows || spotShadows;
+    const auto& frame = anyShadows ? shadowed : input;
+    if (!shadows) view.ShadowDepth.reset();
+    if (!spotShadows) view.SpotShadowDepth.reset();
+    if (frame.LocalMetrics) {
+        frame.LocalMetrics->SpotShadows = spotLayout.Count;
+        frame.LocalMetrics->RequestedSpotShadows = spotLayout.Requested;
+        frame.LocalMetrics->SpotShadowBytes = uint64_t(spotLayout.Extent.x) * spotLayout.Extent.y * sizeof(float);
+    }
+    auto renderShadowAtlas = [&](Ref<Framebuffer>& atlas, glm::uvec2 extent, unsigned count, auto tile, bool spotAtlas = false) {
+        FramebufferSpecification size;
+        size.Width = extent.x;
+        size.Height = extent.y;
+        size.Attachments = {FramebufferTextureFormat::DEPTH32F};
+        if (!atlas || atlas->GetSpecification().Width != size.Width || atlas->GetSpecification().Height != size.Height)
+            atlas = Framebuffer::Create(size);
+        atlas->Bind();
         try {
-            if(!display)throw std::runtime_error("Directional shadows require an explicit view target");
-            shadowed=input;shadowed.Shadows=FitDirectionalShadows(input);shadowed.Shadows.Range.w=float(input.ShadowView);
-        } catch(...) {
-            view.Temporal={};
-            if(display && RendererAPI::GetAPI()==RendererAPI::API::Metal)display->Cancel();
+            if (RendererAPI::GetAPI() == RendererAPI::API::Metal) atlas->Clear(glm::vec4(0));
+            else { RenderCommand::SetClearColor(glm::vec4(0)); RenderCommand::Clear(); }
+            SceneSubmission depth;
+            depth.Assets = frame.Assets;
+            for (unsigned index = 0; index < count; ++index) {
+                glm::vec3 origin(0);
+                const auto viewport = tile(index, depth.Camera.ViewProjection, origin);
+                RenderCommand::SetViewport(viewport.x, viewport.y, viewport.z, viewport.w);
+                if (spotAtlas) {
+                    auto tileRaster = RenderCommand::GetRasterState();
+                    tileRaster.ClipEnabled = true;
+                    tileRaster.ClipRect = glm::ivec4(viewport);
+                    RenderCommand::SetRasterState(tileRaster);
+                }
+                depth.Meshes.clear();
+                for (const auto& draw : frame.ShadowCasters) {
+                    const auto& bounds = draw.Geometry->Geometry.Bounds;
+                    auto model = draw.World;
+                    if (spotAtlas) model[3] -= glm::vec4(origin, 0);
+                    if (ShadowCasterVisible(bounds.Min, bounds.Max, depth.Camera.ViewProjection * model)) {
+                        depth.Meshes.push_back(draw);
+                        depth.Meshes.back().World = model;
+                    }
+                }
+                Renderer3D::Render(depth, false, true);
+            }
+        } catch (...) {
+            atlas->Unbind();
             throw;
         }
-    }
-    const auto& frame=shadows?shadowed:input;
-    if(!shadows)view.ShadowDepth.reset();
-    auto renderShadows=[&] {
-        if(!shadows)return;
-        const unsigned resolution=frame.Presentation.Shadows.Resolution;
-        FramebufferSpecification size;size.Width=size.Height=resolution*2;
-        size.Attachments={FramebufferTextureFormat::DEPTH32F};
-        if(!view.ShadowDepth || view.ShadowDepth->GetSpecification().Width!=size.Width)
-            view.ShadowDepth=Framebuffer::Create(size);
-        view.ShadowDepth->Bind();
-        if(RendererAPI::GetAPI()==RendererAPI::API::Metal)view.ShadowDepth->Clear(glm::vec4(0));
-        else {RenderCommand::SetClearColor(glm::vec4(0));RenderCommand::Clear();}
-        SceneSubmission depth;depth.Assets=frame.Assets;
-        for(unsigned cascade=0;cascade<4;++cascade) {
-            RenderCommand::SetViewport((cascade%2)*resolution,(cascade/2)*resolution,resolution,resolution);
-            depth.Camera.ViewProjection=frame.Shadows.VP[cascade];depth.Meshes.clear();
-            for(const auto& draw:frame.ShadowCasters) {
-                const auto& bounds=draw.Geometry->Geometry.Bounds;
-                if(ShadowCasterVisible(bounds.Min,bounds.Max,depth.Camera.ViewProjection*draw.World))depth.Meshes.push_back(draw);
-            }
-            Renderer3D::Render(depth,false,true);
+        atlas->Unbind();
+    };
+    auto renderShadows = [&] {
+        if (!anyShadows) return;
+        RenderCommand::StateScope restoreRaster;
+        if (shadows) {
+            const unsigned side = frame.Presentation.Shadows.Resolution;
+            renderShadowAtlas(view.ShadowDepth, glm::uvec2(side * 2), 4, [&](unsigned index, glm::mat4& vp, glm::vec3&) {
+                vp = frame.Shadows.VP[index];
+                return glm::uvec4((index % 2) * side, (index / 2) * side, side, side);
+            });
         }
-        view.ShadowDepth->Unbind();
+        if (spotShadows) {
+            renderShadowAtlas(view.SpotShadowDepth, spotLayout.Extent, spotLayout.Count, [&](unsigned index, glm::mat4& vp, glm::vec3& origin) {
+                vp = frame.SpotShadows.VP[index];
+                origin = frame.LocalLights[frame.SpotShadows.LightIndices[index] - 1].Position;
+                const auto& tile = frame.SpotShadows.Tiles[index];
+                return glm::uvec4(unsigned(tile.x), 0, unsigned(tile.y), unsigned(tile.y));
+            }, true);
+        }
+    };
+    auto prepareShadowDepth = [&](const Ref<Framebuffer>& target) {
+        if (shadows) target->PrepareShadowDepth(view.ShadowDepth, ShadowMapKind::Directional);
+        if (spotShadows) target->PrepareShadowDepth(view.SpotShadowDepth, ShadowMapKind::Spot);
     };
     const bool temporal=frame.Presentation.TemporalAA && RendererAPI::GetAPI()==RendererAPI::API::Metal &&
         frame.Presentation.SceneReferred && frame.Debug==SurfaceView::Shaded && frame.AmbientOcclusionView==0 && frame.LocalLightingView==0 && frame.ShadowView==0;
@@ -125,6 +184,19 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
         historyValid=state.Submitted && state.Submitted->load() && state.Width==extent.Width && state.Height==extent.Height &&
             state.Previous.SceneIdentity==frame.SceneIdentity && state.Previous.Assets==frame.Assets &&
             state.Previous.Presentation==frame.Presentation && !CameraCut(frame,state.Previous.Camera);
+        if (historyValid) {
+            // A different admission or map resolution is an abrupt lighting edit.
+            for (unsigned slot = 0; slot < MaxSpotShadows; ++slot) {
+                int current = frame.SpotShadows.LightIndices[slot];
+                int previous = state.Previous.SpotShadows.LightIndices[slot];
+                if (bool(current) != bool(previous) || (current &&
+                    (frame.LocalLights[current - 1].Identity != state.Previous.LocalLights[previous - 1].Identity ||
+                     frame.SpotShadows.Tiles[slot].y != state.Previous.SpotShadows.Tiles[slot].y))) {
+                    historyValid = false;
+                    break;
+                }
+            }
+        }
         if(!historyValid)state.Phase=0;
         jitter={Halton(state.Phase%64+1,2)-.5f,Halton(state.Phase%64+1,3)-.5f};
         glm::mat4 offset(1);offset[3][0]=2*jitter.x/float(extent.Width);offset[3][1]=2*jitter.y/float(extent.Height);
@@ -168,7 +240,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
         try
         {
             const bool ao=frame.Presentation.AmbientOcclusion.Enabled && !frame.Meshes.empty();
-            if(shadows || ao)display->Unbind();
+            if(anyShadows || ao)display->Unbind();
             renderShadows();
             if(ao) {
                 auto size=display->GetSpecification();
@@ -181,7 +253,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
             } else view.AmbientDepth.reset();
             auto prepareLighting=[&](const Ref<Framebuffer>& target) {
 #ifdef HZ_PLATFORM_MACOS
-                if(shadows)target->PrepareDirectionalShadows(view.ShadowDepth);
+                prepareShadowDepth(target);
                 if(ao) std::static_pointer_cast<MetalFramebuffer>(target)->PrepareAmbientOcclusion(view.AmbientDepth,temporal?sample.Camera:frame.Camera,frame.Presentation.AmbientOcclusion,frame.AmbientOcclusionView,view.AmbientTiming,sample.TemporalPhase);
 #else
                 (void)target;
@@ -231,7 +303,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
             }
             else {
                 view.Radiance.reset();
-                if(shadows || ao) {
+                if(anyShadows || ao) {
 #ifdef HZ_PLATFORM_MACOS
                     auto target=std::static_pointer_cast<MetalFramebuffer>(display);
                     if(frame.AmbientOcclusionView)target->Resume(glm::vec4(frame.AmbientOcclusionView==3?0.f:1.f));
@@ -258,6 +330,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
             if(view.Motion)view.Motion->Cancel();
             if (view.AmbientDepth) view.AmbientDepth->Cancel();
             if (view.ShadowDepth) view.ShadowDepth->Cancel();
+            if (view.SpotShadowDepth) view.SpotShadowDepth->Cancel();
             if (view.Radiance) view.Radiance->Cancel();
             display->Cancel();
             throw;
@@ -298,8 +371,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
             }
         }
     } worldBinding;
-    if(shadows) {
-        if(!display)throw std::runtime_error("Directional shadows require an explicit view target");
+    if (anyShadows) {
         renderShadows();display->Bind();
         RenderCommand::SetRasterState(raster);
     }
@@ -327,7 +399,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
     }
     else
         view.Radiance.reset();
-    if(shadows)(hdr?view.Radiance:display)->PrepareDirectionalShadows(view.ShadowDepth);
+    if (anyShadows) prepareShadowDepth(hdr ? view.Radiance : display);
     Renderer3D::Render(frame, hdr);
     raster = RenderCommand::GetRasterState();
     raster.Cull = CullFace::None;

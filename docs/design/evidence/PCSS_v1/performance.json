@@ -1,0 +1,1440 @@
+{
+  "timing-overlap16": {
+    "1280/720/1024/0/18": {
+      "shadowGPUms": {
+        "median": 0.09645835,
+        "p95": 0.133375,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 1.18465,
+        "p95": 1.47992,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 6.33352,
+        "p95": 8.39246,
+        "samples": 20
+      }
+    },
+    "1280/720/1024/0/19.0763": {
+      "shadowGPUms": {
+        "median": 0.10008334999999999,
+        "p95": 0.125792,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 1.559625,
+        "p95": 2.06629,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 9.81252,
+        "p95": 10.3734,
+        "samples": 20
+      }
+    },
+    "1280/720/1024/0/21": {
+      "shadowGPUms": {
+        "median": 0.07685420000000001,
+        "p95": 0.121167,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 1.053645,
+        "p95": 1.58983,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 8.808769999999999,
+        "p95": 10.368,
+        "samples": 20
+      }
+    },
+    "1280/720/1024/1/18": {
+      "shadowGPUms": {
+        "median": 0.0730625,
+        "p95": 0.101667,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 3.36669,
+        "p95": 4.07492,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 12.16775,
+        "p95": 13.7209,
+        "samples": 20
+      }
+    },
+    "1280/720/1024/1/19.0763": {
+      "shadowGPUms": {
+        "median": 0.050375,
+        "p95": 0.244208,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 4.637835,
+        "p95": 5.21379,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 14.4152,
+        "p95": 15.5251,
+        "samples": 20
+      }
+    },
+    "1280/720/1024/1/21": {
+      "shadowGPUms": {
+        "median": 0.058374999999999996,
+        "p95": 0.085125,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 2.594105,
+        "p95": 2.84488,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 11.044450000000001,
+        "p95": 12.6331,
+        "samples": 20
+      }
+    },
+    "1280/720/2048/0/18": {
+      "shadowGPUms": {
+        "median": 0.7067079999999999,
+        "p95": 0.730458,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 1.3257949999999998,
+        "p95": 1.44071,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 10.994250000000001,
+        "p95": 11.3325,
+        "samples": 20
+      }
+    },
+    "1280/720/2048/0/19.0763": {
+      "shadowGPUms": {
+        "median": 0.5352705,
+        "p95": 0.718292,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 1.4333550000000002,
+        "p95": 1.81029,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 10.874500000000001,
+        "p95": 11.2118,
+        "samples": 20
+      }
+    },
+    "1280/720/2048/0/21": {
+      "shadowGPUms": {
+        "median": 0.5601045,
+        "p95": 1.33537,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 1.063645,
+        "p95": 1.30979,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 10.45795,
+        "p95": 11.9345,
+        "samples": 20
+      }
+    },
+    "1280/720/2048/1/18": {
+      "shadowGPUms": {
+        "median": 0.4255835,
+        "p95": 0.472958,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 3.01302,
+        "p95": 4.02062,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 12.486,
+        "p95": 12.6955,
+        "samples": 20
+      }
+    },
+    "1280/720/2048/1/19.0763": {
+      "shadowGPUms": {
+        "median": 0.35516650000000005,
+        "p95": 0.372667,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 4.63933,
+        "p95": 5.22958,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 14.7022,
+        "p95": 15.8718,
+        "samples": 20
+      }
+    },
+    "1280/720/2048/1/21": {
+      "shadowGPUms": {
+        "median": 0.350021,
+        "p95": 0.360458,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 2.59788,
+        "p95": 2.61758,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 11.267,
+        "p95": 12.256,
+        "samples": 20
+      }
+    },
+    "1920/1080/1024/0/18": {
+      "shadowGPUms": {
+        "median": 0.08216665000000001,
+        "p95": 0.137708,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 2.250835,
+        "p95": 2.73062,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 11.882850000000001,
+        "p95": 12.9443,
+        "samples": 20
+      }
+    },
+    "1920/1080/1024/0/19.0763": {
+      "shadowGPUms": {
+        "median": 0.08439579999999999,
+        "p95": 0.108125,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 3.04504,
+        "p95": 3.80837,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 13.4314,
+        "p95": 14.0277,
+        "samples": 20
+      }
+    },
+    "1920/1080/1024/0/21": {
+      "shadowGPUms": {
+        "median": 0.08652080000000001,
+        "p95": 0.117333,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 2.5016249999999998,
+        "p95": 3.09642,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 13.28045,
+        "p95": 14.3284,
+        "samples": 20
+      }
+    },
+    "1920/1080/1024/1/18": {
+      "shadowGPUms": {
+        "median": 0.0546458,
+        "p95": 0.0644167,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 5.640335,
+        "p95": 5.76683,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 16.8816,
+        "p95": 17.5051,
+        "samples": 20
+      }
+    },
+    "1920/1080/1024/1/19.0763": {
+      "shadowGPUms": {
+        "median": 0.048708299999999996,
+        "p95": 0.064125,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 10.2812,
+        "p95": 10.8459,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 21.65175,
+        "p95": 23.2674,
+        "samples": 20
+      }
+    },
+    "1920/1080/1024/1/21": {
+      "shadowGPUms": {
+        "median": 0.05541665,
+        "p95": 0.452208,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 5.74377,
+        "p95": 6.24796,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 16.830849999999998,
+        "p95": 18.4767,
+        "samples": 20
+      }
+    },
+    "1920/1080/2048/0/18": {
+      "shadowGPUms": {
+        "median": 0.3418545,
+        "p95": 0.360083,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 1.516625,
+        "p95": 1.53496,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 10.789000000000001,
+        "p95": 11.4461,
+        "samples": 20
+      }
+    },
+    "1920/1080/2048/0/19.0763": {
+      "shadowGPUms": {
+        "median": 0.3562705,
+        "p95": 0.392042,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 2.11329,
+        "p95": 2.68675,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 11.20435,
+        "p95": 13.5365,
+        "samples": 20
+      }
+    },
+    "1920/1080/2048/0/21": {
+      "shadowGPUms": {
+        "median": 0.480458,
+        "p95": 0.544167,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 2.1637500000000003,
+        "p95": 3.12821,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 12.935749999999999,
+        "p95": 13.8235,
+        "samples": 20
+      }
+    },
+    "1920/1080/2048/1/18": {
+      "shadowGPUms": {
+        "median": 0.35120850000000003,
+        "p95": 0.358917,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 5.746855,
+        "p95": 6.33321,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 16.99035,
+        "p95": 18.3058,
+        "samples": 20
+      }
+    },
+    "1920/1080/2048/1/19.0763": {
+      "shadowGPUms": {
+        "median": 0.3426045,
+        "p95": 0.361875,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 10.137450000000001,
+        "p95": 10.8025,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 22.288800000000002,
+        "p95": 23.9182,
+        "samples": 20
+      }
+    },
+    "1920/1080/2048/1/21": {
+      "shadowGPUms": {
+        "median": 0.3530415,
+        "p95": 0.690958,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 5.750375,
+        "p95": 6.21325,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 16.966450000000002,
+        "p95": 18.1525,
+        "samples": 20
+      }
+    }
+  },
+  "timing-overlap16-gather": {
+    "1280/720/1024/0/18": {
+      "shadowGPUms": {
+        "median": 0.09356249999999999,
+        "p95": 0.119083,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 1.12675,
+        "p95": 1.44892,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 6.29129,
+        "p95": 7.93487,
+        "samples": 20
+      }
+    },
+    "1280/720/1024/0/19.0763": {
+      "shadowGPUms": {
+        "median": 0.08975,
+        "p95": 0.1225,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 1.6892049999999998,
+        "p95": 2.15183,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 9.603835,
+        "p95": 10.333,
+        "samples": 20
+      }
+    },
+    "1280/720/1024/0/21": {
+      "shadowGPUms": {
+        "median": 0.052854200000000004,
+        "p95": 0.103667,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 0.7570835,
+        "p95": 1.41579,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 8.62433,
+        "p95": 9.83221,
+        "samples": 20
+      }
+    },
+    "1280/720/1024/1/18": {
+      "shadowGPUms": {
+        "median": 0.0514375,
+        "p95": 0.0664583,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 3.7081,
+        "p95": 3.98904,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 12.16225,
+        "p95": 12.8942,
+        "samples": 20
+      }
+    },
+    "1280/720/1024/1/19.0763": {
+      "shadowGPUms": {
+        "median": 0.050791649999999994,
+        "p95": 0.455292,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 7.250415,
+        "p95": 8.33488,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 16.4428,
+        "p95": 18.0459,
+        "samples": 20
+      }
+    },
+    "1280/720/1024/1/21": {
+      "shadowGPUms": {
+        "median": 0.04985415,
+        "p95": 0.0694583,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 3.7123150000000003,
+        "p95": 4.34454,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 13.0505,
+        "p95": 13.61,
+        "samples": 20
+      }
+    },
+    "1280/720/2048/0/18": {
+      "shadowGPUms": {
+        "median": 0.35831250000000003,
+        "p95": 0.442792,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 0.7836455,
+        "p95": 1.23575,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 9.510645,
+        "p95": 11.0378,
+        "samples": 20
+      }
+    },
+    "1280/720/2048/0/19.0763": {
+      "shadowGPUms": {
+        "median": 0.501396,
+        "p95": 0.709458,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 1.6451250000000002,
+        "p95": 2.18133,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 10.8298,
+        "p95": 12.5015,
+        "samples": 20
+      }
+    },
+    "1280/720/2048/0/21": {
+      "shadowGPUms": {
+        "median": 0.54,
+        "p95": 0.733125,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 1.12727,
+        "p95": 1.49933,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 10.5612,
+        "p95": 11.3178,
+        "samples": 20
+      }
+    },
+    "1280/720/2048/1/18": {
+      "shadowGPUms": {
+        "median": 0.35225,
+        "p95": 0.368333,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 3.717625,
+        "p95": 4.21092,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 13.027750000000001,
+        "p95": 14.9488,
+        "samples": 20
+      }
+    },
+    "1280/720/2048/1/19.0763": {
+      "shadowGPUms": {
+        "median": 0.3571665,
+        "p95": 0.80475,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 7.26829,
+        "p95": 8.16746,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 16.545,
+        "p95": 18.853,
+        "samples": 20
+      }
+    },
+    "1280/720/2048/1/21": {
+      "shadowGPUms": {
+        "median": 0.349375,
+        "p95": 0.358,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 3.711395,
+        "p95": 4.18875,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 12.5425,
+        "p95": 14.252,
+        "samples": 20
+      }
+    },
+    "1920/1080/1024/0/18": {
+      "shadowGPUms": {
+        "median": 0.05679165,
+        "p95": 0.0639583,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 1.64398,
+        "p95": 2.15975,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 10.6147,
+        "p95": 11.657,
+        "samples": 20
+      }
+    },
+    "1920/1080/1024/0/19.0763": {
+      "shadowGPUms": {
+        "median": 0.062166700000000005,
+        "p95": 0.0710833,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 2.782145,
+        "p95": 3.57358,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 12.7919,
+        "p95": 13.6593,
+        "samples": 20
+      }
+    },
+    "1920/1080/1024/0/21": {
+      "shadowGPUms": {
+        "median": 0.0931042,
+        "p95": 0.162,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 2.71419,
+        "p95": 3.27229,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 12.998000000000001,
+        "p95": 13.5705,
+        "samples": 20
+      }
+    },
+    "1920/1080/1024/1/18": {
+      "shadowGPUms": {
+        "median": 0.031708349999999996,
+        "p95": 0.0684167,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 8.223415,
+        "p95": 8.77254,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 18.24655,
+        "p95": 22.6068,
+        "samples": 20
+      }
+    },
+    "1920/1080/1024/1/19.0763": {
+      "shadowGPUms": {
+        "median": 0.051541649999999994,
+        "p95": 0.0999583,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 16.435699999999997,
+        "p95": 17.0418,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 28.026899999999998,
+        "p95": 30.2558,
+        "samples": 20
+      }
+    },
+    "1920/1080/1024/1/21": {
+      "shadowGPUms": {
+        "median": 0.045479149999999996,
+        "p95": 0.0665,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 8.20525,
+        "p95": 8.84096,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 20.413800000000002,
+        "p95": 23.503,
+        "samples": 20
+      }
+    },
+    "1920/1080/2048/0/18": {
+      "shadowGPUms": {
+        "median": 0.357354,
+        "p95": 0.806833,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 1.657045,
+        "p95": 2.11558,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 10.89535,
+        "p95": 12.8276,
+        "samples": 20
+      }
+    },
+    "1920/1080/2048/0/19.0763": {
+      "shadowGPUms": {
+        "median": 0.35497900000000004,
+        "p95": 0.396542,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 2.439165,
+        "p95": 2.57287,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 13.0367,
+        "p95": 14.7889,
+        "samples": 20
+      }
+    },
+    "1920/1080/2048/0/21": {
+      "shadowGPUms": {
+        "median": 0.538896,
+        "p95": 0.632833,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 2.405205,
+        "p95": 3.02129,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 12.76215,
+        "p95": 14.1594,
+        "samples": 20
+      }
+    },
+    "1920/1080/2048/1/18": {
+      "shadowGPUms": {
+        "median": 0.353521,
+        "p95": 0.405667,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 8.203645,
+        "p95": 8.78246,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 19.00105,
+        "p95": 21.6492,
+        "samples": 20
+      }
+    },
+    "1920/1080/2048/1/19.0763": {
+      "shadowGPUms": {
+        "median": 0.358875,
+        "p95": 0.371,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 16.12625,
+        "p95": 17.1999,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 26.61425,
+        "p95": 28.1288,
+        "samples": 20
+      }
+    },
+    "1920/1080/2048/1/21": {
+      "shadowGPUms": {
+        "median": 0.3537705,
+        "p95": 0.37875,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 8.158375,
+        "p95": 8.74783,
+        "samples": 20
+      },
+      "serializedMs": {
+        "median": 17.4452,
+        "p95": 18.3805,
+        "samples": 20
+      }
+    }
+  },
+  "timing-pcf0": {
+    "1280/720/512/0": {
+      "shadowGPUms": {
+        "median": 0.0,
+        "p95": 0.0,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 0.653458,
+        "p95": 0.885458,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 6.25429,
+        "p95": 7.89075,
+        "samples": 20
+      }
+    },
+    "1280/720/512/1": {
+      "shadowGPUms": {
+        "median": 0.0153542,
+        "p95": 0.024125,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 1.0183935000000002,
+        "p95": 1.63092,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 7.83098,
+        "p95": 9.27325,
+        "samples": 20
+      }
+    },
+    "1280/720/1024/0": {
+      "shadowGPUms": {
+        "median": 0.0,
+        "p95": 0.0,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 0.649167,
+        "p95": 0.866833,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 8.109580000000001,
+        "p95": 8.60479,
+        "samples": 20
+      }
+    },
+    "1280/720/1024/1": {
+      "shadowGPUms": {
+        "median": 0.07908335,
+        "p95": 0.162667,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 1.17002,
+        "p95": 1.38396,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 9.463560000000001,
+        "p95": 10.8253,
+        "samples": 20
+      }
+    },
+    "1280/720/2048/0": {
+      "shadowGPUms": {
+        "median": 0.0,
+        "p95": 0.0,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 0.6485000000000001,
+        "p95": 0.861333,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 8.418585,
+        "p95": 9.00421,
+        "samples": 20
+      }
+    },
+    "1280/720/2048/1": {
+      "shadowGPUms": {
+        "median": 0.2971045,
+        "p95": 0.44425,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 0.9657290000000001,
+        "p95": 1.26696,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 8.6094,
+        "p95": 10.5058,
+        "samples": 20
+      }
+    },
+    "1920/1080/512/0": {
+      "shadowGPUms": {
+        "median": 0.0,
+        "p95": 0.0,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 1.439625,
+        "p95": 2.074,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 11.58395,
+        "p95": 12.1608,
+        "samples": 20
+      }
+    },
+    "1920/1080/512/1": {
+      "shadowGPUms": {
+        "median": 0.023958300000000002,
+        "p95": 0.0361667,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 2.13227,
+        "p95": 3.03837,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 12.39275,
+        "p95": 13.7351,
+        "samples": 20
+      }
+    },
+    "1920/1080/1024/0": {
+      "shadowGPUms": {
+        "median": 0.0,
+        "p95": 0.0,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 1.64775,
+        "p95": 1.98854,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 11.29955,
+        "p95": 11.6882,
+        "samples": 20
+      }
+    },
+    "1920/1080/1024/1": {
+      "shadowGPUms": {
+        "median": 0.063625,
+        "p95": 0.0925833,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 2.2212300000000003,
+        "p95": 2.88987,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 11.88635,
+        "p95": 13.6719,
+        "samples": 20
+      }
+    },
+    "1920/1080/2048/0": {
+      "shadowGPUms": {
+        "median": 0.0,
+        "p95": 0.0,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 1.583355,
+        "p95": 2.07267,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 11.41405,
+        "p95": 11.8945,
+        "samples": 20
+      }
+    },
+    "1920/1080/2048/1": {
+      "shadowGPUms": {
+        "median": 0.3158335,
+        "p95": 0.432583,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 2.50171,
+        "p95": 2.93079,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 13.49595,
+        "p95": 14.3007,
+        "samples": 20
+      }
+    }
+  },
+  "timing-pcf1": {
+    "1280/720/512/0": {
+      "shadowGPUms": {
+        "median": 0.0,
+        "p95": 0.0,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 0.6523749999999999,
+        "p95": 0.88525,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 6.53104,
+        "p95": 7.24267,
+        "samples": 20
+      }
+    },
+    "1280/720/512/1": {
+      "shadowGPUms": {
+        "median": 0.017333349999999997,
+        "p95": 0.030875,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 1.06142,
+        "p95": 1.242,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 8.37121,
+        "p95": 10.041,
+        "samples": 20
+      }
+    },
+    "1280/720/1024/0": {
+      "shadowGPUms": {
+        "median": 0.0,
+        "p95": 0.0,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 0.6603749999999999,
+        "p95": 0.864458,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 8.784375,
+        "p95": 9.12133,
+        "samples": 20
+      }
+    },
+    "1280/720/1024/1": {
+      "shadowGPUms": {
+        "median": 0.0773958,
+        "p95": 0.151167,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 1.0324385,
+        "p95": 2.33775,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 9.241455,
+        "p95": 10.9389,
+        "samples": 20
+      }
+    },
+    "1280/720/2048/0": {
+      "shadowGPUms": {
+        "median": 0.0,
+        "p95": 0.0,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 0.6820625,
+        "p95": 0.876875,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 8.37396,
+        "p95": 8.85679,
+        "samples": 20
+      }
+    },
+    "1280/720/2048/1": {
+      "shadowGPUms": {
+        "median": 0.3517085,
+        "p95": 0.639208,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 1.148375,
+        "p95": 2.14542,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 9.368955,
+        "p95": 11.6396,
+        "samples": 20
+      }
+    },
+    "1920/1080/512/0": {
+      "shadowGPUms": {
+        "median": 0.0,
+        "p95": 0.0,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 1.475315,
+        "p95": 1.76142,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 11.3982,
+        "p95": 11.8484,
+        "samples": 20
+      }
+    },
+    "1920/1080/512/1": {
+      "shadowGPUms": {
+        "median": 0.01979165,
+        "p95": 0.0335,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 2.0607100000000003,
+        "p95": 2.70842,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 12.05845,
+        "p95": 12.6647,
+        "samples": 20
+      }
+    },
+    "1920/1080/1024/0": {
+      "shadowGPUms": {
+        "median": 0.0,
+        "p95": 0.0,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 1.439935,
+        "p95": 1.98921,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 11.6171,
+        "p95": 12.0237,
+        "samples": 20
+      }
+    },
+    "1920/1080/1024/1": {
+      "shadowGPUms": {
+        "median": 0.043604149999999994,
+        "p95": 0.0960833,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 2.454185,
+        "p95": 2.81804,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 12.0105,
+        "p95": 13.5044,
+        "samples": 20
+      }
+    },
+    "1920/1080/2048/0": {
+      "shadowGPUms": {
+        "median": 0.0,
+        "p95": 0.0,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 1.760395,
+        "p95": 2.37196,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 11.59495,
+        "p95": 12.1155,
+        "samples": 20
+      }
+    },
+    "1920/1080/2048/1": {
+      "shadowGPUms": {
+        "median": 0.304729,
+        "p95": 0.431417,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 2.4239800000000002,
+        "p95": 2.84308,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 12.49215,
+        "p95": 13.8789,
+        "samples": 20
+      }
+    }
+  },
+  "timing-pcss16": {
+    "1280/720/512/0": {
+      "shadowGPUms": {
+        "median": 0.0,
+        "p95": 0.0,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 0.7025835,
+        "p95": 0.888625,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 6.530085,
+        "p95": 7.10383,
+        "samples": 20
+      }
+    },
+    "1280/720/512/1": {
+      "shadowGPUms": {
+        "median": 0.0262708,
+        "p95": 0.0454167,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 1.713145,
+        "p95": 2.22517,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 10.42255,
+        "p95": 11.1165,
+        "samples": 20
+      }
+    },
+    "1280/720/1024/0": {
+      "shadowGPUms": {
+        "median": 0.0,
+        "p95": 0.0,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 0.6682710000000001,
+        "p95": 1.45704,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 8.331914999999999,
+        "p95": 8.59092,
+        "samples": 20
+      }
+    },
+    "1280/720/1024/1": {
+      "shadowGPUms": {
+        "median": 0.1145205,
+        "p95": 0.202292,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 1.856455,
+        "p95": 2.63908,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 10.66165,
+        "p95": 11.201,
+        "samples": 20
+      }
+    },
+    "1280/720/2048/0": {
+      "shadowGPUms": {
+        "median": 0.0,
+        "p95": 0.0,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 0.7197499999999999,
+        "p95": 0.883333,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 8.332934999999999,
+        "p95": 8.49475,
+        "samples": 20
+      }
+    },
+    "1280/720/2048/1": {
+      "shadowGPUms": {
+        "median": 0.34368750000000003,
+        "p95": 0.53525,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 1.79754,
+        "p95": 2.31162,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 10.819199999999999,
+        "p95": 11.4247,
+        "samples": 20
+      }
+    },
+    "1920/1080/512/0": {
+      "shadowGPUms": {
+        "median": 0.0,
+        "p95": 0.0,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 1.540085,
+        "p95": 1.95433,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 11.551400000000001,
+        "p95": 11.9965,
+        "samples": 20
+      }
+    },
+    "1920/1080/512/1": {
+      "shadowGPUms": {
+        "median": 0.04154165,
+        "p95": 0.08075,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 3.15108,
+        "p95": 4.24292,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 13.82515,
+        "p95": 15.3658,
+        "samples": 20
+      }
+    },
+    "1920/1080/1024/0": {
+      "shadowGPUms": {
+        "median": 0.0,
+        "p95": 0.0,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 1.66123,
+        "p95": 2.08438,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 11.14345,
+        "p95": 11.5865,
+        "samples": 20
+      }
+    },
+    "1920/1080/1024/1": {
+      "shadowGPUms": {
+        "median": 0.02835415,
+        "p95": 0.121708,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 2.466165,
+        "p95": 3.74121,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 9.997869999999999,
+        "p95": 11.1488,
+        "samples": 20
+      }
+    },
+    "1920/1080/2048/0": {
+      "shadowGPUms": {
+        "median": 0.0,
+        "p95": 0.0,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 1.26773,
+        "p95": 1.91829,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 9.621134999999999,
+        "p95": 11.7313,
+        "samples": 20
+      }
+    },
+    "1920/1080/2048/1": {
+      "shadowGPUms": {
+        "median": 0.195354,
+        "p95": 0.265667,
+        "samples": 20
+      },
+      "forwardGPUms": {
+        "median": 2.7829800000000002,
+        "p95": 3.54092,
+        "samples": 20
+      },
+      "serializedFrameMs": {
+        "median": 13.73635,
+        "p95": 14.3246,
+        "samples": 20
+      }
+    }
+  }
+}

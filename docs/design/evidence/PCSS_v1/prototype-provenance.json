@@ -1,0 +1,21 @@
+{
+  "Hazel/Resources/shaders/ForwardPBR.glsl": "e5c8ab327e32370fd5777367e3fd70f740fdc8d62dc9c9268180a3d6da927318",
+  "Hazel/src/Hazel/Core/DocumentSchema.cpp": "f85d5bc81417fe722814afe6db4a28476e35e233544bd69d6281f4586257b2f5",
+  "Hazel/src/Hazel/Renderer/Scene/DirectionalShadows.cpp": "5c23c0f91a07efffd2933e769582a4dc42ded5174a31c996c688cc18a0bff711",
+  "Hazel/src/Hazel/Renderer/Scene/DirectionalShadows.h": "6f14c61775b27fcc43224edb981bf0f65329b91fdd6e8263b4fde6053bbb4ce3",
+  "Hazel/src/Hazel/Renderer/Scene/Lighting.h": "a71d3fe598c65f21c46bac9fb190ead79e54ccf4314cb85d72b5ad2584161d94",
+  "Hazel/src/Hazel/Renderer/Scene/SceneCollection.cpp": "7bd96e0ba4c3d5137af21b63f2a01affa81023f337734ce2d173ed93fb880986",
+  "Hazel/src/Hazel/Renderer/Scene/SceneRenderer.cpp": "e1ef3df47ff0ce5140220e16b57badb0ecc4d2f5e461d32d4d9cca1dc9258976",
+  "Hazel/src/Hazel/Renderer/Scene/SceneSubmission.h": "55497ae0a57e3164f627ecf798db639da652ddcf21a99d63466444084b2afa19",
+  "Hazel/src/Hazel/Scene/AuthoredState.cpp": "156976321d205e27b550dffc34891df93bebbe3d0cd16beeaed3181e2cd29791",
+  "Hazel/src/Hazel/Scene/SceneDefaults.cpp": "eeea8ff21bfabb0c2a5a126a64d5b184e59dae8dc9c13429af0eb3a1b6579e1f",
+  "Hazel/src/Hazel/Scene/SceneSerializer.cpp": "b28c999e54506aad4e8010f796b893dea593e51eafa6a30fefd53a1540645f1d",
+  "Hazel/src/Platform/macOS/Metal/MetalShaderCompiler.cpp": "d3a3e47bcb3faa4abcd1fa95d9d62965adb3d9b0ce5458cb7afd522fbab5e3c2",
+  "tests/macos/DirectionalShadowQualification.h": "24984c64c0f427a82c9a4c43832aab7a398f2fe3671fa67f4a5c3c5f3e8206d7",
+  "binaries": {
+    "bin-prototype-release/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke": "ec91ccfb2af84c999e9c1a2277cce6c40ed07ecebe8c019e55d12ca4c322a7b1",
+    "bin-prototype-release/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke": "bb5a74261a69429b9fb9d15e959f4dc9632a50d689cf8b73891c9ab1cabac2a2",
+    "bin-prototype-debug/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke": "a8ed9d0bcdd1b4cbefa514caa49bdc534162651d60105b94b395366a5f5af151",
+    "bin-prototype-debug/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke": "06ebbd858b696611306e480e1f42a9f6790aff8d5247a78e8bb197d538b11d11"
+  }
+}

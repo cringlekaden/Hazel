@@ -203,3 +203,19 @@ The [separate shadow study](../examples/RenderingReference/README.md#directional
 and [design/qualification record](design/directional-shadows.md) describe the
 current limits. This foundation is under qualification; it has no owner visual
 acceptance yet. Windows/Linux and Intel GPU execution require separate evidence.
+
+### Spotlight shadow maps
+
+Select a Spot Light, enable **Cast shadows**, and choose a **Shadow resolution**
+of 256, 512 or 1024. New and older scenes default to shadows off. The viewport
+**Lights…** popup reports how many lights received shadow maps. Up to four
+enabled, emitting requests receive maps in ascending entity ID order. Remaining
+spotlights keep illuminating the scene. Higher resolutions sharpen the fixed
+PCF footprint and increase atlas memory and depth rasterization work.
+
+The light's range and outer half angle define coverage. Opaque and masked
+static meshes can cast shadows from outside the camera view. Open the
+[spotlight shadow study](../examples/RenderingReference/README.md#spotlight-shadow-study)
+to see two overlapping shadow maps, solid contact and a masked caster.
+See the [spotlight design record](design/spotlight-shadows.md) for qualification
+and platform coverage.

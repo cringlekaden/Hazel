@@ -1,0 +1,65 @@
+{
+  "scope": "Critical raw source/visibility/radiance and matched before/after readbacks; complete raw directories retained as indexed in README, not all large files rehashed.",
+  "files": [
+    {
+      "path": "build/pcss-v1/final-support/release-planes/metal/plane-23-position.bin",
+      "bytes": 6291456,
+      "sha256": "2a24577aa285c189133d64171fa4c4d4f7599febd8d53698f31a3164ca92dd47"
+    },
+    {
+      "path": "build/pcss-v1/final-support/release-planes/metal/plane-23-visibility.bin",
+      "bytes": 6291456,
+      "sha256": "a65dd6cfc26512bb46679630294ec983d51c7e37570cfa3dc38b9815c0474d00"
+    },
+    {
+      "path": "build/pcss-v1/final-support/release-planes/metal/plane-23-radiance.bin",
+      "bytes": 6291456,
+      "sha256": "da5edde5a58e0d9e035e3909dd11bf6b79987116603908725d07c34d36cb1470"
+    },
+    {
+      "path": "build/pcss-v1/final-support/release-planes/opengl/plane-23-position.bin",
+      "bytes": 6291456,
+      "sha256": "d8636397580b646bb0f787615e70e738cc8282bc6e208fc9ccd96556cede12b1"
+    },
+    {
+      "path": "build/pcss-v1/final-support/release-planes/opengl/plane-23-visibility.bin",
+      "bytes": 6291456,
+      "sha256": "20af1cc6f9e67fc17c2fe1758316473fa0e05d444f451af66a7bf4a2b5629470"
+    },
+    {
+      "path": "build/pcss-v1/final-support/release-planes/opengl/plane-23-radiance.bin",
+      "bytes": 6291456,
+      "sha256": "5c57226f1c3857e14f2ab7c0d908be3780a01093402c56f09d9d2ccaeaf4d8c1"
+    },
+    {
+      "path": "build/pcss-v1/optimization/authored-valid-pcf/metal/study-0-0.bin",
+      "bytes": 22118400,
+      "sha256": "b59be1e5ae19c9effbc6c8f7dd24a3d63a29778a905ffec9d515bb2277725649"
+    },
+    {
+      "path": "build/pcss-v1/optimization/authored-valid-pcf/opengl/study-0-0.bin",
+      "bytes": 22118400,
+      "sha256": "52789aa790cbb9ffe3e9842fbdee478e81cb2f517488ab560de1eaee28d865b8"
+    },
+    {
+      "path": "build/pcss-v1/optimization/authored-valid-refined8-32/metal/study-0-0.bin",
+      "bytes": 22118400,
+      "sha256": "ba648157ee87f8d97a013e92804de7cb37e87b0f80a7cf4a383562791d990263"
+    },
+    {
+      "path": "build/pcss-v1/optimization/authored-valid-refined8-32/opengl/study-0-0.bin",
+      "bytes": 22118400,
+      "sha256": "b3e6a324713d2479e4922e2092a508cf28e9a9407b100587b27249c080b049b6"
+    },
+    {
+      "path": "build/pcss-v1/bound-release-planes/metal/plane-23-visibility.bin",
+      "bytes": 6291456,
+      "sha256": "631b1e3352c36cacd8a18d17d7b3717cc137632490df5b1b575ae56e580a6567"
+    },
+    {
+      "path": "build/pcss-v1/bound-release-planes/opengl/plane-23-visibility.bin",
+      "bytes": 6291456,
+      "sha256": "b0460e5bd499fc9600b64c0d2a26de941ddf66b359e71beb9fcb3abef2bfe919"
+    }
+  ]
+}

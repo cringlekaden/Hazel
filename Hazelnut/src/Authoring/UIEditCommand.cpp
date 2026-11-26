@@ -75,7 +75,7 @@ template <class A, class B, class C, class F> void Fields(A &a, B &b, C &c, F f)
         FIELD(Light, Enabled);
     }
     COMPONENT(Point) {FIELD(Point,Color);FIELD(Point,Intensity);FIELD(Point,Enabled);FIELD(Point,Range);}
-    COMPONENT(Spot) {FIELD(Spot,Color);FIELD(Spot,Intensity);FIELD(Spot,Enabled);FIELD(Spot,Range);FIELD(Spot,InnerCone);FIELD(Spot,OuterCone);}
+    COMPONENT(Spot) {FIELD(Spot,Color);FIELD(Spot,Intensity);FIELD(Spot,Enabled);FIELD(Spot,Range);FIELD(Spot,InnerCone);FIELD(Spot,OuterCone);FIELD(Spot,CastShadows);FIELD(Spot,ShadowResolution);}
     COMPONENT(Mesh) {FIELD(Mesh,Mesh);FIELD(Mesh,Materials);}
     COMPONENT(Circle) {FIELD(Circle,Color);FIELD(Circle,Thickness);FIELD(Circle,Fade);}
     COMPONENT(Camera) {FIELD(Camera,Projection);FIELD(Camera,FOV);FIELD(Camera,Near);FIELD(Camera,Far);FIELD(Camera,Size);FIELD(Camera,OrthoNear);FIELD(Camera,OrthoFar);FIELD(Camera,Primary);FIELD(Camera,FixedAspect);}
@@ -372,7 +372,7 @@ FIELD(Light, Intensity);
 FIELD(Light, Enabled);
 }
     COMPONENT(Point,PointLightComponent) FIELD(Point,Color);FIELD(Point,Intensity);FIELD(Point,Enabled);FIELD(Point,Range);}
-    COMPONENT(Spot,SpotLightComponent) FIELD(Spot,Color);FIELD(Spot,Intensity);FIELD(Spot,Enabled);FIELD(Spot,Range);FIELD(Spot,InnerCone);FIELD(Spot,OuterCone);}
+    COMPONENT(Spot,SpotLightComponent) FIELD(Spot,Color);FIELD(Spot,Intensity);FIELD(Spot,Enabled);FIELD(Spot,Range);FIELD(Spot,InnerCone);FIELD(Spot,OuterCone);FIELD(Spot,CastShadows);FIELD(Spot,ShadowResolution);}
     COMPONENT(Mesh,MeshRendererComponent) FIELD(Mesh,Mesh);FIELD(Mesh,Materials);}
     COMPONENT(Circle, CircleRendererComponent) FIELD(Circle,Color);FIELD(Circle,Thickness);FIELD(Circle,Fade);}
     if(old.Camera && next.Camera) {

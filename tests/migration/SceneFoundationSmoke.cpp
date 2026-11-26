@@ -38,15 +38,27 @@ static void LocalLightContracts() {
     e.GetComponent<TransformComponent>().Translation={2,3,4};e.GetComponent<TransformComponent>().Rotation={.2f,.4f,.1f};
     e.GetComponent<TransformComponent>().Scale={2,3,4};
     auto &point=e.AddComponent<PointLightComponent>();point.Range=17;point.Intensity=23;point.Color={.2f,.4f,.6f};
-    auto &spot=e.AddComponent<SpotLightComponent>();spot.Range=31;spot.InnerCone=.2f;spot.OuterCone=.8f;spot.Enabled=false;
+    auto &spot=e.AddComponent<SpotLightComponent>();spot.Range=31;spot.InnerCone=.2f;spot.OuterCone=.8f;spot.Enabled=false;spot.CastShadows=true;spot.ShadowResolution=1024;
     const auto text=SceneSerializer(scene).SerializeText();auto loaded=CreateRef<Scene>();
     Check(SceneSerializer(loaded).DeserializeText(text),"Local light round trip rejected");
     auto assertLights=[&](Entity candidate) {
         Check(candidate.HasComponent<PointLightComponent>() && candidate.HasComponent<SpotLightComponent>(),"Local components lost");
         Check(candidate.GetComponent<PointLightComponent>().Range==17 && candidate.GetComponent<PointLightComponent>().Intensity==23 &&
             candidate.GetComponent<SpotLightComponent>().Range==31 && candidate.GetComponent<SpotLightComponent>().InnerCone==.2f &&
-            !candidate.GetComponent<SpotLightComponent>().Enabled,"Local authored values lost");
+            !candidate.GetComponent<SpotLightComponent>().Enabled && candidate.GetComponent<SpotLightComponent>().CastShadows &&
+            candidate.GetComponent<SpotLightComponent>().ShadowResolution==1024,"Local authored values lost");
     };
+    auto legacyText = text;
+    for (auto field : {"    CastShadows:", "    ShadowResolution:"}) {
+        const auto mark = legacyText.find(field);
+        Check(mark != std::string::npos, "Serialized spot shadow field missing");
+        const auto start = legacyText.rfind('\n', mark) + 1;
+        legacyText.erase(start, legacyText.find('\n', mark) + 1 - start);
+    }
+    auto legacy = CreateRef<Scene>();
+    Check(SceneSerializer(legacy).DeserializeText(legacyText), "Legacy spotlight schema rejected");
+    const auto& legacySpot = legacy->GetEntityByUUID(4242).GetComponent<SpotLightComponent>();
+    Check(!legacySpot.CastShadows && legacySpot.ShadowResolution == 512, "Legacy spotlight shadow defaults differ");
     assertLights(loaded->GetEntityByUUID(4242));auto copy=Scene::Copy(scene);assertLights(copy->GetEntityByUUID(4242));
     auto duplicate=scene->DuplicateEntity(e);assertLights(duplicate);Check(duplicate.GetUUID()!=e.GetUUID(),"Duplicated light identity reused");
     auto prefab=CreateRef<Scene>();
@@ -100,6 +112,8 @@ static void AuthoredComparisonContracts() {
     changed(e.GetComponent<SpotLightComponent>().InnerCone,.2f);
     changed(e.GetComponent<SpotLightComponent>().OuterCone,.7f);
     changed(e.GetComponent<SpotLightComponent>().Range,8.f);
+    changed(e.GetComponent<SpotLightComponent>().CastShadows,true);
+    changed(e.GetComponent<SpotLightComponent>().ShadowResolution,256u);
     changed(e.GetComponent<DirectionalLightComponent>().Color, glm::vec3(.2f, .4f, .6f));
     changed(e.GetComponent<DirectionalLightComponent>().Intensity, 3.f);
     changed(e.GetComponent<DirectionalLightComponent>().Enabled, false);

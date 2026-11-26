@@ -134,21 +134,25 @@ void MetalFramebuffer::Bind()
     m_Readback.reset(); // this pass must not expose an older generation as current pixels
 }
 void MetalFramebuffer::Unbind() { Backend().UnbindFramebuffer(m_Frame); }
-void MetalFramebuffer::PrepareDirectionalShadows(const Ref<Framebuffer>& depth)
+void MetalFramebuffer::PrepareShadowDepth(const Ref<Framebuffer>& depth, ShadowMapKind kind)
 {
     auto source=std::dynamic_pointer_cast<MetalFramebuffer>(depth);
-    Check(source && source.get()!=this && source->m_Device==m_Device && source->m_Frame && m_Frame &&
+    Check(bool(m_Frame), "Shadows require a bound lighting view");
+    auto& producer = kind == ShadowMapKind::Directional ? m_Frame->ShadowSource : m_Frame->SpotShadowSource;
+    Check(source && source.get()!=this && source->m_Device==m_Device && source->m_Frame &&
         !Backend().IsFramebufferBound(source->m_Frame) && Backend().IsFramebufferBound(m_Frame) &&
         source->m_Specification.Attachments.Attachments.size()==1 && source->m_Attachments->Targets[2] &&
-        !source->m_Attachments->Targets[0] && !m_Frame->ShadowSource,
-        "Directional shadows require an unbound depth-only producer and bound lighting view");
-    m_Frame->ShadowSource=std::move(source->m_Frame);
+        !source->m_Attachments->Targets[0] && !producer,
+        "Shadows require an unbound depth-only producer and bound lighting view");
+    producer = std::move(source->m_Frame);
     // A private atlas has no direct readback/editor consumers. Each captured
     // parent encodes its own depth producer immediately before sampling it on
     // the same queue. Reuse storage with the existing all-stage queue barrier;
     // packets, uniforms and resized generations still retain their own lifetime.
-    source->m_ShadowProducer=true;m_Frame->ShadowSource->QueueOrderedProducer=true;
-    m_Frame->ShadowSource->Readback=false;source->m_SubmittedGeneration=true;
+    source->m_ShadowProducer = true;
+    producer->QueueOrderedProducer = true;
+    producer->Readback = false;
+    source->m_SubmittedGeneration = true;
 }
 void MetalFramebuffer::Resume()
 {

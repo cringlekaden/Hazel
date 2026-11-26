@@ -1,0 +1,48 @@
+{
+  "restoredOwnedFiles": [
+    "Hazel/Resources/shaders/ForwardPBR.glsl",
+    "Hazel/Resources/shaders/metal/ForwardPBR.hzmetal",
+    "Hazel/src/Hazel/Core/DocumentSchema.cpp",
+    "Hazel/src/Hazel/Renderer/Drawing/Renderer3D.cpp",
+    "Hazel/src/Hazel/Renderer/Scene/DirectionalShadows.cpp",
+    "Hazel/src/Hazel/Renderer/Scene/DirectionalShadows.h",
+    "Hazel/src/Hazel/Renderer/Scene/Lighting.h",
+    "Hazel/src/Hazel/Renderer/Scene/SceneCollection.cpp",
+    "Hazel/src/Hazel/Renderer/Scene/SceneRenderer.cpp",
+    "Hazel/src/Hazel/Renderer/Scene/SceneSubmission.h",
+    "Hazel/src/Hazel/Scene/AuthoredState.cpp",
+    "Hazel/src/Hazel/Scene/SceneDefaults.cpp",
+    "Hazel/src/Hazel/Scene/SceneSerializer.cpp",
+    "Hazel/src/Platform/OpenGL/OpenGLFramebuffer.cpp",
+    "Hazel/src/Platform/OpenGL/OpenGLFramebuffer.h",
+    "Hazel/src/Platform/OpenGL/OpenGLShader.cpp",
+    "Hazel/src/Platform/macOS/Metal/MetalDeviceRenderer2D.cpp",
+    "Hazel/src/Platform/macOS/Metal/MetalRenderer2DFrame.h",
+    "Hazel/src/Platform/macOS/Metal/MetalRendererAPI.cpp",
+    "Hazel/src/Platform/macOS/Metal/MetalShader.cpp",
+    "Hazel/src/Platform/macOS/Metal/MetalShaderArtifact.cpp",
+    "Hazel/src/Platform/macOS/Metal/MetalShaderCompiler.cpp",
+    "Hazelnut/src/Authoring/RenderingSettings.cpp",
+    "Hazelnut/src/Panels/SceneHierarchyPanel.cpp",
+    "scripts/macos/metal_shaders.py",
+    "tests/macos/MetalShaderSmoke.cpp",
+    "tests/migration/Renderer2DSmoke.cpp"
+  ],
+  "restoredInitialDirtyTests": [
+    "tests/macos/DirectionalShadowQualification.h",
+    "tests/macos/MetalRenderer2DQuadSmoke.cpp"
+  ],
+  "removedExperimentalPackages": [
+    "bin/Debug-macos-arm64/Hazelnut/Resources/shaders/metal/ForwardPBR_PCSS.hzmetal",
+    "bin/Debug-macos-arm64/Hazelnut/Resources/shaders/metal/ForwardPBR_PCSSInspect.hzmetal",
+    "bin/Debug-macos-arm64/Nutella/Resources/shaders/metal/ForwardPBR_PCSS.hzmetal",
+    "bin/Debug-macos-arm64/Nutella/Resources/shaders/metal/ForwardPBR_PCSSInspect.hzmetal",
+    "bin/Release-macos-arm64/Hazelnut/Resources/shaders/metal/ForwardPBR_PCSS.hzmetal",
+    "bin/Release-macos-arm64/Hazelnut/Resources/shaders/metal/ForwardPBR_PCSSInspect.hzmetal",
+    "bin/Release-macos-arm64/Nutella/Resources/shaders/metal/ForwardPBR_PCSS.hzmetal",
+    "bin/Release-macos-arm64/Nutella/Resources/shaders/metal/ForwardPBR_PCSSInspect.hzmetal"
+  ],
+  "head": "d80bb5e9a3fcfd687b1a995980806c91748e1b8d",
+  "newCommit": false,
+  "push": false
+}

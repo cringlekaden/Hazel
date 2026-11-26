@@ -1,0 +1,255 @@
+{
+  "global-gpu": {
+    "command": [
+      "python3",
+      "scripts/macos/directional_pcss.py",
+      "--resources",
+      "<repo>/build/pcss-v1/resources-global-control",
+      "--benchmark",
+      "--output",
+      "<repo>/build/pcss-v1/comparisons/global-gpu"
+    ],
+    "exitCode": 1
+  },
+  "global-retina-offscreen": {
+    "command": [
+      "python3",
+      "scripts/macos/directional_pcss.py",
+      "--resources",
+      "<repo>/build/pcss-v1/resources-global-control",
+      "--benchmark",
+      "--retina",
+      "--backend",
+      "metal",
+      "--output",
+      "<repo>/build/pcss-v1/comparisons/global-retina-offscreen"
+    ],
+    "exitCode": 0
+  },
+  "typical-pcf-before": {
+    "command": [
+      "<repo>/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "<repo>/build/pcss-v1/resources-global-control",
+      "<repo>/build/pcss-v1/comparisons/typical-pcf-before/metal",
+      "--shadows"
+    ],
+    "exitCode": 0
+  },
+  "typical-pcss": {
+    "command": [
+      "<repo>/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "<repo>/build/pcss-v1/resources-global-control",
+      "<repo>/build/pcss-v1/comparisons/typical-pcss/metal",
+      "--shadows"
+    ],
+    "exitCode": 0
+  },
+  "typical-pcf-after": {
+    "command": [
+      "<repo>/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "<repo>/build/pcss-v1/resources-global-control",
+      "<repo>/build/pcss-v1/comparisons/typical-pcf-after/metal",
+      "--shadows"
+    ],
+    "exitCode": 0
+  },
+  "present-pcf": {
+    "command": [
+      "<repo>/bin/Release-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+      "<repo>/build/pcss-v1/comparisons/present-pcf",
+      "--benchmark-metal",
+      "<repo>/build/pcss-v1/comparisons/resources",
+      "<repo>/build/pcss-v1/comparisons/project/PCSSPrototype.hproj",
+      "-1"
+    ],
+    "exitCode": 0,
+    "positivePresentations": 1391,
+    "groups": {
+      "1280x720": {
+        "gpu": {
+          "samples": 658,
+          "median": 1.7083124839700758,
+          "p95": 1.8628330435603857
+        },
+        "cpuScene": {
+          "samples": 658,
+          "median": 0.826229,
+          "p95": 0.999666
+        },
+        "presentIntervals": {
+          "samples": 657,
+          "median": 2.5413749972358346,
+          "p95": 9.685290977358818
+        }
+      },
+      "1920x1080": {
+        "gpu": {
+          "samples": 673,
+          "median": 3.447249997407198,
+          "p95": 3.56737500987947
+        },
+        "cpuScene": {
+          "samples": 673,
+          "median": 1.161709,
+          "p95": 1.578584
+        },
+        "presentIntervals": {
+          "samples": 672,
+          "median": 3.7554165173787624,
+          "p95": 10.930374963209033
+        }
+      }
+    },
+    "scope": "Actual native presentation joins;30warmup positive presentations per actualphysicalextent, Ultra2048, authoredscene, fixedexposure, AOoff; GPUwholeframe incloutput/TAA, notshadow-only."
+  },
+  "present-pcf-taa": {
+    "command": [
+      "<repo>/bin/Release-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+      "<repo>/build/pcss-v1/comparisons/present-pcf-taa",
+      "--benchmark-metal",
+      "<repo>/build/pcss-v1/comparisons/resources",
+      "<repo>/build/pcss-v1/comparisons/project/PCSSPrototype.hproj",
+      "-1",
+      "--taa"
+    ],
+    "exitCode": 0,
+    "positivePresentations": 1415,
+    "groups": {
+      "1280x720": {
+        "gpu": {
+          "samples": 665,
+          "median": 4.317999992053956,
+          "p95": 4.405125044286251
+        },
+        "cpuScene": {
+          "samples": 665,
+          "median": 1.282208,
+          "p95": 1.603167
+        },
+        "presentIntervals": {
+          "samples": 664,
+          "median": 4.477729002246633,
+          "p95": 11.135083972476423
+        }
+      },
+      "1920x1080": {
+        "gpu": {
+          "samples": 690,
+          "median": 9.315562492702156,
+          "p95": 9.40729200374335
+        },
+        "cpuScene": {
+          "samples": 690,
+          "median": 1.641021,
+          "p95": 2.229917
+        },
+        "presentIntervals": {
+          "samples": 689,
+          "median": 9.325999999418855,
+          "p95": 16.494625015184283
+        }
+      }
+    },
+    "scope": "Actual native presentation joins;30warmup positive presentations per actualphysicalextent, Ultra2048, authoredscene, fixedexposure, AOoff; GPUwholeframe incloutput/TAA, notshadow-only."
+  },
+  "present-pcss": {
+    "command": [
+      "<repo>/bin/Release-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+      "<repo>/build/pcss-v1/comparisons/present-pcss",
+      "--benchmark-metal",
+      "<repo>/build/pcss-v1/comparisons/resources",
+      "<repo>/build/pcss-v1/comparisons/project/PCSSPrototype.hproj",
+      "-1"
+    ],
+    "exitCode": 0,
+    "positivePresentations": 1386,
+    "groups": {
+      "1280x720": {
+        "gpu": {
+          "samples": 656,
+          "median": 2.179125032853335,
+          "p95": 2.367125009186566
+        },
+        "cpuScene": {
+          "samples": 656,
+          "median": 1.027854,
+          "p95": 1.379416
+        },
+        "presentIntervals": {
+          "samples": 655,
+          "median": 2.933291019871831,
+          "p95": 9.049250045791268
+        }
+      },
+      "1920x1080": {
+        "gpu": {
+          "samples": 670,
+          "median": 4.5284375082701445,
+          "p95": 4.597207996994257
+        },
+        "cpuScene": {
+          "samples": 670,
+          "median": 1.2756045,
+          "p95": 1.961667
+        },
+        "presentIntervals": {
+          "samples": 669,
+          "median": 4.71970799844712,
+          "p95": 11.14137499826029
+        }
+      }
+    },
+    "scope": "Actual native presentation joins;30warmup positive presentations per actualphysicalextent, Ultra2048, authoredscene, fixedexposure, AOoff; GPUwholeframe incloutput/TAA, notshadow-only."
+  },
+  "present-pcss-taa": {
+    "command": [
+      "<repo>/bin/Release-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+      "<repo>/build/pcss-v1/comparisons/present-pcss-taa",
+      "--benchmark-metal",
+      "<repo>/build/pcss-v1/comparisons/resources",
+      "<repo>/build/pcss-v1/comparisons/project/PCSSPrototype.hproj",
+      "-1",
+      "--taa"
+    ],
+    "exitCode": 0,
+    "positivePresentations": 1410,
+    "groups": {
+      "1280x720": {
+        "gpu": {
+          "samples": 660,
+          "median": 4.81270850286819,
+          "p95": 4.873332974966615
+        },
+        "cpuScene": {
+          "samples": 660,
+          "median": 1.3394995,
+          "p95": 1.655833
+        },
+        "presentIntervals": {
+          "samples": 659,
+          "median": 4.961750004440546,
+          "p95": 14.256833004765213
+        }
+      },
+      "1920x1080": {
+        "gpu": {
+          "samples": 690,
+          "median": 10.329896031180397,
+          "p95": 10.41774998884648
+        },
+        "cpuScene": {
+          "samples": 690,
+          "median": 1.672229,
+          "p95": 2.288791
+        },
+        "presentIntervals": {
+          "samples": 689,
+          "median": 10.415250028017908,
+          "p95": 19.858666986692697
+        }
+      }
+    },
+    "scope": "Actual native presentation joins;30warmup positive presentations per actualphysicalextent, Ultra2048, authoredscene, fixedexposure, AOoff; GPUwholeframe incloutput/TAA, notshadow-only."
+  },
+  "peakChildResidentBytes": 417529856
+}

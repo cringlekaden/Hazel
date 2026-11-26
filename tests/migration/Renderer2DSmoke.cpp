@@ -5,6 +5,7 @@
 #include "../macos/MultiscatteringQualification.h"
 #include "../macos/LocalLightingQualification.h"
 #include "../macos/DirectionalShadowQualification.h"
+#include "../macos/SpotShadowQualification.h"
 #include <fstream>
 #include "Hazel/Scene/RuntimeSession.h"
 #include "../macos/LoadedImages.h"
@@ -252,10 +253,11 @@ int main(int argc,char** argv) {
         ApplicationSpecification invalid; invalid.Name="Migration Missing Shader"; invalid.Resources.Root=fixture.Directory/"missing-resources";
         bool rejected=false; try { Application failed(invalid); } catch(const std::exception&) { rejected=true; }
         Check(rejected && std::filesystem::current_path()==cwd,"Failed renderer startup did not recover working directory");
+        const bool spotShadows = argc == 3 && std::string(argv[1]) == "--spot-shadows";
         for (bool reduced : {false, true}) {
             ApplicationSpecification specification; specification.Name="Migration Renderer2D";
             RuntimeRendererRequests requests;
-            if((argc==3 || argc==4) && (std::string(argv[1])=="--metal-parity" || std::string(argv[1])=="--renderer3d-parity" || (std::string(argv[1])=="--ggx-ms" || (std::string(argv[1])=="--local-lights" || std::string(argv[1])=="--shadows"))))requests.TextureSlots=4;
+            if(spotShadows || ((argc==3 || argc==4) && (std::string(argv[1])=="--metal-parity" || std::string(argv[1])=="--renderer3d-parity" || (std::string(argv[1])=="--ggx-ms" || (std::string(argv[1])=="--local-lights" || std::string(argv[1])=="--shadows")))))requests.TextureSlots=4;
             if(reduced){requests.TextureSlots=2;requests.ShaderLoading=ShaderLoadingRequest::GLSLCompatibility;requests.VSync=false;}
             specification.Rendering=RendererPolicy::Settings(requests,reduced?DebugOutputRequest::Disabled:DebugOutputRequest::Enabled);
             specification.WindowVSync=requests.VSync;
@@ -267,8 +269,8 @@ int main(int argc,char** argv) {
             framebuffer.Attachments={FramebufferTextureFormat::RGBA8,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::Depth};
             target=Framebuffer::Create(framebuffer);
             Check(Renderer::GetSettings().TextureSlots==(requests.TextureSlots == 4 ? 4u : reduced ? 2u : std::min(32u,Renderer::GetCapabilities().MaxTextureSlots)),"Application renderer settings mismatch");
-            if(argc==3 && (std::string(argv[1])=="--ggx-ms" || (std::string(argv[1])=="--local-lights" || std::string(argv[1])=="--shadows"))) {
-                (std::string(argv[1])=="--shadows"?DirectionalShadowQualification:std::string(argv[1])=="--local-lights"?LocalLightingQualification:MultiscatteringQualification)(std::filesystem::absolute(argv[2]), [](const Ref<Framebuffer>& framebuffer) {
+            if(spotShadows || (argc==3 && (std::string(argv[1])=="--ggx-ms" || (std::string(argv[1])=="--local-lights" || std::string(argv[1])=="--shadows")))) {
+                (spotShadows?SpotShadowQualification:std::string(argv[1])=="--shadows"?DirectionalShadowQualification:std::string(argv[1])=="--local-lights"?LocalLightingQualification:MultiscatteringQualification)(std::filesystem::absolute(argv[2]), [](const Ref<Framebuffer>& framebuffer) {
                     const auto& spec = framebuffer->GetSpecification();
                     auto result = CreateRef<FramebufferReadback>(); result->Width=spec.Width; result->Height=spec.Height;
                     result->Color.resize(size_t(spec.Width)*spec.Height);result->Entity.resize(result->Color.size());result->Depth.resize(result->Color.size());

@@ -35,7 +35,7 @@ struct MetalLocalLightPass
     std::shared_ptr<LocalLightingMetrics> Timing;
     uint64_t Frequency=0;
     size_t RowBytes=0;
-    bool Resolved=false, Tiled=false, Shadowed=false;
+    bool Resolved=false, Tiled=false, Shadowed=false, SpotShadowed=false;
     void Resolve();
 };
 struct MetalRenderer2DDraw
@@ -69,7 +69,7 @@ struct MetalRenderer2DFrame
     NS::SharedPtr<MTL4::ArgumentTable> PresentationArguments;
     float Exposure = 0;
     std::shared_ptr<MetalRenderer2DFrame> AOSource;
-    std::shared_ptr<MetalRenderer2DFrame> ShadowSource;
+    std::shared_ptr<MetalRenderer2DFrame> ShadowSource, SpotShadowSource;
     std::shared_ptr<MetalAOPass> AO;
     std::shared_ptr<MetalTemporalPass> Temporal;
     std::shared_ptr<MetalRenderer2DFrame> TemporalSource, MotionSource;

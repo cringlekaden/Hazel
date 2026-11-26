@@ -18,7 +18,7 @@ namespace
 {
 using namespace Renderer3DUniforms;
 Ref<Shader> shader, skyShader, depthShader, motionShader;
-Ref<UniformBuffer> motionBuffer, shadowBuffer;
+Ref<UniformBuffer> motionBuffer, shadowBuffer, spotShadowBuffer;
 Ref<UniformBuffer> environmentBuffer;
 Ref<VertexArray> skyTriangle;
 Ref<EnvironmentResources> emptyEnvironment;
@@ -38,9 +38,9 @@ void EnsureResources()
     if (shader)
         return;
     const auto &caps = RenderCommand::GetCapabilities();
-    if (caps.MaxTextureSlots < 11 || caps.MaxUniformBindings < 8 ||
+    if (caps.MaxTextureSlots < 12 || caps.MaxUniformBindings < 8 ||
         caps.MaxUniformBlockBytes < sizeof(LocalLightData) || caps.MaxVertexAttributes < 5)
-        throw std::runtime_error("PBR/IBL/CSM needs eleven texture slots, five vertex attributes, eight "
+        throw std::runtime_error("PBR/IBL/CSM needs twelve texture slots, five vertex attributes, eight "
                                  "uniform bindings and a 15376-byte uniform block");
     auto candidate = Shader::Create(
         (Hazel::Resources::Get().Root / "shaders/ForwardPBR.glsl").generic_u8string());
@@ -93,6 +93,7 @@ void Renderer3D::Shutdown()
     white.reset();
     materialBuffer.reset();
     localLightBuffer.reset();
+    spotShadowBuffer.reset();
     objectBuffer.reset();
     cameraBuffer.reset();
     shader.reset();
@@ -159,6 +160,10 @@ void Renderer3D::Render(const SceneSubmission &frame, bool drawBackground, bool 
             if(!shadowBuffer)shadowBuffer=UniformBuffer::Create(sizeof(DirectionalShadowData),5);
             if(frame.Shadows.Range.z<.5f && RendererAPI::GetAPI()==RendererAPI::API::OpenGL)white->Bind(10);
             shadowBuffer->Bind();shadowBuffer->SetData(&frame.Shadows,sizeof(frame.Shadows));
+            if (!spotShadowBuffer) spotShadowBuffer = UniformBuffer::Create(sizeof(SpotShadowData), 1);
+            if (!frame.SpotShadows.LightIndices.x && RendererAPI::GetAPI() == RendererAPI::API::OpenGL) white->Bind(11);
+            spotShadowBuffer->Bind();
+            spotShadowBuffer->SetData(&frame.SpotShadows, sizeof(frame.SpotShadows));
             if (frame.LocalLights.size() > MaxLocalLights)
                 throw std::runtime_error("Submission exceeds 320 local lights; no lights were truncated");
             const auto uploadStart=std::chrono::steady_clock::now();
@@ -205,6 +210,7 @@ void Renderer3D::Render(const SceneSubmission &frame, bool drawBackground, bool 
             shader->SetInt("u_Specular", 6);
             shader->SetInt("u_BRDF", 7);
             shader->SetInt("u_ShadowAtlas", 10);
+            shader->SetInt("u_SpotShadowAtlas", 11);
         }
         for (auto &draw : frame.Meshes)
         {

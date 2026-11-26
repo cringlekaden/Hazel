@@ -250,9 +250,13 @@ void ImportWorkflowUpdate()
         Check(owner.UndoRedo(false)&&point.GetComponent<PointLightComponent>().Range==10&&owner.UndoRedo(true)&&point.GetComponent<PointLightComponent>().Range==7,"Point property Undo/Redo failed");
         Check(panel.AddLocalLight(true),"Native spot light creation failed");
         auto spot=panel.GetSelectedEntity();before=UIEditValues::Capture(spot);proposed=before;
-        proposed.Spot->InnerCone=.2f;proposed.Spot->OuterCone=.8f;proposed.Transform->Translation={1,2,3};
+        proposed.Spot->InnerCone=.2f;proposed.Spot->OuterCone=.8f;
+        proposed.Spot->CastShadows=true;proposed.Spot->ShadowResolution=1024;proposed.Transform->Translation={1,2,3};
         Check(inspector.Edit(*scene,&owner.m_SceneHistory,spot.GetUUID(),"Spot light",before,proposed,edit,0),"Spot light Inspector edit failed");
-        Check(owner.UndoRedo(false)&&spot.GetComponent<SpotLightComponent>().OuterCone!=.8f&&owner.UndoRedo(true)&&spot.GetComponent<SpotLightComponent>().OuterCone==.8f,"Spot property Undo/Redo failed");
+        const auto& spotLight = spot.GetComponent<SpotLightComponent>();
+        Check(owner.UndoRedo(false) && spotLight.OuterCone != .8f && !spotLight.CastShadows &&
+            spotLight.ShadowResolution == 512 && owner.UndoRedo(true) && spotLight.OuterCone == .8f &&
+            spotLight.CastShadows && spotLight.ShadowResolution == 1024, "Spot property Undo/Redo failed");
         std::cout<<"PASS native point/spot creation, Inspector controls, exact property Undo/Redo\n";
         auto state = SceneSerializer(scene).CaptureAuthoredState();
         Check(m_Editor.SaveScene() && m_Editor.OpenScene(m_Editor.m_EditorScenePath) &&
