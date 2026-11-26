@@ -1352,7 +1352,16 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         PropertyUI::DragFloat("range", "Range", light.Range, .1f, .01f, 10000);
         ImGui::TextWrapped("Linear RGB, renderer-relative intensity at unit distance. Range is in world units and ignores transform scale.");
     };
-    DrawUIComponent<PointLightComponent>("Point Light", entity, m_Sections, m_RestoreSections, localControls);
+    DrawUIComponent<PointLightComponent>("Point Light", entity, m_Sections, m_RestoreSections, [&](auto &light) {
+        localControls(light);
+        PropertyUI::Checkbox("cast-shadows", "Cast shadows", light.CastShadows);
+        if (light.CastShadows) {
+            int resolution = light.ShadowResolution == 256 ? 0 : 1;
+            if (PropertyUI::Combo("shadow-resolution", "Shadow resolution per face", resolution, "256\0" "512\0"))
+                light.ShadowResolution = 256u << resolution;
+            ImGui::TextWrapped("The first enabled, emitting point light with shadows gets a map, ordered by entity ID.");
+        }
+    });
     DrawUIComponent<SpotLightComponent>("Spot Light", entity, m_Sections, m_RestoreSections, [&](auto &light) {
         localControls(light);
         float inner=glm::degrees(light.InnerCone),outer=glm::degrees(light.OuterCone);

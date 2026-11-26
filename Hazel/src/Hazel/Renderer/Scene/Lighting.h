@@ -22,7 +22,7 @@ struct LightParameters
 struct DirectionalLight : LightParameters {};
 // Shared portable storage bound: 16 + 320 * 48 fits the GL 4.1 16 KiB UBO guarantee.
 inline constexpr unsigned MaxLocalLights = 320;
-struct PointLight : LightParameters
+struct LocalLight : LightParameters
 {
     float Range = 10;
     void Validate() const
@@ -32,7 +32,18 @@ struct PointLight : LightParameters
             throw std::runtime_error("Local light range requires [.01,10000] world units");
     }
 };
-struct SpotLight : PointLight
+struct PointLight : LocalLight
+{
+    bool CastShadows = false;
+    unsigned ShadowResolution = 256;
+    void Validate() const
+    {
+        LocalLight::Validate();
+        if (ShadowResolution != 256 && ShadowResolution != 512)
+            throw std::runtime_error("Point shadow resolution requires 256 or 512");
+    }
+};
+struct SpotLight : LocalLight
 {
     // Half angles in radians. A strictly positive penumbra avoids undefined smoothstep.
     float InnerCone = .34906585f, OuterCone = .52359878f;
@@ -45,7 +56,7 @@ struct SpotLight : PointLight
     }
     void Validate() const
     {
-        PointLight::Validate();
+        LocalLight::Validate();
         ValidateShadowResolution(ShadowResolution);
         if (!std::isfinite(InnerCone) || !std::isfinite(OuterCone) ||
             InnerCone < 0 || OuterCone > 1.553343f || OuterCone - InnerCone < .001f)

@@ -3,6 +3,7 @@
 #include "Hazel/Renderer/Drawing/Renderer3DUniforms.h"
 #include "Hazel/Renderer/Scene/DirectionalShadows.h"
 #include "Hazel/Renderer/Scene/SpotShadows.h"
+#include "Hazel/Renderer/Scene/PointShadows.h"
 #include <shaderc/shaderc.hpp>
 #include <spirv-tools/libspirv.hpp>
 #include <spirv_cross/spirv_msl.hpp>
@@ -32,6 +33,7 @@ Layout CPUContract(const std::string& name)
     if (name == "DirectionalShadows") return {sizeof(DirectionalShadowData), {offsetof(DirectionalShadowData,VP), offsetof(DirectionalShadowData,Splits),
         offsetof(DirectionalShadowData,Eye), offsetof(DirectionalShadowData,Forward), offsetof(DirectionalShadowData,Parameters),
         offsetof(DirectionalShadowData,Range), offsetof(DirectionalShadowData,TexelDepth)}};
+    if (name == "PointShadows") return {sizeof(PointShadowData), {offsetof(PointShadowData, Parameters)}};
     if (name == "SpotShadows") return {sizeof(SpotShadowData), {offsetof(SpotShadowData, VP),
         offsetof(SpotShadowData, Tiles), offsetof(SpotShadowData, LightIndices)}};
     if (name == "LocalLights") return {sizeof(Renderer3DUniforms::LocalLightData), {0, 16}};

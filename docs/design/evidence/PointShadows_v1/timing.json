@@ -1,0 +1,103 @@
+{
+  "config": "Release",
+  "validation": false,
+  "head": "58fd90c3ef02177a7e16647531f597ac8fb54f38",
+  "sourceSHA256": "2e36e1a02bc491896c01f6f402ec1248d0b0ea3f1dc4bbfa8b91d2f6e8258ea4",
+  "artifactSHA256": "1f5471b9727abdc9fceec0c4d5d319f9ea19e5d6ae5e70e5e07ddbfef4cb46de",
+  "cases": {
+    "metal": {
+      "command": [
+        "<repo>/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+        "<repo>/Hazel/Resources",
+        "<repo>/build/point-timing/metal",
+        "--point-shadows"
+      ],
+      "exitCode": 0,
+      "summary": [
+        "POINT maxDepthError=2.28882e-08",
+        "POINT_RESOURCES peak=101038488 attachments=31039744 final=0"
+      ]
+    },
+    "metal-baseline": {
+      "command": [
+        "<repo>/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+        "<repo>/build/point-timing/baseline-resources",
+        "<repo>/build/point-timing/metal-baseline",
+        "--point-shadows"
+      ],
+      "exitCode": 0,
+      "summary": [
+        "POINT maxDepthError=2.28882e-08",
+        "POINT_RESOURCES peak=101038488 attachments=31039744 final=0"
+      ]
+    }
+  },
+  "status": "MEASURED",
+  "benchmark": {
+    "width": 1280,
+    "height": 720,
+    "warmups": 5,
+    "samples": 15,
+    "cases": {
+      "256": {
+        "atlasBytes": 1572864,
+        "cull_ms": {
+          "median": 0.0177917,
+          "p95": 0.0183333
+        },
+        "point_ms": {
+          "median": 0.0140833,
+          "p95": 0.548667
+        },
+        "forward_ms": {
+          "median": 5.77817,
+          "p95": 6.11275
+        },
+        "controlForward": {
+          "median": 5.33675,
+          "p95": 5.50908
+        },
+        "pairedForwardDelta": {
+          "median": 0.43599999999999994,
+          "p95": 0.7930000000000001
+        }
+      },
+      "512": {
+        "atlasBytes": 6291456,
+        "cull_ms": {
+          "median": 0.01725,
+          "p95": 0.0177917
+        },
+        "point_ms": {
+          "median": 0.0242083,
+          "p95": 0.0297083
+        },
+        "forward_ms": {
+          "median": 5.75796,
+          "p95": 5.96854
+        },
+        "controlForward": {
+          "median": 5.35617,
+          "p95": 5.5845
+        },
+        "pairedForwardDelta": {
+          "median": 0.3999600000000001,
+          "p95": 0.6147900000000002
+        }
+      }
+    }
+  },
+  "unshadowedBaseline": {
+    "revision": "58fd90c3ef02177a7e16647531f597ac8fb54f38",
+    "cases": {
+      "256": {
+        "median": 5.20183,
+        "p95": 5.64179
+      },
+      "512": {
+        "median": 5.20071,
+        "p95": 5.49592
+      }
+    }
+  }
+}

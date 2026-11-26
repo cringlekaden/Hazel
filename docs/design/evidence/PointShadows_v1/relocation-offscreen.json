@@ -1,0 +1,21 @@
+{
+  "config": "Release",
+  "validation": true,
+  "head": "58fd90c3ef02177a7e16647531f597ac8fb54f38",
+  "sourceSHA256": "2e36e1a02bc491896c01f6f402ec1248d0b0ea3f1dc4bbfa8b91d2f6e8258ea4",
+  "artifactSHA256": "1f5471b9727abdc9fceec0c4d5d319f9ea19e5d6ae5e70e5e07ddbfef4cb46de",
+  "cases": {
+    "Nutella-inventory": {
+      "exitCode": 0,
+      "artifacts": 16
+    },
+    "metal-source-free": {
+      "exitCode": 0
+    },
+    "Hazelnut-inventory": {
+      "exitCode": 0,
+      "artifacts": 16
+    }
+  },
+  "status": "PASS offscreen relocation"
+}

@@ -18,7 +18,7 @@ namespace
 {
 using namespace Renderer3DUniforms;
 Ref<Shader> shader, skyShader, depthShader, motionShader;
-Ref<UniformBuffer> motionBuffer, shadowBuffer, spotShadowBuffer;
+Ref<UniformBuffer> motionBuffer, shadowBuffer, spotShadowBuffer, pointShadowBuffer;
 Ref<UniformBuffer> environmentBuffer;
 Ref<VertexArray> skyTriangle;
 Ref<EnvironmentResources> emptyEnvironment;
@@ -38,9 +38,9 @@ void EnsureResources()
     if (shader)
         return;
     const auto &caps = RenderCommand::GetCapabilities();
-    if (caps.MaxTextureSlots < 12 || caps.MaxUniformBindings < 8 ||
+    if (caps.MaxTextureSlots < 13 || caps.MaxUniformBindings < 8 ||
         caps.MaxUniformBlockBytes < sizeof(LocalLightData) || caps.MaxVertexAttributes < 5)
-        throw std::runtime_error("PBR/IBL/CSM needs twelve texture slots, five vertex attributes, eight "
+        throw std::runtime_error("PBR/IBL/CSM needs thirteen texture slots, five vertex attributes, eight "
                                  "uniform bindings and a 15376-byte uniform block");
     auto candidate = Shader::Create(
         (Hazel::Resources::Get().Root / "shaders/ForwardPBR.glsl").generic_u8string());
@@ -94,6 +94,7 @@ void Renderer3D::Shutdown()
     materialBuffer.reset();
     localLightBuffer.reset();
     spotShadowBuffer.reset();
+    pointShadowBuffer.reset();
     objectBuffer.reset();
     cameraBuffer.reset();
     shader.reset();
@@ -164,6 +165,10 @@ void Renderer3D::Render(const SceneSubmission &frame, bool drawBackground, bool 
             if (!frame.SpotShadows.LightIndices.x && RendererAPI::GetAPI() == RendererAPI::API::OpenGL) white->Bind(11);
             spotShadowBuffer->Bind();
             spotShadowBuffer->SetData(&frame.SpotShadows, sizeof(frame.SpotShadows));
+            if (!pointShadowBuffer) pointShadowBuffer = UniformBuffer::Create(sizeof(PointShadowData), 0);
+            if (!frame.PointShadows.Parameters.x && RendererAPI::GetAPI() == RendererAPI::API::OpenGL) white->Bind(12);
+            pointShadowBuffer->Bind();
+            pointShadowBuffer->SetData(&frame.PointShadows, sizeof(frame.PointShadows));
             if (frame.LocalLights.size() > MaxLocalLights)
                 throw std::runtime_error("Submission exceeds 320 local lights; no lights were truncated");
             const auto uploadStart=std::chrono::steady_clock::now();
@@ -175,7 +180,7 @@ void Renderer3D::Render(const SceneSubmission &frame, bool drawBackground, bool 
             locals.Meta.w = float(frame.LocalLightTileSize);
             for (size_t i=0;i<frame.LocalLights.size();++i) {
                 const auto &light=frame.LocalLights[i];
-                PointLight validation;validation.Range=light.Range;validation.Validate();
+                LocalLight validation;validation.Range=light.Range;validation.Validate();
                 for (int axis=0;axis<3;++axis)
                     if (!std::isfinite(light.Position[axis]) || !std::isfinite(light.Incident[axis]) ||
                         light.Incident[axis]<0 || light.Incident[axis]>1000)
@@ -211,6 +216,7 @@ void Renderer3D::Render(const SceneSubmission &frame, bool drawBackground, bool 
             shader->SetInt("u_BRDF", 7);
             shader->SetInt("u_ShadowAtlas", 10);
             shader->SetInt("u_SpotShadowAtlas", 11);
+            shader->SetInt("u_PointShadowAtlas", 12);
         }
         for (auto &draw : frame.Meshes)
         {

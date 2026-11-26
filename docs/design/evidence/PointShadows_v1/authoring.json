@@ -1,0 +1,16 @@
+{
+  "Debug/SceneFoundationSmoke": [
+    "PASS: point/spot schema, round trip, copy, duplicate, prefab, transforms and validation"
+  ],
+  "Debug/EditorSmoke": [
+    "PASS point/spot Inspector history, exact Undo/Redo and invalid-cone atomic rejection",
+    "PASS native point/spot creation, Inspector controls, exact property Undo/Redo"
+  ],
+  "Release/SceneFoundationSmoke": [
+    "PASS: point/spot schema, round trip, copy, duplicate, prefab, transforms and validation"
+  ],
+  "Release/EditorSmoke": [
+    "PASS point/spot Inspector history, exact Undo/Redo and invalid-cone atomic rejection",
+    "PASS native point/spot creation, Inspector controls, exact property Undo/Redo"
+  ]
+}

@@ -490,7 +490,7 @@ void OpenGLFramebuffer::PrepareShadowDepth(const Ref<Framebuffer>& depth, Shadow
        !source->m_DepthAttachment || source->m_Specification.Samples!=1)
         throw std::logic_error("Shadows require a distinct depth-only producer and bound lighting view");
     GLint active=0;glGetIntegerv(GL_ACTIVE_TEXTURE,&active);
-    const GLuint binding = kind == ShadowMapKind::Directional ? 10 : 11;
+    const GLuint binding = kind == ShadowMapKind::Directional ? 10 : kind == ShadowMapKind::Spot ? 11 : 12;
     glActiveTexture(GL_TEXTURE0 + binding);
     glBindTexture(GL_TEXTURE_2D, source->m_DepthAttachment);
     glBindSampler(binding, 0);

@@ -82,16 +82,16 @@ authored normals provide continuous direct-light transitions; IBL retains its
 geometric reflection-horizon protection. See the
 [local-light gallery](examples/RenderingReference/README.md#locallights_v1-authored-point-and-spot-gallery)
 and [qualification status](docs/design/local-lighting.md). The owner accepted the
-local-light terminator correction at `c36fd1a`. Up to four spots can cast
-perspective shadows. See the [spotlight study](examples/RenderingReference/README.md#spotlight-shadow-study)
-and [qualification record](docs/design/spotlight-shadows.md). Point-light shadows
-remain deferred.
+local-light terminator correction at `c36fd1a`. Up to four spotlights and
+one point light per view can cast shadows. See the
+[spotlight design record](docs/design/spotlight-shadows.md) and the
+[point and spot shadow study](examples/RenderingReference/README.md#point-and-spot-shadow-study).
 
 An opt-in [directional CSM foundation](docs/design/directional-shadows.md) is under
 qualification, with a [separate shadow study](examples/RenderingReference/README.md#directional-shadow-study).
 Cascade settings include 2048 (Ultra); transient inspection separates cascade
 visibility, overlap and receiver bias. See the linked record for measured limits.
-Production qualification and owner visual acceptance are pending.
+The owner accepted the CSM and spotlight appearance for continued development. Broader qualification remains open.
 
 The development branch also includes [Metal XeGTAO ambient occlusion](docs/design/xegtao.md)
 for diffuse IBL, with editor controls and a separate contact-study scene. Functional

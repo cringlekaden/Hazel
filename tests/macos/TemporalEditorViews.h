@@ -109,13 +109,20 @@ public:
     Hazel::SceneRenderView View;
     Hazel::NavigationCamera Camera{30,1600.f/900.f,.1f,1000};
     unsigned Frames=0;
+    bool PointShadows=false;
+    explicit ShadowEditorSettings(bool pointShadows) : PointShadows(pointShadows) {}
     void OnAttach() override {
         using namespace Hazel;
-        Project=Hazel::Project::LoadCandidate(std::filesystem::absolute("examples/RenderingReference/RenderingReference-Shadows.hproj"));
+        Project=Hazel::Project::LoadCandidate(std::filesystem::absolute(PointShadows
+            ? "examples/RenderingReference/RenderingReference-PointShadows.hproj"
+            : "examples/RenderingReference/RenderingReference-Shadows.hproj"));
         Scene=Project->LoadScene(Project->GetConfig().StartScene);Scene->OnViewportResize(1600,900);
         Scene->SetUIFramebufferSize({3200,1800});Camera.SetViewportSize(1600,900);
         Scene->Presentation().Shadows.Resolution=2048;
-        Camera.RestoreOrbit({-20.0864868f,14.6694498f,-25.6105156f},.609317422f,-4.08032942f,10);
+        if (PointShadows) {
+            const auto world = Scene->GetWorldTransform(Scene->GetPrimaryCameraEntity());
+            Camera.RestoreWorldPose(glm::vec3(world[3]), glm::quat_cast(glm::mat3(world)));
+        } else Camera.RestoreOrbit({-20.0864868f,14.6694498f,-25.6105156f},.609317422f,-4.08032942f,10);
         auto radicalInverse=[](unsigned index,unsigned base) {
             double value=0,weight=1;while(index){weight/=base;value+=weight*(index%base);index/=base;}return value;
         };
@@ -140,9 +147,30 @@ public:
         using namespace Hazel;++Frames;
         Scene->Presentation().AmbientOcclusion.Enabled=Frames>=4 && (Frames<48 || Frames>=52);
         Scene->Presentation().TemporalAA=Frames>=8 && (Frames<40 || Frames>=44);
+        if (PointShadows) {
+            auto light = Scene->GetEntityByUUID(2);
+            Check(bool(light) && light.HasComponent<PointLightComponent>(), "Point editor fixture lost light");
+            auto& point = light.GetComponent<PointLightComponent>();
+            point.CastShadows = Frames < 32 || Frames >= 36;
+            point.ShadowResolution = Frames < 54 ? 512 : 256;
+        }
         Source->Bind();Source->ClearEditor(Scene->Presentation().Background);Source->ClearAttachment(1,-1);
         Scene->OnUpdateEditor(Timestep(0),Camera,&View,Source);
         if(!Scene->RenderError().empty())throw std::runtime_error("Retina shadow editor frame "+std::to_string(Frames)+": "+Scene->RenderError());
+        if (PointShadows) {
+            const bool enabled = Frames < 32 || Frames >= 36;
+            Check(bool(View.PointShadowDepth) == enabled && View.SpotShadowDepth,
+                "3200x1800 point shadow atlas admission differed from settings");
+            // Initial device attachment replaces the view's publisher. Check
+            // the texture itself here, including the first frame.
+            const unsigned side = Frames < 54 ? 512u : 256u;
+            if (enabled) {
+                const auto& atlas = View.PointShadowDepth->GetSpecification();
+                Check(atlas.Width == 3 * side && atlas.Height == 2 * side, "Point atlas extent differs from settings");
+            }
+            if (Frames > 1) Check(View.LocalMetrics->PointShadowBytes ==
+                (enabled ? 6u * side * side * sizeof(float) : 0u), "Point atlas memory metric differs from storage");
+        }
         Renderer2D::BeginScene(Camera);Renderer2D::EndScene(); // Actual editor overlay entry contract.
         Source->Unbind();Source->EncodeOutput(Output);
         if(Frames>=60 && Backend().Observe()->Snapshot().CompletedPresented>=20)Application::Get().GetWindow().RequestClose();
@@ -158,12 +186,12 @@ public:
         if(Source)Source->Cancel();View.Reset();Source.reset();Output.reset();Scene.reset();Project.reset();
     }
 };
-static int ShadowEditorSettingsProof(const std::filesystem::path& output,const std::filesystem::path& resources) {
+static int ShadowEditorSettingsProof(const std::filesystem::path& output,const std::filesystem::path& resources, bool pointShadows=false) {
     using namespace Hazel;Log::Init();std::filesystem::create_directories(output);
     auto spec=Specification(output);spec.Name="Hazel shadow settings regression";spec.EnableImGui=true;
     spec.RendererMode=RendererInitialization::Drawing;spec.Resources.Root=resources;
     std::shared_ptr<MetalProofObserver> observer;
-    {Application app(spec);observer=Backend().Observe();app.PushLayer(CreateScope<ShadowEditorSettings>());
+    {Application app(spec);observer=Backend().Observe();app.PushLayer(CreateScope<ShadowEditorSettings>(pointShadows));
         auto start=Clock::now();app.SetBackgroundTick([&]{Check(Clock::now()-start<std::chrono::seconds(120),"Shadow editor settings timeout");});app.Run();}
     const auto proof=observer->Snapshot();
     std::cout<<"SHADOW_EDITOR presented="<<proof.CompletedPresented<<" errors="<<proof.Errors<<" resources="<<proof.ResourceBytes
@@ -171,5 +199,6 @@ static int ShadowEditorSettingsProof(const std::filesystem::path& output,const s
         <<" peak_attachments="<<proof.PeakAttachmentBytes<<'\n';
     Check(proof.CompletedPresented>=20 && proof.Errors==0 && proof.ResourceBytes==0 && proof.AttachmentGenerations==0,"Shadow editor presentation/retirement failed");
     std::cout<<"PASS 3200x1800 editor shadow/AO/TAA toggles and overlays; positive presentations="<<proof.CompletedPresented
-        <<" peak_resources="<<proof.PeakResourceBytes<<" peak_attachments="<<proof.PeakAttachmentBytes<<'\n';return 0;
+        <<" peak_resources="<<proof.PeakResourceBytes<<" peak_attachments="<<proof.PeakAttachmentBytes<<" backing_scale="<<proof.BackingScale
+        <<" point="<<pointShadows<<'\n';return 0;
 }

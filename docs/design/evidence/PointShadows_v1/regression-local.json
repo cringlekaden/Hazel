@@ -1,0 +1,41 @@
+{
+  "smoothTerminator": true,
+  "terminator": false,
+  "head": "58fd90c3ef02177a7e16647531f597ac8fb54f38",
+  "configuration": "Release",
+  "benchmark": false,
+  "sourceSHA256": "2e36e1a02bc491896c01f6f402ec1248d0b0ea3f1dc4bbfa8b91d2f6e8258ea4",
+  "commands": {
+    "metal": [
+      "<repo>/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "<repo>/Hazel/Resources",
+      "<repo>/build/point-regression-local/metal",
+      "--local-lights"
+    ],
+    "opengl": [
+      "<repo>/bin/Release-macos-arm64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke",
+      "--local-lights",
+      "<repo>/build/point-regression-local/opengl"
+    ]
+  },
+  "backends": {
+    "metal": {
+      "cases": 40,
+      "maximumFP64Error": 1.02809119742e-05,
+      "maximumOrderAndCullingError": 1.23977661133e-05,
+      "maximumOverflowTiles": 20
+    },
+    "opengl": {
+      "cases": 40,
+      "maximumFP64Error": 9.84876134069e-06,
+      "maximumOrderAndCullingError": 1.33514404297e-05,
+      "maximumOverflowTiles": 0
+    }
+  },
+  "showcaseParity": {
+    "idMismatches": 0,
+    "maxDepth": 1.7881393432617188e-07,
+    "maxRGB": 9.074807167053223e-06
+  },
+  "status": "PASS scoped numerical/culling/parity; full milestone gates are separate"
+}

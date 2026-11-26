@@ -259,7 +259,7 @@ void MetalShader::Unbind() const {}
 void MetalShader::SetInt(const std::string& name, int value)
 {
     static const std::map<std::string, int> bindings = {{"u_Base",0},{"u_MetalRough",1},{"u_Normal",2},{"u_Occlusion",3},
-        {"u_ShadowAtlas",10},{"u_SpotShadowAtlas",11},{"u_Emissive",4},{"u_Irradiance",5},{"u_Specular",6},{"u_BRDF",7},{"u_Sky",5}};
+        {"u_ShadowAtlas",10},{"u_SpotShadowAtlas",11},{"u_PointShadowAtlas",12},{"u_Emissive",4},{"u_Irradiance",5},{"u_Specular",6},{"u_BRDF",7},{"u_Sky",5}};
     auto found = bindings.find(name);
     if (found == bindings.end() || found->second != value) throw std::invalid_argument("Metal loose uniform unavailable or sampler differs from reflected GLSL binding");
 }

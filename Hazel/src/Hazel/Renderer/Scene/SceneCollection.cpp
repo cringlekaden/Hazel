@@ -94,12 +94,12 @@ SceneSubmission SceneRenderer::Collect(Scene &scene, const SceneCameraView &came
             submitted.Position = LightPosition(world);
             submitted.Incident = light.Color * light.Intensity;
             submitted.Range = light.Range;
+            submitted.CastShadows = light.CastShadows;
+            submitted.ShadowResolution = light.ShadowResolution;
             if constexpr (std::is_same_v<T, SpotLightComponent>) {
                 submitted.Direction = DirectionalTravel(world);
                 submitted.InnerCos = std::cos(light.InnerCone);
                 submitted.OuterCos = std::cos(light.OuterCone);
-                submitted.CastShadows = light.CastShadows;
-                submitted.ShadowResolution = light.ShadowResolution;
                 submitted.ShadowUp = glm::vec3(world[1]);
             }
             frame.LocalLights.push_back(submitted);

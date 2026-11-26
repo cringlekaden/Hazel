@@ -1,0 +1,347 @@
+{
+  "config": "Release",
+  "validation": true,
+  "head": "58fd90c3ef02177a7e16647531f597ac8fb54f38",
+  "sourceSHA256": "2e36e1a02bc491896c01f6f402ec1248d0b0ea3f1dc4bbfa8b91d2f6e8258ea4",
+  "artifactSHA256": "1f5471b9727abdc9fceec0c4d5d319f9ea19e5d6ae5e70e5e07ddbfef4cb46de",
+  "cases": {
+    "metal": {
+      "command": [
+        "<repo>/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+        "<repo>/Hazel/Resources",
+        "<repo>/build/point-qual-release-strict/metal",
+        "--point-shadows"
+      ],
+      "exitCode": 0,
+      "summary": [
+        "POINT maxDepthError=2.28882e-08",
+        "POINT -1_-1_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=468 seamBlocked=217",
+        "POINT 0_-1_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=384 seamBlocked=282",
+        "POINT 1_-1_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=459 seamBlocked=226",
+        "POINT -1_0_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=435 seamBlocked=213",
+        "POINT 0_0_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=0 seamBlocked=0",
+        "POINT 1_0_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=435 seamBlocked=213",
+        "POINT -1_1_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=485 seamBlocked=167",
+        "POINT 0_1_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=384 seamBlocked=282",
+        "POINT 1_1_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=485 seamBlocked=167",
+        "POINT -1_-1_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=328 seamBlocked=135",
+        "POINT 0_-1_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=0 seamBlocked=0",
+        "POINT 1_-1_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=298 seamBlocked=162",
+        "POINT -1_0_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=0 seamBlocked=0",
+        "POINT 1_0_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=0 seamBlocked=0",
+        "POINT -1_1_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=298 seamBlocked=162",
+        "POINT 0_1_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=0 seamBlocked=0",
+        "POINT 1_1_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=328 seamBlocked=135",
+        "POINT -1_-1_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=485 seamBlocked=167",
+        "POINT 0_-1_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=384 seamBlocked=282",
+        "POINT 1_-1_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=485 seamBlocked=167",
+        "POINT -1_0_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=435 seamBlocked=213",
+        "POINT 0_0_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=0 seamBlocked=0",
+        "POINT 1_0_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=435 seamBlocked=213",
+        "POINT -1_1_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=459 seamBlocked=226",
+        "POINT 0_1_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=384 seamBlocked=282",
+        "POINT 1_1_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=468 seamBlocked=217",
+        "POINT orientations=26 referenceSamples=1064518",
+        "POINT mask revealed=278 retained=7318",
+        "POINT contactSamples=63 grazingError=0",
+        "PASS point projection, face interiors and seams, MASK, clipping, light exhaustion, culling and motion",
+        "POINT_RESOURCES peak=60818024 attachments=36299008 final=0"
+      ]
+    },
+    "point-shadow-lifetime": {
+      "command": [
+        "<repo>/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+        "<repo>/Hazel/Resources",
+        "<repo>/build/point-qual-release-strict/point-shadow-lifetime",
+        "--point-shadow-lifetime"
+      ],
+      "exitCode": 0,
+      "summary": [
+        "PASS lit moving-shadow serialized/three-slot equivalence, shared atlas storage, resolution replacement, busy cancellation and view destruction/retirement spot=0 point=1 TAA=0",
+        "POINT_RESOURCES peak=9771312 attachments=14852352 final=0"
+      ]
+    },
+    "point-shadow-taa-lifetime": {
+      "command": [
+        "<repo>/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+        "<repo>/Hazel/Resources",
+        "<repo>/build/point-qual-release-strict/point-shadow-taa-lifetime",
+        "--point-shadow-taa-lifetime"
+      ],
+      "exitCode": 0,
+      "summary": [
+        "PASS lit moving-shadow serialized/three-slot equivalence, shared atlas storage, resolution replacement, busy cancellation and view destruction/retirement spot=0 point=1 TAA=1",
+        "POINT_RESOURCES peak=10335064 attachments=15409408 final=0"
+      ]
+    },
+    "opengl": {
+      "command": [
+        "<repo>/bin/Release-macos-arm64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke",
+        "--point-shadows",
+        "<repo>/build/point-qual-release-strict/opengl"
+      ],
+      "exitCode": 0,
+      "summary": [
+        "Renderer: Apple M4; Version: 4.1 Metal - 91.7",
+        "POINT maxDepthError=2.28882e-08",
+        "POINT -1_-1_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=468 seamBlocked=217",
+        "POINT 0_-1_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=384 seamBlocked=282",
+        "POINT 1_-1_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=459 seamBlocked=226",
+        "POINT -1_0_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=435 seamBlocked=213",
+        "POINT 0_0_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=0 seamBlocked=0",
+        "POINT 1_0_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=435 seamBlocked=213",
+        "POINT -1_1_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=485 seamBlocked=167",
+        "POINT 0_1_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=384 seamBlocked=282",
+        "POINT 1_1_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=485 seamBlocked=167",
+        "POINT -1_-1_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=328 seamBlocked=135",
+        "POINT 0_-1_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=0 seamBlocked=0",
+        "POINT 1_-1_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=298 seamBlocked=162",
+        "POINT -1_0_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=0 seamBlocked=0",
+        "POINT 1_0_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=0 seamBlocked=0",
+        "POINT -1_1_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=298 seamBlocked=162",
+        "POINT 0_1_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=0 seamBlocked=0",
+        "POINT 1_1_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=328 seamBlocked=135",
+        "POINT -1_-1_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=485 seamBlocked=167",
+        "POINT 0_-1_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=384 seamBlocked=282",
+        "POINT 1_-1_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=485 seamBlocked=167",
+        "POINT -1_0_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=435 seamBlocked=213",
+        "POINT 0_0_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=0 seamBlocked=0",
+        "POINT 1_0_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=435 seamBlocked=213",
+        "POINT -1_1_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=459 seamBlocked=226",
+        "POINT 0_1_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=384 seamBlocked=282",
+        "POINT 1_1_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=468 seamBlocked=217",
+        "POINT orientations=26 referenceSamples=1064518",
+        "POINT mask revealed=278 retained=7318",
+        "POINT contactSamples=63 grazingError=2.98023e-08",
+        "PASS point projection, face interiors and seams, MASK, clipping, light exhaustion, culling and motion"
+      ]
+    }
+  },
+  "status": "PASS",
+  "parity": {
+    "contact": {
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 4.693865776062012e-06,
+      "p99RGB": 1.4901161193847656e-07,
+      "pixelsAbove003": 0
+    },
+    "face--1_-1_-1": {
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 1.7508864402770996e-06,
+      "p99RGB": 3.725290298461914e-08,
+      "pixelsAbove003": 0
+    },
+    "face--1_-1_0": {
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 1.6763806343078613e-06,
+      "p99RGB": 3.725290298461914e-08,
+      "pixelsAbove003": 0
+    },
+    "face--1_-1_1": {
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 1.996755599975586e-06,
+      "p99RGB": 3.725290298461914e-08,
+      "pixelsAbove003": 0
+    },
+    "face--1_0_-1": {
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 1.4416873455047607e-06,
+      "p99RGB": 3.725290298461914e-08,
+      "pixelsAbove003": 0
+    },
+    "face--1_0_0": {
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 1.2442469596862793e-06,
+      "p99RGB": 3.3527612686157227e-08,
+      "pixelsAbove003": 0
+    },
+    "face--1_0_1": {
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 1.903623342514038e-06,
+      "p99RGB": 3.725290298461914e-08,
+      "pixelsAbove003": 0
+    },
+    "face--1_1_-1": {
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 2.7492642402648926e-06,
+      "p99RGB": 3.725290298461914e-08,
+      "pixelsAbove003": 0
+    },
+    "face--1_1_0": {
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 1.862645149230957e-06,
+      "p99RGB": 3.725290298461914e-08,
+      "pixelsAbove003": 0
+    },
+    "face--1_1_1": {
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 1.8998980522155762e-06,
+      "p99RGB": 3.725290298461914e-08,
+      "pixelsAbove003": 0
+    },
+    "face-0_-1_-1": {
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 1.4360994100570679e-06,
+      "p99RGB": 3.725290298461914e-08,
+      "pixelsAbove003": 0
+    },
+    "face-0_-1_0": {
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 1.432374119758606e-06,
+      "p99RGB": 3.725290298461914e-08,
+      "pixelsAbove003": 0
+    },
+    "face-0_-1_1": {
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 1.8887221813201904e-06,
+      "p99RGB": 3.725290298461914e-08,
+      "pixelsAbove003": 0
+    },
+    "face-0_0_-1": {
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 1.2218952178955078e-06,
+      "p99RGB": 3.3527612686157227e-08,
+      "pixelsAbove003": 0
+    },
+    "face-0_0_1": {
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 1.2777745723724365e-06,
+      "p99RGB": 3.3527612686157227e-08,
+      "pixelsAbove003": 0
+    },
+    "face-0_1_-1": {
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 1.3597309589385986e-06,
+      "p99RGB": 3.725290298461914e-08,
+      "pixelsAbove003": 0
+    },
+    "face-0_1_0": {
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 1.3560056686401367e-06,
+      "p99RGB": 3.3527612686157227e-08,
+      "pixelsAbove003": 0
+    },
+    "face-0_1_1": {
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 2.1867454051971436e-06,
+      "p99RGB": 3.725290298461914e-08,
+      "pixelsAbove003": 0
+    },
+    "face-1_-1_-1": {
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 1.519918441772461e-06,
+      "p99RGB": 3.725290298461914e-08,
+      "pixelsAbove003": 0
+    },
+    "face-1_-1_0": {
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 1.4677643775939941e-06,
+      "p99RGB": 3.725290298461914e-08,
+      "pixelsAbove003": 0
+    },
+    "face-1_-1_1": {
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 1.9781291484832764e-06,
+      "p99RGB": 3.725290298461914e-08,
+      "pixelsAbove003": 0
+    },
+    "face-1_0_-1": {
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 1.6130506992340088e-06,
+      "p99RGB": 3.725290298461914e-08,
+      "pixelsAbove003": 0
+    },
+    "face-1_0_0": {
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 1.519918441772461e-06,
+      "p99RGB": 3.3527612686157227e-08,
+      "pixelsAbove003": 0
+    },
+    "face-1_0_1": {
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 1.5906989574432373e-06,
+      "p99RGB": 3.725290298461914e-08,
+      "pixelsAbove003": 0
+    },
+    "face-1_1_-1": {
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 1.862645149230957e-06,
+      "p99RGB": 3.725290298461914e-08,
+      "pixelsAbove003": 0
+    },
+    "face-1_1_0": {
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 2.7120113372802734e-06,
+      "p99RGB": 3.725290298461914e-08,
+      "pixelsAbove003": 0
+    },
+    "face-1_1_1": {
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 2.664513885974884e-06,
+      "p99RGB": 3.725290298461914e-08,
+      "pixelsAbove003": 0
+    },
+    "grazing": {
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 9.059906005859375e-06,
+      "p99RGB": 1.1920928955078125e-07,
+      "pixelsAbove003": 0
+    },
+    "masked": {
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 1.7825514078140259e-06,
+      "p99RGB": 3.725290298461914e-08,
+      "pixelsAbove003": 0
+    },
+    "mixed": {
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 1.4416873455047607e-06,
+      "p99RGB": 3.725290298461914e-08,
+      "pixelsAbove003": 0
+    },
+    "study-clear": {
+      "idMismatches": 1,
+      "maxDepth": 1.7881393432617188e-07,
+      "maxRGB": 0.13615751545876265,
+      "p99RGB": 2.5387853384017944e-06,
+      "pixelsAbove003": 3
+    },
+    "study": {
+      "idMismatches": 1,
+      "maxDepth": 1.7881393432617188e-07,
+      "maxRGB": 0.06339409481734037,
+      "p99RGB": 2.592802047729492e-06,
+      "pixelsAbove003": 36
+    }
+  }
+}

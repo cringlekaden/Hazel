@@ -324,6 +324,11 @@ namespace Hazel {
                 if(!tiled)ImGui::TextUnformatted("OpenGL uses the complete loop; tile views and culling GPU timestamps require Metal 4.");
                 const auto &metrics=*m_RenderView.LocalMetrics;
                 ImGui::Text("%u lights; collect %.3f / light prep %.3f CPU ms",metrics.Count,metrics.CollectionMilliseconds,metrics.UploadMilliseconds);
+                if (metrics.RequestedPointShadows) {
+                    ImGui::Text("Point shadows %u / %u requested, %.2f MiB", metrics.PointShadows,
+                        metrics.RequestedPointShadows, double(metrics.PointShadowBytes) / (1024 * 1024));
+                    if (metrics.Valid) ImGui::Text("Point map generation %.3f GPU ms", metrics.PointShadowMilliseconds);
+                }
                 if (metrics.RequestedSpotShadows) {
                     ImGui::Text("Spot shadows %u / %u requested, %.2f MiB", metrics.SpotShadows,
                         metrics.RequestedSpotShadows, double(metrics.SpotShadowBytes) / (1024 * 1024));

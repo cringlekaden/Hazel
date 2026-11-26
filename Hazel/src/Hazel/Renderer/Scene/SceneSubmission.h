@@ -3,6 +3,7 @@
 #include "Hazel/Assets/Environment.h"
 #include "Hazel/Scene/SceneDefaults.h"
 #include "SpotShadows.h"
+#include "PointShadows.h"
 #include <optional>
 #include <cstdint>
 #include <memory>
@@ -61,6 +62,9 @@ struct LocalLightingMetrics
     double SpotShadowMilliseconds=0;
     uint64_t SpotShadowBytes=0;
     unsigned SpotShadows=0, RequestedSpotShadows=0;
+    double PointShadowMilliseconds=0;
+    uint64_t PointShadowBytes=0;
+    unsigned PointShadows=0, RequestedPointShadows=0;
     bool Valid=false;
 };
 struct SubmittedLocalLight
@@ -93,6 +97,7 @@ struct SceneSubmission
     std::vector<SubmittedMesh> ShadowCasters; // Same collection; never camera-frustum culled.
     DirectionalShadowData Shadows;
     SpotShadowData SpotShadows;
+    PointShadowData PointShadows;
     std::optional<SubmittedDirectional> Light;
     std::vector<SubmittedLocalLight> LocalLights;
     double LightCollectionMilliseconds=0;

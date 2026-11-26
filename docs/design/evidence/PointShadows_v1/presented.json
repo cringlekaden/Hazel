@@ -1,0 +1,151 @@
+{
+  "config": "Release",
+  "validation": true,
+  "head": "58fd90c3ef02177a7e16647531f597ac8fb54f38",
+  "sourceSHA256": "2e36e1a02bc491896c01f6f402ec1248d0b0ea3f1dc4bbfa8b91d2f6e8258ea4",
+  "artifactSHA256": "1f5471b9727abdc9fceec0c4d5d319f9ea19e5d6ae5e70e5e07ddbfef4cb46de",
+  "cases": {
+    "editor-3200x1800": {
+      "command": [
+        "<repo>/bin/Release-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+        "<repo>/build/point-presented-final/editor",
+        "--point-shadow-editor-settings",
+        "<repo>/Hazel/Resources"
+      ],
+      "exitCode": 0,
+      "summary": [
+        "PASS all 64 Retina editor jitter phases against independent camera pose axes",
+        "SHADOW_EDITOR cpu_frames=96",
+        "SHADOW_EDITOR presented=24 errors=0 resources=0 attachments=0 peak_resources=1592522944 peak_attachments=1528348672",
+        "PASS 3200x1800 editor shadow/AO/TAA toggles and overlays; positive presentations=24 peak_resources=1592522944 peak_attachments=1528348672 backing_scale=1 point=1"
+      ]
+    },
+    "control": {
+      "command": [
+        "<repo>/bin/Release-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+        "<repo>/build/point-presented-final/control",
+        "--benchmark-metal",
+        "<repo>/Hazel/Resources",
+        "<repo>/build/point-presented-final/project/RenderingReference-PointShadows.hproj",
+        "-1"
+      ],
+      "exitCode": 0,
+      "summary": [
+        "PASS production window benchmark, authored camera/assets, four texture slots, VSync-off request, 120 positive presentations per extent"
+      ]
+    },
+    "enabled": {
+      "command": [
+        "<repo>/bin/Release-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+        "<repo>/build/point-presented-final/enabled",
+        "--benchmark-metal",
+        "<repo>/Hazel/Resources",
+        "<repo>/build/point-presented-final/project/RenderingReference-PointShadows.hproj",
+        "-1"
+      ],
+      "exitCode": 0,
+      "summary": [
+        "PASS production window benchmark, authored camera/assets, four texture slots, VSync-off request, 120 positive presentations per extent"
+      ]
+    }
+  },
+  "status": "PASS",
+  "presented": {
+    "control": {
+      "1280x720": {
+        "positiveFrames": 92,
+        "gpuWholeFrameMs": {
+          "samples": 92,
+          "median": 2.795896027237177,
+          "p95": 2.9458749922923744
+        },
+        "sceneCPUms": {
+          "samples": 92,
+          "median": 0.317208,
+          "p95": 0.679792
+        },
+        "layerCPUms": {
+          "samples": 92,
+          "median": 0.3389165,
+          "p95": 0.700666
+        },
+        "presentedIntervalMs": {
+          "samples": 91,
+          "median": 3.755416953936219,
+          "p95": 11.14149997010827
+        }
+      },
+      "1920x1080": {
+        "positiveFrames": 91,
+        "gpuWholeFrameMs": {
+          "samples": 91,
+          "median": 5.880457989405841,
+          "p95": 5.965374992229044
+        },
+        "sceneCPUms": {
+          "samples": 91,
+          "median": 0.768583,
+          "p95": 1.067125
+        },
+        "layerCPUms": {
+          "samples": 91,
+          "median": 0.860125,
+          "p95": 1.208125
+        },
+        "presentedIntervalMs": {
+          "samples": 90,
+          "median": 5.812750023324043,
+          "p95": 12.804666999727488
+        }
+      }
+    },
+    "enabled": {
+      "1280x720": {
+        "positiveFrames": 93,
+        "gpuWholeFrameMs": {
+          "samples": 93,
+          "median": 3.1538750045001507,
+          "p95": 3.3281249925494194
+        },
+        "sceneCPUms": {
+          "samples": 93,
+          "median": 0.359583,
+          "p95": 0.773333
+        },
+        "layerCPUms": {
+          "samples": 93,
+          "median": 0.387375,
+          "p95": 0.805417
+        },
+        "presentedIntervalMs": {
+          "samples": 92,
+          "median": 3.388542012544349,
+          "p95": 11.14137499826029
+        }
+      },
+      "1920x1080": {
+        "positiveFrames": 91,
+        "gpuWholeFrameMs": {
+          "samples": 91,
+          "median": 6.651417003013194,
+          "p95": 6.831666978541762
+        },
+        "sceneCPUms": {
+          "samples": 91,
+          "median": 0.9705,
+          "p95": 1.33175
+        },
+        "layerCPUms": {
+          "samples": 91,
+          "median": 1.035958,
+          "p95": 1.471042
+        },
+        "presentedIntervalMs": {
+          "samples": 90,
+          "median": 6.613708479562774,
+          "p95": 14.498875010758638
+        }
+      }
+    }
+  }
+}

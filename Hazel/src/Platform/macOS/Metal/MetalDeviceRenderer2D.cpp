@@ -40,6 +40,7 @@ void MetalRenderer2DFrame::CollectAllocations(std::set<const MTL::Allocation*>& 
     if (AOSource) AOSource->CollectAllocations(allocations);
     if (ShadowSource) ShadowSource->CollectAllocations(allocations);
     if (SpotShadowSource) SpotShadowSource->CollectAllocations(allocations);
+    if (PointShadowSource) PointShadowSource->CollectAllocations(allocations);
     if (AO) {const auto& r=*AO->Resources;for(auto texture:{r.Depth,r.Raw,r.Edges,r.Scratch,r.Visibility})allocations.insert(texture.get());}
     if(Temporal) {
         for(auto history:{Temporal->Current,Temporal->Previous})if(history)
@@ -56,6 +57,7 @@ void MetalRenderer2DFrame::MarkMipmapsSubmitted() const
     if (AOSource) AOSource->MarkMipmapsSubmitted();
     if (ShadowSource) ShadowSource->MarkMipmapsSubmitted();
     if (SpotShadowSource) SpotShadowSource->MarkMipmapsSubmitted();
+    if (PointShadowSource) PointShadowSource->MarkMipmapsSubmitted();
     if(Temporal)Temporal->Current->Submitted->store(true);
     if(TemporalSource)TemporalSource->MarkMipmapsSubmitted();
     if(MotionSource)MotionSource->MarkMipmapsSubmitted();
@@ -70,6 +72,7 @@ void MetalRenderer2DFrame::ResolveAmbientOcclusionTimings()
     if(AO)AO->ResolveTimings();
     if(ShadowSource)ShadowSource->ResolveAmbientOcclusionTimings();
     if(SpotShadowSource)SpotShadowSource->ResolveAmbientOcclusionTimings();
+    if (PointShadowSource) PointShadowSource->ResolveAmbientOcclusionTimings();
     if(Temporal)Temporal->ResolveTimings();
     if(TemporalSource)TemporalSource->ResolveAmbientOcclusionTimings();
     if(MotionSource)MotionSource->ResolveAmbientOcclusionTimings();
@@ -81,9 +84,9 @@ void MetalLocalLightPass::Resolve()
 {
     if(Resolved || !Timing || !Counters || !Frequency)return;
     Resolved=true;
-    auto values=NS::RetainPtr(Counters->resolveCounterRange(NS::Range::Make(0,8)));
-    if(!values || values->length()!=8*sizeof(MTL4::TimestampHeapEntry))return;
-    MTL4::TimestampHeapEntry entries[8];std::memcpy(entries,values->bytes(),sizeof(entries));
+    auto values=NS::RetainPtr(Counters->resolveCounterRange(NS::Range::Make(0,10)));
+    if(!values || values->length()!=10*sizeof(MTL4::TimestampHeapEntry))return;
+    MTL4::TimestampHeapEntry entries[10];std::memcpy(entries,values->bytes(),sizeof(entries));
     if(!entries[2].timestamp || entries[3].timestamp<entries[2].timestamp)return;
     Timing->ForwardMilliseconds=double(entries[3].timestamp-entries[2].timestamp)*1000/double(Frequency);
     Timing->ShadowMilliseconds=0;
@@ -95,6 +98,11 @@ void MetalLocalLightPass::Resolve()
     if (SpotShadowed) {
         if (!entries[6].timestamp || entries[7].timestamp < entries[6].timestamp) return;
         Timing->SpotShadowMilliseconds = double(entries[7].timestamp - entries[6].timestamp) * 1000 / double(Frequency);
+    }
+    Timing->PointShadowMilliseconds = 0;
+    if (PointShadowed) {
+        if (!entries[8].timestamp || entries[9].timestamp < entries[8].timestamp) return;
+        Timing->PointShadowMilliseconds = double(entries[9].timestamp - entries[8].timestamp) * 1000 / double(Frequency);
     }
     Timing->CullMilliseconds=0;Timing->OverflowTiles=0;Timing->Candidates=0;Timing->Tiles=0;
     if(Tiled) {
@@ -219,6 +227,7 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
     if (quad->AOSource) PrepareRenderer2DFrame(quad->AOSource);
     if (quad->ShadowSource) PrepareRenderer2DFrame(quad->ShadowSource);
     if (quad->SpotShadowSource) PrepareRenderer2DFrame(quad->SpotShadowSource);
+    if (quad->PointShadowSource) PrepareRenderer2DFrame(quad->PointShadowSource);
     if (quad->ComputeSource) PrepareRenderer2DFrame(quad->ComputeSource);
     if (quad->World) PrepareRenderer2DFrame(quad->World);
     if (quad->DisplaySource) PrepareRenderer2DFrame(quad->DisplaySource);
@@ -245,10 +254,11 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
     quad->Buffers.push_back(AcquireRenderer2DBuffer(indices.size() * sizeof(uint32_t), indices.data()));
     auto args = NS::TransferPtr(MTL4::ArgumentTableDescriptor::alloc()->init());
     args->setInitializeBindings(true); args->setMaxBufferBindCount(17);
-    args->setMaxTextureBindCount(12); args->setMaxSamplerStateBindCount(12);
+    args->setMaxTextureBindCount(13); args->setMaxSamplerStateBindCount(13);
     for (auto &pass:quad->LocalLights) {
         pass->Shadowed=bool(quad->ShadowSource);
         pass->SpotShadowed=bool(quad->SpotShadowSource);
+        pass->PointShadowed=bool(quad->PointShadowSource);
         const auto lightStart=std::chrono::steady_clock::now();
         pass->Buffer=AcquireRenderer2DBuffer(pass->Lights->size(),pass->Lights->data());
         quad->Buffers.push_back(pass->Buffer);quad->Residency->addAllocation(pass->Buffer.get());
@@ -268,12 +278,12 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
             auto &slot=m_Frames[m_Next];
             if(slot.LocalLightCursor==slot.LocalLightCounters.size()) {
                 auto counters=NS::TransferPtr(MTL4::CounterHeapDescriptor::alloc()->init());
-                counters->setType(MTL4::CounterHeapTypeTimestamp);counters->setCount(8);
+                counters->setType(MTL4::CounterHeapTypeTimestamp);counters->setCount(10);
                 slot.LocalLightCounters.push_back(NS::TransferPtr(m_Device->newCounterHeap(counters.get(),&error)));
             }
             pass->Counters=slot.LocalLightCounters[slot.LocalLightCursor++];
             Check(bool(pass->Counters),"Cannot allocate local lighting timestamps");
-            pass->Counters->invalidateCounterRange(NS::Range::Make(0,8));pass->Frequency=m_Device->queryTimestampFrequency();
+            pass->Counters->invalidateCounterRange(NS::Range::Make(0,10));pass->Frequency=m_Device->queryTimestampFrequency();
         }
         if(pass->Tiled) {
             auto table=NS::TransferPtr(MTL4::ArgumentTableDescriptor::alloc()->init());
@@ -335,6 +345,10 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
                 fragment->setTexture(spots->gpuResourceID(), 11);
                 fragment->setSamplerState(draw.Textures[0]->Sampler->gpuResourceID(), 11);
                 if (quad->SpotShadowSource) quad->Residency->addAllocation(spots.get());
+                auto points = quad->PointShadowSource ? quad->PointShadowSource->Attachments->Targets[2] : draw.Textures[0]->Texture;
+                fragment->setTexture(points->gpuResourceID(), 12);
+                fragment->setSamplerState(draw.Textures[0]->Sampler->gpuResourceID(), 12);
+                if (quad->PointShadowSource) quad->Residency->addAllocation(points.get());
             }
             if(draw.MeshVertices && draw.Textures[0]) {
                 auto aoTexture=draw.Textures[0]->Texture;
@@ -454,6 +468,12 @@ void MetalDevice::EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFra
         EncodeRenderer2DFrame(quad->SpotShadowSource);
         for (const auto& pass : quad->LocalLights) if (pass->Counters) m_Commands->writeTimestampIntoHeap(pass->Counters.get(), 7);
     }
+    if (quad->PointShadowSource) {
+        for (const auto& pass : quad->LocalLights) if (pass->Counters) m_Commands->writeTimestampIntoHeap(pass->Counters.get(), 8);
+        m_Commands->useResidencySet(quad->PointShadowSource->Residency.get());
+        EncodeRenderer2DFrame(quad->PointShadowSource);
+        for (const auto& pass : quad->LocalLights) if (pass->Counters) m_Commands->writeTimestampIntoHeap(pass->Counters.get(), 9);
+    }
     if(quad->AO) EncodeAmbientOcclusion(quad);
     if(quad->Temporal)EncodeTemporal(quad);
     for (const auto &pass:quad->LocalLights) if(pass->Tiled) {
@@ -535,7 +555,7 @@ void MetalDevice::EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFra
     auto* render = m_Commands->renderCommandEncoder(pass.get());
     if (!render) { m_Commands->endCommandBuffer(); throw std::runtime_error("Cannot create quad encoder"); }
     if(quad->QueueOrderedProducer)render->barrierAfterQueueStages(MTL::StageAll,MTL::StageAll,MTL4::VisibilityOptionDevice);
-    if (!quad->LocalLights.empty() || quad->ShadowSource || quad->SpotShadowSource || quad->AO || quad->World || quad->Temporal || !mipmaps.empty()) render->barrierAfterQueueStages(MTL::StageAll, MTL::StageFragment, MTL4::VisibilityOptionDevice);
+    if (!quad->LocalLights.empty() || quad->ShadowSource || quad->SpotShadowSource || quad->PointShadowSource || quad->AO || quad->World || quad->Temporal || !mipmaps.empty()) render->barrierAfterQueueStages(MTL::StageAll, MTL::StageFragment, MTL4::VisibilityOptionDevice);
     auto* boundPipeline = quad->World ? quad->PresentationShader->Pipeline() : nullptr;
     if (boundPipeline) render->setRenderPipelineState(boundPipeline);
     // Metal starts each encoder with full-target viewport/scissor, no culling,

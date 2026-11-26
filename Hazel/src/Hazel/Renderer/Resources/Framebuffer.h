@@ -71,7 +71,7 @@ namespace Hazel {
     };
 
     class ComputePipeline;
-    enum class ShadowMapKind { Directional, Spot };
+    enum class ShadowMapKind { Directional, Spot, Point };
 	class Framebuffer
 	{
 	public:

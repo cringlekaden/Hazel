@@ -246,8 +246,12 @@ void ImportWorkflowUpdate()
         Check(panel.AddLocalLight(false),"Native point light creation failed");
         auto point=panel.GetSelectedEntity();before=UIEditValues::Capture(point);proposed=before;
         proposed.Point->Range=7;proposed.Point->Intensity=5;proposed.Transform->Translation={-1,2,3};
+        proposed.Point->CastShadows=true;proposed.Point->ShadowResolution=512;
         Check(inspector.Edit(*scene,&owner.m_SceneHistory,point.GetUUID(),"Point light",before,proposed,edit,0),"Point light Inspector edit failed");
-        Check(owner.UndoRedo(false)&&point.GetComponent<PointLightComponent>().Range==10&&owner.UndoRedo(true)&&point.GetComponent<PointLightComponent>().Range==7,"Point property Undo/Redo failed");
+        const auto& pointLight = point.GetComponent<PointLightComponent>();
+        Check(owner.UndoRedo(false) && pointLight.Range == 10 && !pointLight.CastShadows &&
+            pointLight.ShadowResolution == 256 && owner.UndoRedo(true) && pointLight.Range == 7 &&
+            pointLight.CastShadows && pointLight.ShadowResolution == 512, "Point property Undo/Redo failed");
         Check(panel.AddLocalLight(true),"Native spot light creation failed");
         auto spot=panel.GetSelectedEntity();before=UIEditValues::Capture(spot);proposed=before;
         proposed.Spot->InnerCone=.2f;proposed.Spot->OuterCone=.8f;

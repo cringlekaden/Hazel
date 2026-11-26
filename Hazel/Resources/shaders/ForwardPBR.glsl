@@ -38,6 +38,8 @@ layout(std140,binding=1) uniform SpotShadows {
     ivec4 u_SpotLightIndices;
 };
 layout(binding=11) uniform sampler2D u_SpotShadowAtlas;
+layout(std140,binding=0) uniform PointShadows {vec4 u_PointShadowParameters;};
+layout(binding=12) uniform sampler2D u_PointShadowAtlas;
 #ifdef HZ_METAL
 layout(binding=9) uniform usampler2D u_LightTiles;
 #endif
@@ -256,6 +258,70 @@ float spotVisibility(int slot, vec3 lightRelativePosition, vec3 Ng, vec3 L, vec3
     }
     return mix(1, visibility, smoothstep(tile.z, 2 * tile.z, clip.w));
 }
+float pointFaceVisibility(int axis, vec3 p, vec3 normal, float cosine, float distanceToLight, float farDepth) {
+    vec4 map = u_PointShadowParameters;
+    int side = int(map.y);
+    float signAxis = p[axis] < 0 ? -1 : 1;
+    int face = 2 * axis + (signAxis < 0 ? 1 : 0);
+    // Same RH look directions as FitPointShadows, with +Z up on the Y faces.
+    vec3 forward = vec3(0);
+    forward[axis] = signAxis;
+    vec3 up = axis == 1 ? vec3(0, 0, 1) : vec3(0, 1, 0);
+    vec3 right = cross(forward, up);
+    float axial = abs(p[axis]);
+    float stepSize = 2 / (map.y * map.w);
+    float texel = axial * stepSize;
+    float axisCosine = axial / distanceToLight;
+    p += normal * (.2 * texel * axisCosine * sqrt(max(1 - cosine * cosine, 0)));
+    axial = dot(p, forward);
+    if (axial <= map.z) return 1;
+
+    vec2 ray = vec2(dot(p, right), dot(p, up)) / axial;
+    vec2 coordinate = (ray * map.w * .5 + .5) * map.y - .5;
+    ivec2 base = ivec2(floor(coordinate));
+    vec2 fraction = fract(coordinate);
+    vec2 planeSlope = vec2(dot(normal, right), dot(normal, up));
+    float planeDot = dot(normal, forward) + dot(planeSlope, ray);
+    // Reciprocal axial depth on a plane is affine in the perspective ray.
+    // Limit its slope only when the geometric plane is nearly edge-on.
+    float inversePlaneDot = 1 / min(planeDot, -.01 / axisCosine);
+    float biasedNearRatio = map.z / max(map.z, axial - .05 * texel);
+    float depthScale = farDepth / (farDepth - map.z);
+    ivec2 origin = ivec2(face % 3, face / 3) * side;
+    float visibility = 0;
+    for (int y = 0; y < 2; ++y) for (int x = 0; x < 2; ++x) {
+        ivec2 tap = clamp(base + ivec2(x, y), ivec2(0), ivec2(side - 1));
+        float rayDelta = dot(planeSlope, vec2(tap) - coordinate) * stepSize;
+        float inverseDepthRatio = biasedNearRatio * (1 + rayDelta * inversePlaneDot);
+        float receiver = clamp(depthScale * (1 - inverseDepthRatio), 0, 1);
+        vec2 weight = mix(1 - fraction, fraction, vec2(x, y));
+        visibility += (receiver <= texelFetch(u_PointShadowAtlas, origin + tap, 0).r ? 1 : 0) * weight.x * weight.y;
+    }
+    return visibility;
+}
+float pointVisibility(vec3 p, vec3 Ng, vec3 L, float distanceSquared, float farDepth) {
+    float distanceToLight = sqrt(distanceSquared);
+    float nearDepth = u_PointShadowParameters.z;
+    if (distanceToLight <= 2 * nearDepth) return 1;
+
+    vec3 magnitude = abs(p);
+    int dominant = magnitude.x >= magnitude.y && magnitude.x >= magnitude.z ? 0 :
+        magnitude.y >= magnitude.z ? 1 : 2;
+    float cosine = dot(Ng, L);
+    vec3 normal = cosine < 0 ? -Ng : Ng;
+    float visibility = pointFaceVisibility(dominant, p, normal, cosine, distanceToLight, farDepth);
+    // The same normalized weights apply from either side of a face tie.
+    // At a corner all three axes can contribute. Most pixels only read four taps.
+    float seamStart = 1 - 4 / u_PointShadowParameters.y;
+    vec3 weights = smoothstep(vec3(seamStart), vec3(1), magnitude / magnitude[dominant]);
+    weights[dominant] = 0;
+    for (int axis = 0; axis < 3; ++axis) {
+        if (weights[axis] > 0)
+            visibility += weights[axis] * pointFaceVisibility(axis, p, normal, cosine, distanceToLight, farDepth);
+    }
+    return mix(1, visibility / (1 + weights.x + weights.y + weights.z),
+               smoothstep(2 * nearDepth, 4 * nearDepth, distanceToLight));
+}
 void main(){
     // Evaluate geometric derivatives before a potentially nonuniform mask discard.
     vec3 geometricNormal=normalize(cross(dFdx(v_Position),dFdy(v_Position)));
@@ -327,6 +393,8 @@ void main(){
                     }
                 }
             }
+            if (index + 1 == int(u_PointShadowParameters.x))
+                attenuation *= pointVisibility(-delta, geometricNormal, localL, distanceSquared, positionRange.w);
             directTerm+=direct(base.rgb,metal,rough,directNormal,V,localL,directEnergy)*incidentInner.rgb*attenuation*((maps&4)!=0?surfaceVisibility(surfaceNormal,directNormal,localL):1);
         }
         localProbe=directTerm-directionalTerm;

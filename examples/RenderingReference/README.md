@@ -327,3 +327,17 @@ python3 scripts/hazel.py run Nutella --config Release --project examples/Renderi
 ```
 
 See the [spotlight shadow design and evidence](../../docs/design/spotlight-shadows.md).
+
+## Point and spot shadow study
+
+Open `RenderingReference-PointShadows.hproj` in Hazelnut and press **Play**.
+The amber point light uses six 512-texel faces. Its shadow crosses a face
+boundary on the receiver. The blue spotlight provides contrasting directional
+coverage. The scene contains contact, mirrored, smooth and texture-masked
+casters. Toggle **Cast shadows** on the amber light to inspect its contribution.
+
+```sh
+python3 scripts/hazel.py run Nutella --config Release --project examples/RenderingReference/RenderingReference-PointShadows.hproj
+```
+
+See the [point-shadow design and evidence](../../docs/design/point-shadows.md).

@@ -179,7 +179,9 @@ std::string SceneSerializer::CaptureAuthoredState(Entity only, const std::type_i
         auto localLight = [&](auto &c) {
             state.Value(c.Color);state.Value(c.Intensity);state.Value(c.Enabled);state.Value(c.Range);
         };
-        state.Component<PointLightComponent>(e, localLight);
+        state.Component<PointLightComponent>(e, [&](auto &c) {
+            localLight(c);state.Value(c.CastShadows);state.Value(c.ShadowResolution);
+        });
         state.Component<SpotLightComponent>(e, [&](auto &c) {
             localLight(c);state.Value(c.InnerCone);state.Value(c.OuterCone);
             state.Value(c.CastShadows);state.Value(c.ShadowResolution);

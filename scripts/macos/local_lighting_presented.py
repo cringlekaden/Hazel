@@ -69,6 +69,27 @@ def stats(values):
     if len(values)<30:raise RuntimeError('Insufficient matched positive presentation samples')
     return dict(samples=len(values),median=statistics.median(values),p95=values[math.ceil(.95*len(values))-1])
 
+def presented_timings(log,name):
+    text=log.read_text();cpu={};joins={};gpu={};present={}
+    for m in re.finditer(r'M4_BENCH_CPU frame=(\d+) pixels=(\d+)x(\d+) scene_ms=([\d.]+) layer_ms=([\d.]+)',text):cpu[int(m[1])]=(m[2]+'x'+m[3],float(m[4]),float(m[5]))
+    for m in re.finditer(r'M4_BENCH_JOIN cpu_frame=(\d+) submission=(\d+)',text):joins[int(m[2])]=int(m[1])
+    for m in re.finditer(r'M1_FEEDBACK frame=(\d+) gpu_start=([\d.]+) gpu_end=([\d.]+)',text):gpu[int(m[1])]=(float(m[3])-float(m[2]))*1000
+    for m in re.finditer(r'M1_PRESENT frame=(\d+) timestamp=([\d.]+)',text):
+        if float(m[2])>0:present[int(m[1])]=float(m[2])
+    groups={}
+    for serial,time in present.items():
+        row=cpu.get(joins.get(serial));duration=gpu.get(serial)
+        if row and duration is not None:groups.setdefault(row[0],[]).append((time,duration,row[1],row[2]))
+    case={}
+    for extent,rows in groups.items():
+        rows=sorted(rows)[30:]
+        if len(rows)<60:raise RuntimeError('Insufficient completed positive frames for '+name+' '+extent)
+        case[extent]=dict(positiveFrames=len(rows),gpuWholeFrameMs=stats([r[1] for r in rows]),
+            sceneCPUms=stats([r[2] for r in rows]),layerCPUms=stats([r[3] for r in rows]),
+            presentedIntervalMs=stats([(b[0]-a[0])*1000 for a,b in zip(rows,rows[1:])]))
+    if set(case)!= {'1280x720','1920x1080'}:raise RuntimeError('Physical extents differ: '+str(case.keys()))
+    return case
+
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
     args=p.parse_args();out=args.output.resolve();out.mkdir(parents=True,exist_ok=True)
@@ -88,24 +109,7 @@ def main():
                 cmd=[hz.binaries('Release')/'MetalM1Smoke/MetalM1Smoke',folder,'--benchmark-metal',hz.binaries('Release')/'Nutella/Resources',descriptor,'-1']
                 with (out/(name+'.log')).open('w') as log:r=subprocess.run(list(map(str,cmd)),env=env,stdout=log,stderr=subprocess.STDOUT,timeout=120)
                 if r.returncode:raise RuntimeError('Native pacing failed: '+name)
-                text=(out/(name+'.log')).read_text();cpu={};joins={};gpu={};present={}
-                for m in re.finditer(r'M4_BENCH_CPU frame=(\d+) pixels=(\d+)x(\d+) scene_ms=([\d.]+) layer_ms=([\d.]+)',text):cpu[int(m[1])]=(m[2]+'x'+m[3],float(m[4]),float(m[5]))
-                for m in re.finditer(r'M4_BENCH_JOIN cpu_frame=(\d+) submission=(\d+)',text):joins[int(m[2])]=int(m[1])
-                for m in re.finditer(r'M1_FEEDBACK frame=(\d+) gpu_start=([\d.]+) gpu_end=([\d.]+)',text):gpu[int(m[1])]=(float(m[3])-float(m[2]))*1000
-                for m in re.finditer(r'M1_PRESENT frame=(\d+) timestamp=([\d.]+)',text):
-                    if float(m[2])>0:present[int(m[1])]=float(m[2])
-                groups={}
-                for serial,time in present.items():
-                    row=cpu.get(joins.get(serial));duration=gpu.get(serial)
-                    if row and duration is not None:groups.setdefault(row[0],[]).append((time,duration,row[1],row[2]))
-                case={}
-                for extent,rows in groups.items():
-                    rows=sorted(rows)[30:]
-                    if len(rows)<60:raise RuntimeError('Insufficient completed positive frames for '+name+' '+extent)
-                    case[extent]=dict(positiveFrames=len(rows),gpuWholeFrameMs=stats([r[1] for r in rows]),
-                        sceneCPUms=stats([r[2] for r in rows]),layerCPUms=stats([r[3] for r in rows]),
-                        presentedIntervalMs=stats([(b[0]-a[0])*1000 for a,b in zip(rows,rows[1:])]))
-                if set(case)!= {'1280x720','1920x1080'}:raise RuntimeError('Physical extents differ: '+str(case.keys()))
+                case=presented_timings(out/(name+'.log'),name)
                 report['cases'][name]=case;print('PASS',name,flush=True)
         report['status']='PASS matched native positive-presentation pacing'
     except Exception as error:report['status']='INCOMPLETE';report['error']=str(error);raise

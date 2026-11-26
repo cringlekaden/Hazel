@@ -362,8 +362,8 @@ namespace Hazel {
                 << YAML::Key << "Range" << YAML::Value << light.Range;
             if constexpr (std::is_same_v<T,SpotLightComponent>)
                 out << YAML::Key << "InnerCone" << YAML::Value << light.InnerCone
-                    << YAML::Key << "OuterCone" << YAML::Value << light.OuterCone
-                    << YAML::Key << "CastShadows" << YAML::Value << light.CastShadows
+                    << YAML::Key << "OuterCone" << YAML::Value << light.OuterCone;
+            out << YAML::Key << "CastShadows" << YAML::Value << light.CastShadows
                     << YAML::Key << "ShadowResolution" << YAML::Value << light.ShadowResolution;
             out << YAML::EndMap;
         };
@@ -698,9 +698,9 @@ namespace Hazel {
                         if constexpr (std::is_same_v<T,SpotLightComponent>) {
                             light.InnerCone = node["InnerCone"].template as<float>();
                             light.OuterCone = node["OuterCone"].template as<float>();
-                            if (auto cast = node["CastShadows"]) light.CastShadows = cast.template as<bool>();
-                            if (auto side = node["ShadowResolution"]) light.ShadowResolution = side.template as<unsigned>();
                         }
+                        if (auto cast = node["CastShadows"]) light.CastShadows = cast.template as<bool>();
+                        if (auto side = node["ShadowResolution"]) light.ShadowResolution = side.template as<unsigned>();
                         light.Validate();
                     }
                 };

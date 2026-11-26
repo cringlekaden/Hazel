@@ -15,12 +15,12 @@ SpotShadowLayout FitSpotShadows(const SceneSubmission& frame)
     for (size_t i = 0; i < frame.LocalLights.size(); ++i)
     {
         const auto& light = frame.LocalLights[i];
-        if (!light.CastShadows || !glm::any(glm::greaterThan(light.Incident, glm::vec3(0))))
+        if (light.OuterCos == -1 || !light.CastShadows || !glm::any(glm::greaterThan(light.Incident, glm::vec3(0))))
             continue;
         ++layout.Requested;
         if (layout.Count == MaxSpotShadows)
             continue;
-        PointLight validation;
+        LocalLight validation;
         validation.Range = light.Range;
         validation.Validate();
         SpotLight::ValidateShadowResolution(light.ShadowResolution);

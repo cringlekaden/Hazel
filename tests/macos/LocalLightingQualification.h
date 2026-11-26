@@ -68,7 +68,7 @@ inline void LocalLightingQualification(const std::filesystem::path &output,
             target->Resize(extent.x,extent.y);
             auto scene=CreateRef<Scene>();scene->Presentation().SceneReferred=true;
             for(unsigned i=0;i<count;++i) {
-                auto e=scene->CreateEntityWithUUID(i+1,"Benchmark light");PointLight *light=nullptr;
+                auto e=scene->CreateEntityWithUUID(i+1,"Benchmark light");LocalLight *light=nullptr;
                 if(i%2){auto &spot=e.AddComponent<SpotLightComponent>();spot.InnerCone=.3f;spot.OuterCone=.8f;light=&spot;}
                 else light=&e.AddComponent<PointLightComponent>();
                 light->Intensity=.25f;light->Range=sparse?1.5f:4;

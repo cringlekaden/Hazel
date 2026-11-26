@@ -1,0 +1,192 @@
+{
+  "sourceSHA256": "2e36e1a02bc491896c01f6f402ec1248d0b0ea3f1dc4bbfa8b91d2f6e8258ea4",
+  "benchmark": false,
+  "head": "58fd90c3ef02177a7e16647531f597ac8fb54f38",
+  "configuration": "Release",
+  "commands": {
+    "metal": [
+      "<repo>/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "<repo>/Hazel/Resources",
+      "<repo>/build/point-regression-csm/metal",
+      "--shadows"
+    ],
+    "temporalLifetime": [
+      "<repo>/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "<repo>/Hazel/Resources",
+      "<repo>/build/point-regression-csm/metal/temporal",
+      "--shadow-temporal-lifetime"
+    ],
+    "atlasLifetime": [
+      "<repo>/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "<repo>/Hazel/Resources",
+      "<repo>/build/point-regression-csm/metal/atlas-lifetime",
+      "--shadow-atlas-lifetime"
+    ],
+    "atlasTemporalLifetime": [
+      "<repo>/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "<repo>/Hazel/Resources",
+      "<repo>/build/point-regression-csm/metal/atlas-lifetime",
+      "--shadow-atlas-taa-lifetime"
+    ],
+    "opengl": [
+      "<repo>/bin/Release-macos-arm64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke",
+      "--shadows",
+      "<repo>/build/point-regression-csm/opengl"
+    ]
+  },
+  "backends": {
+    "metal": {
+      "cases": 24
+    },
+    "opengl": {
+      "cases": 24
+    }
+  },
+  "parity": [
+    {
+      "name": "case-0",
+      "idMismatches": 0,
+      "maxDepth": 2.384185791015625e-07,
+      "maxRGB": 7.7858567237854e-05
+    },
+    {
+      "name": "case-1",
+      "idMismatches": 0,
+      "maxDepth": 1.1920928955078125e-07,
+      "maxRGB": 8.642673492431641e-07
+    },
+    {
+      "name": "case-10",
+      "idMismatches": 0,
+      "maxDepth": 9.834766387939453e-07,
+      "maxRGB": 0.00012937188148498535
+    },
+    {
+      "name": "case-11",
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 2.816319465637207e-06
+    },
+    {
+      "name": "case-12",
+      "idMismatches": 0,
+      "maxDepth": 2.384185791015625e-07,
+      "maxRGB": 0.0003178715705871582
+    },
+    {
+      "name": "case-13",
+      "idMismatches": 0,
+      "maxDepth": 1.1920928955078125e-07,
+      "maxRGB": 8.642673492431641e-07
+    },
+    {
+      "name": "case-14",
+      "idMismatches": 0,
+      "maxDepth": 1.1920928955078125e-07,
+      "maxRGB": 7.450580596923828e-07
+    },
+    {
+      "name": "case-15",
+      "idMismatches": 0,
+      "maxDepth": 1.1920928955078125e-07,
+      "maxRGB": 0.00011098384857177734
+    },
+    {
+      "name": "case-16",
+      "idMismatches": 0,
+      "maxDepth": 9.834766387939453e-07,
+      "maxRGB": 0.0002626478672027588
+    },
+    {
+      "name": "case-17",
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 5.617737770080566e-06
+    },
+    {
+      "name": "case-18",
+      "idMismatches": 0,
+      "maxDepth": 2.384185791015625e-07,
+      "maxRGB": 0.0006236061453819275
+    },
+    {
+      "name": "case-19",
+      "idMismatches": 0,
+      "maxDepth": 1.1920928955078125e-07,
+      "maxRGB": 8.642673492431641e-07
+    },
+    {
+      "name": "case-2",
+      "idMismatches": 0,
+      "maxDepth": 1.1920928955078125e-07,
+      "maxRGB": 8.493661880493164e-07
+    },
+    {
+      "name": "case-20",
+      "idMismatches": 0,
+      "maxDepth": 1.1920928955078125e-07,
+      "maxRGB": 7.450580596923828e-07
+    },
+    {
+      "name": "case-21",
+      "idMismatches": 0,
+      "maxDepth": 1.1920928955078125e-07,
+      "maxRGB": 0.00019879639148712158
+    },
+    {
+      "name": "case-22",
+      "idMismatches": 0,
+      "maxDepth": 9.834766387939453e-07,
+      "maxRGB": 0.000556647777557373
+    },
+    {
+      "name": "case-23",
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 1.12093985080719e-05
+    },
+    {
+      "name": "case-3",
+      "idMismatches": 0,
+      "maxDepth": 1.1920928955078125e-07,
+      "maxRGB": 2.944469451904297e-05
+    },
+    {
+      "name": "case-4",
+      "idMismatches": 0,
+      "maxDepth": 9.834766387939453e-07,
+      "maxRGB": 6.058812141418457e-05
+    },
+    {
+      "name": "case-5",
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 2.757646143436432e-06
+    },
+    {
+      "name": "case-6",
+      "idMismatches": 0,
+      "maxDepth": 2.384185791015625e-07,
+      "maxRGB": 0.0001589357852935791
+    },
+    {
+      "name": "case-7",
+      "idMismatches": 0,
+      "maxDepth": 1.1920928955078125e-07,
+      "maxRGB": 8.642673492431641e-07
+    },
+    {
+      "name": "case-8",
+      "idMismatches": 0,
+      "maxDepth": 1.1920928955078125e-07,
+      "maxRGB": 7.450580596923828e-07
+    },
+    {
+      "name": "case-9",
+      "idMismatches": 0,
+      "maxDepth": 1.1920928955078125e-07,
+      "maxRGB": 5.996227264404297e-05
+    }
+  ],
+  "status": "PASS scoped analytic visibility and deterministic captures; full milestone gates separate"
+}

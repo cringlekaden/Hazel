@@ -5,6 +5,7 @@
 #include "LocalLightingQualification.h"
 #include "DirectionalShadowQualification.h"
 #include "SpotShadowQualification.h"
+#include "PointShadowQualification.h"
 #include "XeGTAOQualification.h"
 #include "TemporalAAQualification.h"
 #include "TemporalEdgeQualification.h"
@@ -224,7 +225,8 @@ void TemporalLifetime(Hazel::MetalRendererAPI& backend, bool shadows=false) {
 
 // Lit moving shadows make atlas read-after-write errors visible. The older
 // lifetime probes intentionally use unlit materials and cannot establish this.
-void ShadowAtlasLifetime(Hazel::MetalRendererAPI& backend, bool temporal=false, bool spot=false) {
+void ShadowAtlasLifetime(Hazel::MetalRendererAPI& backend, bool temporal=false, Hazel::ShadowMapKind kind = Hazel::ShadowMapKind::Directional) {
+    const bool spot = kind == Hazel::ShadowMapKind::Spot, point = kind == Hazel::ShadowMapKind::Point;
     using namespace Hazel;
     auto project=Project::LoadCandidate(std::filesystem::absolute("examples/RenderingReference/RenderingReference.hproj"));
     SceneSubmission frame;frame.Assets=CreateRef<ProjectAssets>(project->GetAssetRoot());
@@ -238,7 +240,7 @@ void ShadowAtlasLifetime(Hazel::MetalRendererAPI& backend, bool temporal=false, 
     frame.Light=SubmittedDirectional{glm::normalize(glm::vec3(1,1,0)),glm::vec3(2)};
     frame.Camera.Orthographic=true;frame.Camera.Position={0,10,0};frame.Camera.ToCamera={0,1,0};
     frame.Camera.ViewProjection=glm::ortho(-2.f,2.f,-2.f,2.f,.1f,20.f)*glm::lookAt(frame.Camera.Position,glm::vec3(0),glm::vec3(0,0,-1));
-    if (spot) {
+    if (spot || point) {
         frame.Presentation.Shadows.Enabled = false;
         frame.Light.reset();
         SubmittedLocalLight light;
@@ -246,14 +248,14 @@ void ShadowAtlasLifetime(Hazel::MetalRendererAPI& backend, bool temporal=false, 
         light.Position = {3, 3, 0};
         light.Incident = glm::vec3(16);
         light.InnerCos = std::cos(.4f);
-        light.OuterCos = std::cos(.75f);
+        light.OuterCos = spot ? std::cos(.75f) : -1.f;
         light.CastShadows = true;
         frame.LocalLights = {light};
     }
     auto target=Framebuffer::Create(TargetSpecification(64,64));SceneRenderView view;
     auto render=[&](unsigned index) {
-        if (spot) {
-            frame.LocalLights[0].ShadowResolution = index == 2 ? 256 : 1024;
+        if (spot || point) {
+            frame.LocalLights[0].ShadowResolution = index == 2 ? 256 : point ? 512 : 1024;
             frame.LocalLights[0].Position.z = float(index) * .2f;
             frame.LocalLights[0].Direction = glm::normalize(-frame.LocalLights[0].Position);
         }
@@ -272,7 +274,7 @@ void ShadowAtlasLifetime(Hazel::MetalRendererAPI& backend, bool temporal=false, 
     struct Release {std::function<void()> Call;~Release(){if(Call)Call();}} gate{backend.GateQueueForTesting()};
     for(unsigned i=0;i<3;++i) {
         queued[i]=render(i);Check(bool(queued[i]),"Queued shadow atlas busy");
-        auto snapshot=std::static_pointer_cast<MetalFramebuffer>(spot ? view.SpotShadowDepth : view.ShadowDepth)->Snapshot();
+        auto snapshot=std::static_pointer_cast<MetalFramebuffer>(spot ? view.SpotShadowDepth : point ? view.PointShadowDepth : view.ShadowDepth)->Snapshot();
         if(i==0)first=snapshot;
         if(i==1)Check(first.lock()==snapshot,"Private Ultra atlas storage was multiplied for queued frames");
         if(i==2)last=snapshot;
@@ -285,7 +287,7 @@ void ShadowAtlasLifetime(Hazel::MetalRendererAPI& backend, bool temporal=false, 
         for(size_t p=0;p<queued[i]->Color.size();++p)Check(glm::length(queued[i]->Color[p]-expected[i]->Color[p])<1e-6f,"Queue-ordered atlas overwrote an earlier lit shadow");
     }
     Check(first.expired() && last.expired(),"Completed private shadow atlas generation retained");
-    std::cout<<"PASS lit moving-shadow serialized/three-slot equivalence, shared atlas storage, resolution replacement, busy cancellation and view destruction/retirement spot="<<spot<<" TAA="<<temporal<<'\n';
+    std::cout<<"PASS lit moving-shadow serialized/three-slot equivalence, shared atlas storage, resolution replacement, busy cancellation and view destruction/retirement spot="<<spot<<" point="<<point<<" TAA="<<temporal<<'\n';
 }
 
 void MeshLifetime(Hazel::MetalRendererAPI& backend, bool ambientOcclusion=false, bool shadows=false)
@@ -362,11 +364,14 @@ int main(int argc, char** argv)
         const bool atlasTemporal = argc == 4 && std::string(argv[3]) == "--shadow-atlas-taa-lifetime";
         const bool atlasLifetime = argc == 4 && std::string(argv[3]) == "--shadow-atlas-lifetime";
         const bool shadows = argc == 4 && std::string(argv[3]) == "--shadows";
+        const bool pointShadows = argc == 4 && std::string(argv[3]) == "--point-shadows";
+        const bool pointLifetime = argc == 4 && std::string(argv[3]) == "--point-shadow-lifetime";
+        const bool pointTemporalLifetime = argc == 4 && std::string(argv[3]) == "--point-shadow-taa-lifetime";
         const bool spotLifetime = argc == 4 && std::string(argv[3]) == "--spot-shadow-lifetime";
         const bool spotTemporalLifetime = argc == 4 && std::string(argv[3]) == "--spot-shadow-taa-lifetime";
         const bool spotShadows = argc == 4 && std::string(argv[3]) == "--spot-shadows";
         const bool localLights = argc == 4 && std::string(argv[3]) == "--local-lights";
-        const bool multiscattering = atlasTemporal || atlasLifetime || shadowTemporal || shadows || spotShadows || spotLifetime || spotTemporalLifetime || localLights || (argc == 4 && std::string(argv[3]) == "--ggx-ms");
+        const bool multiscattering = pointShadows || pointLifetime || pointTemporalLifetime || atlasTemporal || atlasLifetime || shadowTemporal || shadows || spotShadows || spotLifetime || spotTemporalLifetime || localLights || (argc == 4 && std::string(argv[3]) == "--ggx-ms");
         const bool renderer3D = argc == 4 && std::string(argv[3]) == "--renderer3d-parity";
         Hazel::RendererSettings settings; settings.TextureSlots = argc >= 4 && !multiscattering && !renderer3D && !compute && !ao && !temporal && !edges && !temporalBenchmark && !offscreenBenchmark ? uint32_t(std::stoul(argv[3])) : 4;
         Check(settings.TextureSlots == 2 || settings.TextureSlots == 4,"Fixture supports two or four texture slots");
@@ -399,17 +404,20 @@ int main(int argc, char** argv)
         }
         if (multiscattering) {
             if(atlasLifetime || atlasTemporal)ShadowAtlasLifetime(backend,atlasTemporal);
-            else if (spotLifetime || spotTemporalLifetime) ShadowAtlasLifetime(backend, spotTemporalLifetime, true);
+            else if (spotLifetime || spotTemporalLifetime) ShadowAtlasLifetime(backend, spotTemporalLifetime, Hazel::ShadowMapKind::Spot);
+            else if (pointLifetime || pointTemporalLifetime) ShadowAtlasLifetime(backend, pointTemporalLifetime, Hazel::ShadowMapKind::Point);
             else if(shadowTemporal)TemporalLifetime(backend,true);
             else {
-            (spotShadows?SpotShadowQualification:shadows?DirectionalShadowQualification:localLights?LocalLightingQualification:MultiscatteringQualification)(output, [&](const auto& target) {
+            (pointShadows?PointShadowQualification:spotShadows?SpotShadowQualification:shadows?DirectionalShadowQualification:localLights?LocalLightingQualification:MultiscatteringQualification)(output, [&](const auto& target) {
                 auto result=Submit(target);Check(bool(result),"GGX submit busy");Wait(*target,result);return result;
             });
-            if (!spotShadows) MeshLifetime(backend,true,shadows);
+            if (!spotShadows && !pointShadows) MeshLifetime(backend,true,shadows);
             }
             framebuffer.reset();Hazel::Renderer2D::Shutdown();Hazel::RenderCommand::Shutdown();
             Check(observer->Snapshot().Errors==0 && observer->Snapshot().ResourceBytes==0 && observer->Snapshot().AttachmentGenerations==0,"GGX retirement failed");
             if (spotShadows || spotLifetime || spotTemporalLifetime) std::cout << "SPOT_RESOURCES peak=" << observer->Snapshot().PeakResourceBytes
+                << " attachments=" << observer->Snapshot().PeakAttachmentBytes << " final=" << observer->Snapshot().ResourceBytes << '\n';
+            if (pointShadows || pointLifetime || pointTemporalLifetime) std::cout << "POINT_RESOURCES peak=" << observer->Snapshot().PeakResourceBytes
                 << " attachments=" << observer->Snapshot().PeakAttachmentBytes << " final=" << observer->Snapshot().ResourceBytes << '\n';
             return 0;
         }

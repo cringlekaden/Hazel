@@ -1,4 +1,5 @@
 #include "hzpch.h"
+#include <type_traits>
 #include "DocumentSchema.h"
 #include "Hazel/Assets/FontFamily.h"
 #include "Hazel/Assets/ImportedAsset.h"
@@ -186,23 +187,27 @@ bool Scene(const YAML::Node& root, bool prefabDocument)
             l.Enabled = n["Enabled"].as<bool>();
             l.Validate();
         }
-        for(const char *name:{"PointLightComponent","SpotLightComponent"})if(auto n=entity[name]) {
-            const bool spot=std::string(name)=="SpotLightComponent";
-            if(spot)Keys(n,{"Color","Intensity","Enabled","Range","InnerCone","OuterCone","CastShadows","ShadowResolution"},name);
-            else Keys(n,{"Color","Intensity","Enabled","Range"},name);
-            Vector(n["Color"],3);
-            SpotLight light;
-            for(int i=0;i<3;++i)light.Color[i]=n["Color"][i].as<float>();
-            light.Intensity=n["Intensity"].as<float>();light.Enabled=n["Enabled"].as<bool>();light.Range=n["Range"].as<float>();
-            if (spot) {
+        auto readLocal = [&](auto light, const char* name) {
+            auto n = entity[name];
+            if (!n) return;
+            if constexpr (std::is_same_v<decltype(light), SpotLight>) {
+                Keys(n, {"Color","Intensity","Enabled","Range","InnerCone","OuterCone","CastShadows","ShadowResolution"}, name);
                 light.InnerCone = n["InnerCone"].as<float>();
                 light.OuterCone = n["OuterCone"].as<float>();
-                if (auto cast = n["CastShadows"]) light.CastShadows = cast.as<bool>();
-                if (auto side = n["ShadowResolution"]) light.ShadowResolution = side.as<unsigned>();
-                light.Validate();
+            } else {
+                Keys(n, {"Color","Intensity","Enabled","Range","CastShadows","ShadowResolution"}, name);
             }
-            else light.PointLight::Validate();
-        }
+            Vector(n["Color"],3);
+            for (int i = 0; i < 3; ++i) light.Color[i] = n["Color"][i].as<float>();
+            light.Intensity = n["Intensity"].as<float>();
+            light.Enabled = n["Enabled"].as<bool>();
+            light.Range = n["Range"].as<float>();
+            if (auto cast = n["CastShadows"]) light.CastShadows = cast.as<bool>();
+            if (auto side = n["ShadowResolution"]) light.ShadowResolution = side.as<unsigned>();
+            light.Validate();
+        };
+        readLocal(PointLight{}, "PointLightComponent");
+        readLocal(SpotLight{}, "SpotLightComponent");
         if(auto n=entity["MeshRendererComponent"])ReadMeshBinding(n);
         if (auto n = entity["CircleRendererComponent"])
         {

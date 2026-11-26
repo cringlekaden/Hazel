@@ -174,7 +174,7 @@ Light gizmos support viewport picking; selection shows the influence sphere or
 inner/outer cones. **Lights...** in the viewport opens transient radiance,
 occupancy/overflow and timing inspection. Metal uses Forward+; OpenGL 4.1 evaluates
 the same lighting with a bounded loop. The shared limit is 320 enabled local lights;
-excess submission reports an error. Point and spot lights do not cast shadows.
+excess submission reports an error. Point and spot shadow maps are opt-in.
 See [the local-light gallery](../examples/RenderingReference/README.md#locallights_v1-authored-point-and-spot-gallery)
 for a reproducible scene and launch commands, and its linked qualification status.
 
@@ -219,3 +219,18 @@ static meshes can cast shadows from outside the camera view. Open the
 to see two overlapping shadow maps, solid contact and a masked caster.
 See the [spotlight design record](design/spotlight-shadows.md) for qualification
 and platform coverage.
+
+### Point shadow maps
+
+Select a **Point Light**, enable **Cast shadows**, and choose 256 or 512
+for **Shadow resolution per face**. The default is off at 256. The first
+enabled, emitting request in ascending entity ID order gets omnidirectional
+shadows. Additional point lights retain their full unshadowed contribution.
+The viewport **Lights…** popup shows admission, atlas memory, and Metal GPU
+generation time. The current atlas uses 1.5 MiB at 256 or 6 MiB at 512 per
+view, plus pending replacement generations.
+
+Opaque and masked static meshes cast point shadows, including off-camera
+casters. Light rotation and scale leave coverage unchanged. See the
+[point and spot shadow study](../examples/RenderingReference/README.md#point-and-spot-shadow-study)
+and the [qualification record](design/point-shadows.md).

@@ -138,7 +138,8 @@ void MetalFramebuffer::PrepareShadowDepth(const Ref<Framebuffer>& depth, ShadowM
 {
     auto source=std::dynamic_pointer_cast<MetalFramebuffer>(depth);
     Check(bool(m_Frame), "Shadows require a bound lighting view");
-    auto& producer = kind == ShadowMapKind::Directional ? m_Frame->ShadowSource : m_Frame->SpotShadowSource;
+    auto& producer = kind == ShadowMapKind::Directional ? m_Frame->ShadowSource :
+        kind == ShadowMapKind::Spot ? m_Frame->SpotShadowSource : m_Frame->PointShadowSource;
     Check(source && source.get()!=this && source->m_Device==m_Device && source->m_Frame &&
         !Backend().IsFramebufferBound(source->m_Frame) && Backend().IsFramebufferBound(m_Frame) &&
         source->m_Specification.Attachments.Attachments.size()==1 && source->m_Attachments->Targets[2] &&

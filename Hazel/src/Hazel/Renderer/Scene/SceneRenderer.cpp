@@ -72,12 +72,14 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
     if(input.ShadowView>10)throw std::runtime_error("Unsupported directional shadow inspection");
     const bool shadows = input.Presentation.Shadows.Enabled && input.Light.has_value();
     SpotShadowLayout spotLayout;
+    PointShadowLayout pointLayout;
     SceneSubmission shadowed;
     try {
         if (input.LocalLights.size() > MaxLocalLights)
             throw std::runtime_error("Submission exceeds 320 local lights; no lights were truncated");
         spotLayout = FitSpotShadows(input);
-        if (shadows || spotLayout.Count) {
+        pointLayout = FitPointShadows(input);
+        if (shadows || spotLayout.Count || pointLayout.Side) {
             if (!display) throw std::runtime_error("Shadows require an explicit view target");
             shadowed = input;
             if (shadows) {
@@ -85,6 +87,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
                 shadowed.Shadows.Range.w = float(input.ShadowView);
             }
             shadowed.SpotShadows = spotLayout.Data;
+            shadowed.PointShadows = pointLayout.Data;
         }
     } catch (...) {
         view.Temporal = {};
@@ -92,16 +95,21 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
         throw;
     }
     const bool spotShadows = spotLayout.Count != 0;
-    const bool anyShadows = shadows || spotShadows;
+    const bool pointShadows = pointLayout.Side != 0;
+    const bool anyShadows = shadows || spotShadows || pointShadows;
     const auto& frame = anyShadows ? shadowed : input;
     if (!shadows) view.ShadowDepth.reset();
     if (!spotShadows) view.SpotShadowDepth.reset();
+    if (!pointShadows) view.PointShadowDepth.reset();
     if (frame.LocalMetrics) {
+        frame.LocalMetrics->PointShadows = pointShadows ? 1 : 0;
+        frame.LocalMetrics->RequestedPointShadows = pointLayout.Requested;
+        frame.LocalMetrics->PointShadowBytes = uint64_t(PointShadowFaces) * pointLayout.Side * pointLayout.Side * sizeof(float);
         frame.LocalMetrics->SpotShadows = spotLayout.Count;
         frame.LocalMetrics->RequestedSpotShadows = spotLayout.Requested;
         frame.LocalMetrics->SpotShadowBytes = uint64_t(spotLayout.Extent.x) * spotLayout.Extent.y * sizeof(float);
     }
-    auto renderShadowAtlas = [&](Ref<Framebuffer>& atlas, glm::uvec2 extent, unsigned count, auto tile, bool spotAtlas = false) {
+    auto renderShadowAtlas = [&](Ref<Framebuffer>& atlas, glm::uvec2 extent, unsigned count, auto tile, bool localAtlas = false) {
         FramebufferSpecification size;
         size.Width = extent.x;
         size.Height = extent.y;
@@ -118,7 +126,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
                 glm::vec3 origin(0);
                 const auto viewport = tile(index, depth.Camera.ViewProjection, origin);
                 RenderCommand::SetViewport(viewport.x, viewport.y, viewport.z, viewport.w);
-                if (spotAtlas) {
+                if (localAtlas) {
                     auto tileRaster = RenderCommand::GetRasterState();
                     tileRaster.ClipEnabled = true;
                     tileRaster.ClipRect = glm::ivec4(viewport);
@@ -128,13 +136,13 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
                 for (const auto& draw : frame.ShadowCasters) {
                     const auto& bounds = draw.Geometry->Geometry.Bounds;
                     auto model = draw.World;
-                    if (spotAtlas) model[3] -= glm::vec4(origin, 0);
+                    if (localAtlas) model[3] -= glm::vec4(origin, 0);
                     if (ShadowCasterVisible(bounds.Min, bounds.Max, depth.Camera.ViewProjection * model)) {
                         depth.Meshes.push_back(draw);
                         depth.Meshes.back().World = model;
                     }
                 }
-                Renderer3D::Render(depth, false, true);
+                if (!depth.Meshes.empty()) Renderer3D::Render(depth, false, true);
             }
         } catch (...) {
             atlas->Unbind();
@@ -160,10 +168,20 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
                 return glm::uvec4(unsigned(tile.x), 0, unsigned(tile.y), unsigned(tile.y));
             }, true);
         }
+        if (pointShadows) {
+            const unsigned side = pointLayout.Side;
+            renderShadowAtlas(view.PointShadowDepth, {3 * side, 2 * side}, PointShadowFaces,
+                [&](unsigned face, glm::mat4& vp, glm::vec3& origin) {
+                    vp = pointLayout.VP[face];
+                    origin = frame.LocalLights[pointLayout.LightIndex].Position;
+                    return glm::uvec4((face % 3) * side, (face / 3) * side, side, side);
+                }, true);
+        }
     };
     auto prepareShadowDepth = [&](const Ref<Framebuffer>& target) {
         if (shadows) target->PrepareShadowDepth(view.ShadowDepth, ShadowMapKind::Directional);
         if (spotShadows) target->PrepareShadowDepth(view.SpotShadowDepth, ShadowMapKind::Spot);
+        if (pointShadows) target->PrepareShadowDepth(view.PointShadowDepth, ShadowMapKind::Point);
     };
     const bool temporal=frame.Presentation.TemporalAA && RendererAPI::GetAPI()==RendererAPI::API::Metal &&
         frame.Presentation.SceneReferred && frame.Debug==SurfaceView::Shaded && frame.AmbientOcclusionView==0 && frame.LocalLightingView==0 && frame.ShadowView==0;
@@ -196,6 +214,13 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
                     break;
                 }
             }
+        }
+        if (historyValid) {
+            const auto current = frame.PointShadows.Parameters;
+            const auto previous = state.Previous.PointShadows.Parameters;
+            historyValid = current.y == previous.y && (!current.x ||
+                frame.LocalLights[unsigned(current.x) - 1].Identity ==
+                    state.Previous.LocalLights[unsigned(previous.x) - 1].Identity);
         }
         if(!historyValid)state.Phase=0;
         jitter={Halton(state.Phase%64+1,2)-.5f,Halton(state.Phase%64+1,3)-.5f};
@@ -331,6 +356,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
             if (view.AmbientDepth) view.AmbientDepth->Cancel();
             if (view.ShadowDepth) view.ShadowDepth->Cancel();
             if (view.SpotShadowDepth) view.SpotShadowDepth->Cancel();
+            if (view.PointShadowDepth) view.PointShadowDepth->Cancel();
             if (view.Radiance) view.Radiance->Cancel();
             display->Cancel();
             throw;

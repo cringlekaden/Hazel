@@ -115,15 +115,16 @@ def main():
     print(report['status'])
 
 
-def verify_archives(archives, output, binaries, sdk, env, report):
+def verify_archives(archives, output, binaries, sdk, env, report, mode="spot", offscreen_only=False):
     from internal.package_tests import extract_verified
     from macos.packaging import relocate_executable, sign
     from macos.qualification import isolation_command, native_console
 
-    native_console(output / 'console.json')
+    if not offscreen_only:
+        native_console(output / 'console.json')
     clean = {k: v for k, v in env.items() if not k.startswith(('HAZEL_', 'DYLD_'))}
     clean.update(PATH='/usr/bin:/bin', DEVELOPER_DIR='/nonexistent', MTL_DEBUG_LAYER='1', MTL_SHADER_VALIDATION='1')
-    with tempfile.TemporaryDirectory(prefix='Hazel spotlight relocation ü ') as temporary:
+    with tempfile.TemporaryDirectory(prefix=f'Hazel {mode} shadow relocation ü ') as temporary:
         working = Path(temporary)
 
         def run(name, command, project=None):
@@ -151,15 +152,16 @@ def verify_archives(archives, output, binaries, sdk, env, report):
                 if hashlib.sha256((resources / 'shaders/metal' / name).read_bytes()).hexdigest() != digest:
                     raise RuntimeError('Package shader digest differs for ' + name)
             if metadata['metal_shaders'].get('ForwardPBR.hzmetal') != report['artifactSHA256']:
-                raise RuntimeError('Package does not contain the verified spotlight forward shader')
+                raise RuntimeError('Package does not contain the verified forward shader')
             report['cases'][app + '-inventory'] = dict(exitCode=0, artifacts=len(metadata['metal_shaders']))
             project = next((resources / 'Project').glob('*.hproj'))
-            for backend in ('metal', 'opengl'):
-                options = ['--no-restore'] if app == 'Hazelnut' else []
-                run(app + '-' + backend, [contents / 'MacOS' / app, '--project', project,
-                                         '--' + backend, '--smoke-test', *options])
+            if not offscreen_only:
+                for backend in ('metal', 'opengl'):
+                    options = ['--no-restore'] if app == 'Hazelnut' else []
+                    run(app + '-' + backend, [contents / 'MacOS' / app, '--project', project,
+                                             '--' + backend, '--smoke-test', *options])
             if app == 'Nutella':
-                probe = working / 'Probe/MacOS/SpotProbe'
+                probe = working / 'Probe/MacOS/ShadowProbe'
                 probe.parent.mkdir(parents=True)
                 shutil.copy2(binaries / 'MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke', probe)
                 shutil.copytree(contents / 'Frameworks', probe.parent.parent / 'Frameworks')
@@ -168,7 +170,7 @@ def verify_archives(archives, output, binaries, sdk, env, report):
                 source_free = working / 'Source-free Resources'
                 shutil.copytree(resources, source_free, ignore=shutil.ignore_patterns('*.glsl', '*.metal'))
                 descriptor = source_free / 'Project' / project.name
-                run('metal-source-free', [probe, source_free, working / 'source-free-captures', '--spot-shadows'], descriptor)
+                run('metal-source-free', [probe, source_free, working / 'source-free-captures', f'--{mode}-shadows'], descriptor)
 
 
 if __name__ == '__main__':
