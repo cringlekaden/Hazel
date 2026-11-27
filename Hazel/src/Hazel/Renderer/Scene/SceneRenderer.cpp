@@ -24,7 +24,7 @@ bool ValidCamera(const glm::mat4& matrix) {
 }
 bool CameraCut(const SceneSubmission& frame,const SceneCameraView& previous) {
     const auto& current=frame.Camera;
-    if(current.Orthographic!=previous.Orthographic)return true;
+    if(current.Identity!=previous.Identity || current.Orthographic!=previous.Orthographic)return true;
     // Near-plane displacement exaggerates ordinary camera motion, especially
     // with a small near clip or a long orthographic depth range. Compare rays
     // at submitted mesh depth instead; disocclusion remains a per-pixel test.
@@ -289,13 +289,16 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
             *view.BloomMetrics = {};
     }
     auto presentWorld = [&] {
+        const auto lens = frame.Camera.Physical.value_or(PhysicalCamera{});
+        lens.Validate();
+        const float gain = lens.Log2ExposureGain(frame.Presentation.Exposure);
         if (useBloom) {
             bloom.Validate();
             const auto& size = view.Radiance->GetSpecification();
             view.Bloom.Timing = view.BloomMetrics;
             view.Bloom.Prepare(size.Width, size.Height, bloom.Intensity, bloom.Radius);
         }
-        view.Radiance->CompositeWorldTo(display, frame.Presentation.Exposure, useBloom ? &view.Bloom : nullptr);
+        view.Radiance->CompositeWorldTo(display, gain, useBloom ? &view.Bloom : nullptr);
     };
     const bool reflections = frame.Presentation.ScreenReflections.Enabled && frame.Presentation.SceneReferred &&
         !frame.CaptureRadiance && frame.Debug==SurfaceView::Shaded && frame.AmbientOcclusionView==0 &&

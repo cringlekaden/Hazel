@@ -1023,9 +1023,13 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             }
             if (camera.GetProjectionType() == SceneCamera::ProjectionType::Perspective)
             {
-                float perspectiveVerticalFov = glm::degrees(camera.GetPerspectiveVerticalFOV());
-                if (PropertyUI::DragFloat("vertical-fov", "Vertical FOV (deg)", perspectiveVerticalFov))
-                    camera.SetPerspectiveVerticalFOV(glm::radians(perspectiveVerticalFov));
+                const auto& physical = camera.GetPhysicalCamera();
+                if (!physical || !physical->LensProjection)
+                {
+                    float perspectiveVerticalFov = glm::degrees(camera.GetPerspectiveVerticalFOV());
+                    if (PropertyUI::DragFloat("vertical-fov", "Vertical FOV (deg)", perspectiveVerticalFov))
+                        camera.SetPerspectiveVerticalFOV(glm::radians(perspectiveVerticalFov));
+                }
 
                 float perspectiveNear = camera.GetPerspectiveNearClip();
                 if (PropertyUI::DragFloat("Near", "Near", perspectiveNear))
@@ -1052,6 +1056,35 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
 
                 PropertyUI::Checkbox("Fixed Aspect Ratio", "Fixed Aspect Ratio",
                                      component.FixedAspectRatio);
+            }
+
+            bool usePhysical = camera.GetPhysicalCamera().has_value();
+            if (PropertyUI::Checkbox("physical-camera", "Physical camera", usePhysical))
+            {
+                if (usePhysical)
+                    camera.SetPhysicalCamera(PhysicalCamera{});
+                else
+                    camera.SetPhysicalCamera(std::nullopt);
+            }
+            if (usePhysical)
+            {
+                auto lens = *camera.GetPhysicalCamera();
+                bool changed = bool(PropertyUI::DragFloat("aperture", "Aperture (f-number)", lens.Aperture, .05f, .5f, 128));
+                changed |= bool(PropertyUI::DragFloat("shutter-seconds", "Shutter (s)", lens.ShutterSeconds, .0001f, 1.f / 32000, 60, "%.6f"));
+                changed |= bool(PropertyUI::DragFloat("iso", "ISO", lens.ISO, 1, 1, 204800, "%.0f"));
+                ImGui::Text("EV100 %.2f", lens.EV100());
+                if (ImGui::TreeNode("Physical lens"))
+                {
+                    if (camera.GetProjectionType() == SceneCamera::ProjectionType::Perspective)
+                        changed |= bool(PropertyUI::Checkbox("lens-projection", "Frame using lens", lens.LensProjection));
+                    changed |= bool(PropertyUI::DragFloat("focal-length", "Focal length (mm)", lens.FocalLengthMM, .2f, 1, 2000));
+                    changed |= bool(PropertyUI::DragFloat("sensor-width", "Sensor width (mm)", lens.SensorWidthMM, .1f, 1, 200));
+                    changed |= bool(PropertyUI::DragFloat("sensor-height", "Sensor height (mm)", lens.SensorHeightMM, .1f, 1, 200));
+                    changed |= bool(PropertyUI::DragFloat("focus-distance", "Focus distance (world units)", lens.FocusDistance, .05f, .001f, 100000));
+                    ImGui::TreePop();
+                }
+                if (changed)
+                    camera.SetPhysicalCamera(lens);
             }
         });
 

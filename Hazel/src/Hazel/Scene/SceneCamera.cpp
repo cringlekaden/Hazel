@@ -39,11 +39,26 @@ namespace Hazel {
 		RecalculateProjection();
 	}
 
+	void SceneCamera::SetPhysicalCamera(const std::optional<PhysicalCamera>& camera)
+	{
+		if (camera)
+			camera->Validate();
+		m_PhysicalCamera = camera;
+		RecalculateProjection();
+	}
+
+	float SceneCamera::GetEffectivePerspectiveVerticalFOV() const
+	{
+		return m_PhysicalCamera && m_PhysicalCamera->LensProjection
+			? float(m_PhysicalCamera->VerticalFOV(m_AspectRatio)) : m_PerspectiveFOV;
+	}
+
 	void SceneCamera::RecalculateProjection()
 	{
 		if (m_ProjectionType == ProjectionType::Perspective)
 		{
-			m_Projection = PerspectiveProjection::Matrix(m_PerspectiveFOV, m_AspectRatio, m_PerspectiveNear, m_PerspectiveFar);
+			m_Projection = PerspectiveProjection::Matrix(GetEffectivePerspectiveVerticalFOV(),
+				m_AspectRatio, m_PerspectiveNear, m_PerspectiveFar);
 		}
 		else
 		{

@@ -40,10 +40,10 @@ World presentation is independent of camera projection and editor navigation.
 ordered screen UI into one RGBA16F linear target with depth and integer picking.
 It needs no lighting target or tone-map pass.
 
-**SceneReferred** renders world radiance into RGBA32F, applies `2^Exposure` and
+**SceneReferred** renders world radiance into RGBA32F, applies exposure gain and
 fixed Khronos PBR Neutral tone mapping into the display-linear RGBA16F composite,
-then composes screen UI independently. Exposure is [-16,16] stops; no automatic
-exposure or selectable tone curves. Lit metallic/roughness meshes require this
+then composes screen UI independently. Scene compensation adds signed stops to
+the camera gain. Lit metallic/roughness meshes require this
 mode. Unlit world content receives the same world exposure/presentation. Both
 orthographic and perspective cameras work in either supported presentation.
 The opaque linear background follows world presentation; transparent scene output
@@ -52,6 +52,14 @@ background, diffuse and specular lookups share inverse yaw and radiance gain.
 Cubemaps have explicit prepared mips; the BRDF LUT is linear A/B data. No source
 image, sRGB transfer or convolution runs during runtime loading. See
 [environment preparation](design/3d-environment-stage4.md).
+
+The primary runtime Camera Inspector offers optional physical aperture, shutter
+duration and ISO. These set EV100. The reference camera is f/4, 1/64 s and
+ISO 100 (EV100 10). At that reference, zero compensation gives unity gain and
+each positive compensation stop doubles it. This mapping uses Hazel's relative
+scene-light units. The perspective camera can also use focal length and sensor
+dimensions to frame the shot. The editor navigation camera uses the reference
+exposure. See [camera and image formation](design/camera-image-formation.md).
 
 A final pass applies the piecewise sRGB transfer into RGBA8, or into Nutella's
 window with `GL_FRAMEBUFFER_SRGB` disabled. Alpha is copied. The editor's output

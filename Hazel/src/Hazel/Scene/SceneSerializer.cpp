@@ -244,6 +244,20 @@ namespace Hazel {
 			out << YAML::Key << "OrthographicSize" << YAML::Value << camera.GetOrthographicSize();
 			out << YAML::Key << "OrthographicNear" << YAML::Value << camera.GetOrthographicNearClip();
 			out << YAML::Key << "OrthographicFar" << YAML::Value << camera.GetOrthographicFarClip();
+			if (const auto& lens = camera.GetPhysicalCamera())
+			{
+				out << YAML::Key << "PhysicalLens" << YAML::Value << YAML::BeginMap;
+				out << YAML::Key << "Version" << YAML::Value << 1;
+				out << YAML::Key << "Projection" << YAML::Value << lens->LensProjection;
+				out << YAML::Key << "FocalLengthMM" << YAML::Value << lens->FocalLengthMM;
+				out << YAML::Key << "SensorWidthMM" << YAML::Value << lens->SensorWidthMM;
+				out << YAML::Key << "SensorHeightMM" << YAML::Value << lens->SensorHeightMM;
+				out << YAML::Key << "Aperture" << YAML::Value << lens->Aperture;
+				out << YAML::Key << "ShutterSeconds" << YAML::Value << lens->ShutterSeconds;
+				out << YAML::Key << "ISO" << YAML::Value << lens->ISO;
+				out << YAML::Key << "FocusDistance" << YAML::Value << lens->FocusDistance;
+				out << YAML::EndMap;
+			}
 			out << YAML::EndMap; // Camera
 
 			out << YAML::Key << "Primary" << YAML::Value << cameraComponent.Primary;
@@ -595,6 +609,9 @@ namespace Hazel {
 					cc.Camera.SetOrthographicSize(cameraProps["OrthographicSize"].as<float>());
 					cc.Camera.SetOrthographicNearClip(cameraProps["OrthographicNear"].as<float>());
 					cc.Camera.SetOrthographicFarClip(cameraProps["OrthographicFar"].as<float>());
+
+					if (const auto node = cameraProps["PhysicalLens"])
+						cc.Camera.SetPhysicalCamera(DocumentSchema::ReadPhysicalLens(node));
 
 					cc.Primary = cameraComponent["Primary"].as<bool>();
 					cc.FixedAspectRatio = cameraComponent["FixedAspectRatio"].as<bool>();

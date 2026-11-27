@@ -7,6 +7,7 @@
 #include "Hazel/Project/Project.h"
 #include "Hazel/Project/RendererRequestsSerializer.h"
 #include "Hazel/Project/RuntimeStorage.h"
+#include "Hazel/Renderer/Cameras/PhysicalCamera.h"
 #include "Hazel/Renderer/Scene/Lighting.h"
 #include "Hazel/Renderer/Scene/ReflectionProbe.h"
 #include "Hazel/Scripting/ScriptEngine.h"
@@ -30,6 +31,24 @@ void Vector(const YAML::Node& node,size_t size)
     if(!node.IsSequence() || node.size()!=size)throw std::runtime_error("Wrong authored vector size (expected "+std::to_string(size)+")");
     Finite(node);
 }
+}
+PhysicalCamera ReadPhysicalLens(const YAML::Node& node)
+{
+    Keys(node, {"Version", "Projection", "FocalLengthMM", "SensorWidthMM",
+                "SensorHeightMM", "Aperture", "ShutterSeconds", "ISO", "FocusDistance"}, "PhysicalLens");
+    if (node["Version"].as<unsigned>() != 1)
+        throw std::runtime_error("Unsupported PhysicalLens version");
+    PhysicalCamera lens;
+    lens.LensProjection = node["Projection"].as<bool>();
+    lens.FocalLengthMM = node["FocalLengthMM"].as<float>();
+    lens.SensorWidthMM = node["SensorWidthMM"].as<float>();
+    lens.SensorHeightMM = node["SensorHeightMM"].as<float>();
+    lens.Aperture = node["Aperture"].as<float>();
+    lens.ShutterSeconds = node["ShutterSeconds"].as<float>();
+    lens.ISO = node["ISO"].as<float>();
+    lens.FocusDistance = node["FocusDistance"].as<float>();
+    lens.Validate();
+    return lens;
 }
 bool Project(const YAML::Node& root)
 {
@@ -134,10 +153,14 @@ bool Scene(const YAML::Node& root, bool prefabDocument)
             Keys(n, {"Camera", "Primary", "FixedAspectRatio"}, "CameraComponent");
             auto camera = n["Camera"];
             Keys(camera, {"ProjectionType", "PerspectiveFOV", "PerspectiveNear", "PerspectiveFar",
-                          "OrthographicSize", "OrthographicNear", "OrthographicFar"}, "Camera");
+                          "OrthographicSize", "OrthographicNear", "OrthographicFar", "PhysicalLens"}, "Camera");
             const auto type = camera["ProjectionType"].as<int>();
             if (type < 0 || type > 1) throw std::runtime_error("Unsupported camera ProjectionType");
-            for (auto field : camera) Finite(field.second);
+            for (auto field : camera)
+                if (field.first.as<std::string>() != "PhysicalLens")
+                    Finite(field.second);
+            if (const auto lens = camera["PhysicalLens"])
+                ReadPhysicalLens(lens);
             const auto fov=camera["PerspectiveFOV"].as<float>(),perspectiveNear=camera["PerspectiveNear"].as<float>(),perspectiveFar=camera["PerspectiveFar"].as<float>();
             if(fov<=0 || fov>=3.14159265359f || perspectiveNear<=0 || perspectiveFar<=perspectiveNear || camera["OrthographicSize"].as<float>()<=0 || camera["OrthographicFar"].as<float>()<=camera["OrthographicNear"].as<float>())
                 throw std::runtime_error("Camera requires positive size/FOV, ordered clipping, and positive perspective near");

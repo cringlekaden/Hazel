@@ -192,6 +192,27 @@ inline void HDRBloomQualification(const std::filesystem::path& output,
         throw std::runtime_error("Uniform HDR bloom/exposure differs from the FP64 reference: " + std::to_string(maxError));
     std::cout << "BLOOM_ORACLE uniformCases=27 maxLinearError=" << maxError << '\n';
 
+    uniform.Presentation.Bloom.Enabled = false;
+    uniform.Presentation.Exposure = -1;
+    material->EmissiveStrength = .25f;
+    double physicalError = 0;
+    for (const float iso : {64.f, 100.f, 200.f, 400.f, 800.f}) {
+        PhysicalCamera lens;
+        lens.Aperture = 8;
+        lens.ShutterSeconds = 1.f / 128;
+        lens.ISO = iso;
+        uniform.Camera.Physical = lens;
+        const double sensor = .25 * (1024. * iso / (100. * 128. * 64.)) / 2;
+        const double expected = sensor < .08 ? 6.25 * sensor * sensor : sensor - .04;
+        const auto result = render(uniform, reference);
+        for (const auto& p : result->Color)
+            physicalError = std::max(physicalError, std::abs(p.r - expected));
+    }
+    if (physicalError > 1e-4)
+        throw std::runtime_error("Physical camera gain differs from the FP64 reference");
+    uniform.Camera.Physical.reset();
+    std::cout << "CAMERA_ORACLE physicalCases=5 maxLinearError=" << physicalError << '\n';
+
     // Move an HDR pixel through all four half-resolution lattice phases.
     // The background is in the linear segment of Neutral, so the sum of the
     // presentation differences measures the reconstructed bloom energy.
@@ -278,6 +299,25 @@ inline void HDRBloomQualification(const std::filesystem::path& output,
     save("parity-on", on);
     if (on->Color != repeated->Color)
         throw std::runtime_error("Repeated AA-off HDR bloom is not deterministic");
+    PhysicalCamera physical;
+    physical.ISO = 200;
+    physical.Aperture = 8;
+    auto physicalFrame = frame;
+    physicalFrame.Camera.Physical = physical;
+    physicalFrame.Camera.Identity = 42;
+    auto compensatedFrame = frame;
+    compensatedFrame.Presentation.Exposure -= 1;
+    SceneRenderView cameraView;
+    const auto photographic = render(physicalFrame, cameraView);
+    const auto compensated = render(compensatedFrame, reference);
+    coverage(on, photographic);
+    if (photographic->Color != compensated->Color || photographic->Color == on->Color ||
+        render(frame, cameraView)->Color != on->Color)
+        throw std::runtime_error("Physical exposure did not match equivalent gain or leaked across cameras");
+    save("camera-reference", on);
+    save("camera-physical", photographic);
+    save("camera-compensated", compensated);
+    std::cout << "CAMERA_STUDY equivalentGain=bit-exact ID/depth=pass cameraSwitch=pass\n";
     frame.Presentation.Bloom.Intensity = 0;
     const auto zero = render(frame, reference);
     frame.Presentation.Bloom.Enabled = false;

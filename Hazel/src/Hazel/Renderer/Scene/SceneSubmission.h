@@ -1,6 +1,7 @@
 #pragma once
 #include "Hazel/Assets/ImportedAsset.h"
 #include "Hazel/Assets/Environment.h"
+#include "Hazel/Renderer/Cameras/PhysicalCamera.h"
 #include "Hazel/Scene/SceneDefaults.h"
 #include "SpotShadows.h"
 #include "PointShadows.h"
@@ -41,6 +42,8 @@ struct SceneCameraView
     glm::vec3 Position{}, ToCamera{0, 0, 1};
     bool Orthographic = false;
     glm::mat4 View{1}, Projection{1}; // Unjittered source matrices; VP is authoritative for direct submissions.
+    uint64_t Identity = 0; // Navigation and direct submissions default to a view-local camera.
+    std::optional<PhysicalCamera> Physical{};
 };
 struct SubmittedMesh
 {

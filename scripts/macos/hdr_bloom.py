@@ -24,7 +24,7 @@ SIZE = (640, 360)
 POSES = 17
 
 
-def authored_study(source, root, runtime_only=False):
+def authored_study(source, root, runtime_only=False, physical_camera=False):
     def producer_inputs(directory, names):
         return [name for name in names if name.endswith(".hdr") or
                 (Path(directory).name == "CapturedReflections" and name.endswith(".hlight"))]
@@ -35,6 +35,20 @@ def authored_study(source, root, runtime_only=False):
     source_scene = re.search(r"(?m)^  StartScene: (.+)$", project)[1]
     assets = root / "Assets"
     scene = (assets / source_scene).read_text().replace("Scene: SSR Gallery", "Scene: HDR Bloom Study", 1)
+    if physical_camera:
+        scene, count = re.subn(r"(?m)^(        OrthographicFar: .+)$", r"""\1
+        PhysicalLens:
+          Version: 1
+          Projection: true
+          FocalLengthMM: 25
+          SensorWidthMM: 36
+          SensorHeightMM: 24
+          Aperture: 8
+          ShutterSeconds: 0.015625
+          ISO: 200
+          FocusDistance: 8""", scene, count=1)
+        if count != 1:
+            raise RuntimeError("The study camera is missing")
     scene = re.sub(r"(?m)^  Exposure: .*$", """  Exposure: -0.75
   TemporalAA: true
   Bloom:
@@ -210,6 +224,8 @@ def main():
     parser.add_argument("--backend", choices=("both", "metal", "opengl"), default="both")
     parser.add_argument("--resources", type=Path, default=RESOURCES)
     parser.add_argument("--prepare-only", action="store_true")
+    parser.add_argument("--physical-camera", action="store_true",
+                        help="Author the study's runtime camera with a physical lens")
     parser.add_argument("--runtime-only", action="store_true",
                         help="Omit producer inputs from the generated study for archive qualification")
     parser.add_argument("--benchmark", action="store_true")
@@ -229,7 +245,10 @@ def main():
         parser.error("--offscreen-only requires --archive")
     if args.runtime_only and not args.from_gallery:
         parser.error("--runtime-only requires --from-gallery")
-    project = args.project.resolve() if args.project else authored_study(args.from_gallery.resolve(), output / "HDR Bloom Study", args.runtime_only)
+    if args.physical_camera and not args.from_gallery:
+        parser.error("--physical-camera requires --from-gallery")
+    project = args.project.resolve() if args.project else authored_study(
+        args.from_gallery.resolve(), output / "HDR Bloom Study", args.runtime_only, args.physical_camera)
     print(project, flush=True)
     if args.prepare_only:
         return
@@ -254,13 +273,17 @@ def main():
             if run.returncode:
                 raise RuntimeError(f"{backend} failed. See {log_path}")
             record = {"command": list(map(str, cmd)), "checks": [line for line in log.splitlines()
-                      if line.startswith("BLOOM_") and not line.startswith(("BLOOM_TIMING", "BLOOM_PHASES"))]}
+                      if line.startswith(("BLOOM_", "CAMERA_")) and not line.startswith(("BLOOM_TIMING", "BLOOM_PHASES"))]}
             report["backends"][backend] = record
             if args.benchmark:
                 record["timing"] = timings(log, folder / "timing.csv", backend)
                 continue
             for state in ("off", "on"):
                 png(folder / (state + ".png"), *SIZE, pixels(folder / f"{state}-{POSES // 2}.bin"))
+            for state in ("reference", "physical", "compensated"):
+                capture = folder / f"camera-{state}.bin"
+                if capture.exists():
+                    png(folder / f"camera-{state}.png", *SIZE, pixels(capture))
             if args.motion:
                 reflection_diagnostic.write_motion(folder / "matched-motion.png", folder, pixels,
                                                    modes=("off", "on"), poses=POSES)

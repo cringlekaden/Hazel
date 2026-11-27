@@ -2,8 +2,10 @@
 
 // Actual upstream SceneCamera; finite default projection and minimized-viewport guard.
 #include <cstdint>
+#include <optional>
 
 #include "Hazel/Renderer/Cameras/Camera.h"
+#include "Hazel/Renderer/Cameras/PhysicalCamera.h"
 
 namespace Hazel {
 
@@ -20,7 +22,12 @@ namespace Hazel {
 
 		void SetViewportSize(uint32_t width, uint32_t height);
 
+		const std::optional<PhysicalCamera>& GetPhysicalCamera() const { return m_PhysicalCamera; }
+		void SetPhysicalCamera(const std::optional<PhysicalCamera>& camera);
+
+		// Authored vertical FOV used when lens projection is disabled.
 		float GetPerspectiveVerticalFOV() const { return m_PerspectiveFOV; }
+		float GetEffectivePerspectiveVerticalFOV() const;
 		void SetPerspectiveVerticalFOV(float verticalFov) { m_PerspectiveFOV = verticalFov; RecalculateProjection(); }
 		float GetPerspectiveNearClip() const { return m_PerspectiveNear; }
 		void SetPerspectiveNearClip(float nearClip) { m_PerspectiveNear = nearClip; RecalculateProjection(); }
@@ -49,6 +56,7 @@ namespace Hazel {
 		float m_OrthographicNear = -1.0f, m_OrthographicFar = 1.0f;
 
 		float m_AspectRatio = 1.0f;
+		std::optional<PhysicalCamera> m_PhysicalCamera;
 	};
 
 }

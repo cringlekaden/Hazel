@@ -653,7 +653,21 @@ namespace Hazel {
                 glm::normalize(glm::vec3(world * glm::vec4(0, 0, 1, 0))),
                 camera.GetProjectionType() == SceneCamera::ProjectionType::Orthographic};
             cameraView.View=glm::inverse(world);cameraView.Projection=camera.GetProjection();
-            DrawView(inspection?*inspection:cameraView, renderView, display);
+            cameraView.Identity = entity.GetUUID();
+            cameraView.Physical = camera.GetPhysicalCamera();
+            if (inspection)
+            {
+                auto inspected = *inspection;
+                inspected.Physical = cameraView.Physical;
+                if (inspected.Physical && inspected.Physical->LensProjection && !cameraView.Orthographic)
+                {
+                    inspected.Projection = cameraView.Projection;
+                    inspected.ViewProjection = inspected.Projection * inspected.View;
+                }
+                DrawView(inspected, renderView, display);
+            }
+            else
+                DrawView(cameraView, renderView, display);
         }
         else if(m_Presentation.SceneReferred)
         {

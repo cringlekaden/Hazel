@@ -3,6 +3,8 @@
 #include <initializer_list>
 #include <string>
 
+namespace Hazel { struct PhysicalCamera; }
+
 namespace Hazel::DocumentSchema
 {
 // Reject data our serializers cannot represent before constructing a candidate.
@@ -12,4 +14,5 @@ void Keys(const YAML::Node& node, std::initializer_list<const char*> allowed,
           const std::string& location);
 bool Scene(const YAML::Node& root, bool prefabDocument = false); // true: known legacy/default encoding
 bool Project(const YAML::Node& root);
+PhysicalCamera ReadPhysicalLens(const YAML::Node& node);
 }

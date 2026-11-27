@@ -25,7 +25,7 @@ void RuntimeSession::SetCameraInspection(bool enabled)
                        SceneCamera::ProjectionType::Perspective)
         throw std::runtime_error("Camera inspection requires a primary perspective camera");
     auto &projection = entity.GetComponent<CameraComponent>().Camera;
-    NavigationCamera camera(glm::degrees(projection.GetPerspectiveVerticalFOV()),
+    NavigationCamera camera(glm::degrees(projection.GetEffectivePerspectiveVerticalFOV()),
                             projection.GetAspectRatio(), projection.GetPerspectiveNearClip(),
                             projection.GetPerspectiveFarClip());
     glm::vec3 position, rotation, scale;

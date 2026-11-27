@@ -29,6 +29,32 @@ struct HistoryFixture
 static void EditorHistoryChecks()
 {
     {
+        HistoryFixture fixture;
+        DocumentHistory history;
+        history.Bind(fixture.World->GetIdentity());
+        auto entity = fixture.World->CreateEntity("Physical camera history");
+        auto& camera = entity.AddComponent<CameraComponent>().Camera;
+        camera.SetPerspective(glm::radians(45.f), .1f, 100);
+        const auto original = fixture.State();
+        auto before = UIEditValues::Capture(entity);
+        auto proposed = before;
+        PhysicalCamera lens;
+        lens.Aperture = 5.6f;
+        lens.LensProjection = true;
+        proposed.Camera->Physical = lens;
+        std::string error;
+        Check(history.Begin(*fixture.World, CreateScope<UIEditCommand>(
+            *fixture.World, entity.GetUUID(), "Physical camera", before)), "Camera history begin failed");
+        Check(dynamic_cast<UIEditCommand*>(history.Transaction())->Preview(*fixture.World, proposed, error) &&
+            history.Commit(*fixture.World), error.c_str());
+        const auto changed = fixture.State();
+        Check(camera.GetPhysicalCamera() && *camera.GetPhysicalCamera() == lens &&
+            changed != original, "Inspector did not apply the physical camera");
+        Check(history.Undo(*fixture.World) && fixture.State() == original &&
+            history.Redo(*fixture.World) && fixture.State() == changed, "Physical camera Undo/Redo lost authored values");
+        std::cout << "PASS physical camera Inspector history and exact Undo/Redo\n";
+    }
+    {
         HistoryFixture f;DocumentHistory history;history.Bind(f.World->GetIdentity());
         auto light=f.World->CreateEntity("Local property history");
         light.AddComponent<PointLightComponent>();light.AddComponent<SpotLightComponent>();

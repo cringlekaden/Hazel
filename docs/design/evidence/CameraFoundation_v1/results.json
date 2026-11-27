@@ -1,0 +1,555 @@
+{
+  "base": "4d6bb7a588ec994a4f5ff9aeee5802b6cc958450",
+  "device": "Apple M4",
+  "os": "27.3",
+  "xcode": [
+    "Xcode 27.3",
+    "Build version 27C5020n"
+  ],
+  "scope": "Phase 1 physical camera, manual image formation, M4 native Metal 4 and OpenGL 4.1",
+  "build": {
+    "Debug": "PASS",
+    "Release": "PASS",
+    "newFirstPartyWarnings": 0
+  },
+  "cpuAndEditor": {
+    "Debug": "PASS",
+    "Release": "PASS"
+  },
+  "native": {
+    "Debug": {
+      "metal": [
+        "BLOOM_ORACLE uniformCases=27 maxLinearError=1.43051e-08",
+        "CAMERA_ORACLE physicalCases=5 maxLinearError=8.9407e-10",
+        "BLOOM_IMPULSE fourPhases=pass minEnergy=6.47153 maxEnergy=6.47153",
+        "BLOOM_DISOCCLUSION maxResidual=0",
+        "CAMERA_STUDY equivalentGain=bit-exact ID/depth=pass cameraSwitch=pass",
+        "BLOOM_LIFETIME queue=3 reset=pass oddResize=pass onePixel=pass",
+        "BLOOM_STUDY poses=17 ID/depth=pass disabled=pass UI=pass AO/TAA=pass exposureHistory=pass"
+      ],
+      "opengl": [
+        "BLOOM_ORACLE uniformCases=27 maxLinearError=1.43051e-08",
+        "CAMERA_ORACLE physicalCases=5 maxLinearError=8.9407e-10",
+        "BLOOM_IMPULSE fourPhases=pass minEnergy=6.47153 maxEnergy=6.47153",
+        "CAMERA_STUDY equivalentGain=bit-exact ID/depth=pass cameraSwitch=pass",
+        "BLOOM_STUDY poses=17 ID/depth=pass disabled=pass UI=pass"
+      ]
+    },
+    "Release": {
+      "metal": [
+        "BLOOM_ORACLE uniformCases=27 maxLinearError=1.43051e-08",
+        "CAMERA_ORACLE physicalCases=5 maxLinearError=8.9407e-10",
+        "BLOOM_IMPULSE fourPhases=pass minEnergy=6.47153 maxEnergy=6.47153",
+        "BLOOM_DISOCCLUSION maxResidual=0",
+        "CAMERA_STUDY equivalentGain=bit-exact ID/depth=pass cameraSwitch=pass",
+        "BLOOM_LIFETIME queue=3 reset=pass oddResize=pass onePixel=pass",
+        "BLOOM_STUDY poses=17 ID/depth=pass disabled=pass UI=pass AO/TAA=pass exposureHistory=pass"
+      ],
+      "opengl": [
+        "BLOOM_ORACLE uniformCases=27 maxLinearError=1.43051e-08",
+        "CAMERA_ORACLE physicalCases=5 maxLinearError=8.9407e-10",
+        "BLOOM_IMPULSE fourPhases=pass minEnergy=6.47153 maxEnergy=6.47153",
+        "CAMERA_STUDY equivalentGain=bit-exact ID/depth=pass cameraSwitch=pass",
+        "BLOOM_STUDY poses=17 ID/depth=pass disabled=pass UI=pass"
+      ]
+    }
+  },
+  "aaOffParity": {
+    "bloomIncrementRGBp99": 1.1920928955078125e-07,
+    "idDifferences": 1,
+    "compared": 230399
+  },
+  "frozenBloomCaptureFilesBitExact": 8,
+  "package": {
+    "archiveIntegrity": "PASS",
+    "metalSourceFree": {
+      "exitCode": 0,
+      "results": [
+        "BLOOM_ORACLE uniformCases=27 maxLinearError=1.43051e-08",
+        "BLOOM_IMPULSE fourPhases=pass minEnergy=6.47153 maxEnergy=6.47153",
+        "BLOOM_DISOCCLUSION maxResidual=0",
+        "BLOOM_LIFETIME queue=3 reset=pass oddResize=pass onePixel=pass",
+        "BLOOM_STUDY poses=17 ID/depth=pass disabled=pass UI=pass AO/TAA=pass exposureHistory=pass"
+      ]
+    },
+    "openglSourceFree": {
+      "exitCode": 0,
+      "results": [
+        "BLOOM_ORACLE uniformCases=27 maxLinearError=1.43051e-08",
+        "BLOOM_IMPULSE fourPhases=pass minEnergy=6.47153 maxEnergy=6.47153",
+        "BLOOM_STUDY poses=17 ID/depth=pass disabled=pass UI=pass"
+      ]
+    },
+    "metalPlayer": "PASS",
+    "openglPlayer": "PASS"
+  },
+  "sourceFreePhysicalOracle": {
+    "metal": [
+      "CAMERA_ORACLE physicalCases=5 maxLinearError=8.9407e-10",
+      "CAMERA_STUDY equivalentGain=bit-exact ID/depth=pass cameraSwitch=pass"
+    ],
+    "opengl": [
+      "CAMERA_ORACLE physicalCases=5 maxLinearError=8.9407e-10",
+      "CAMERA_STUDY equivalentGain=bit-exact ID/depth=pass cameraSwitch=pass"
+    ]
+  },
+  "timings": [
+    {
+      "run": 1,
+      "warmupPerState": 4,
+      "samplesPerState": 15,
+      "backends": {
+        "metal": {
+          "rawCsv": "metal-timing-run-1.csv",
+          "extent": {
+            "1280x720": {
+              "offFrameMS": {
+                "median": 24.448250012937933,
+                "p95": 27.780500007793307
+              },
+              "onFrameMS": {
+                "median": 24.45399999851361,
+                "p95": 27.45625004172325
+              },
+              "pairedFrameDeltaMS": {
+                "median": 0.15920796431601048,
+                "p95": 6.532000028528273
+              },
+              "extractMS": {
+                "median": 0.211375,
+                "p95": 3.14629
+              },
+              "downMS": {
+                "median": 0.0316667,
+                "p95": 3.09554
+              },
+              "upMS": {
+                "median": 0.229,
+                "p95": 0.558792
+              },
+              "presentMS": {
+                "median": 0.649875,
+                "p95": 0.883708
+              },
+              "scratchBytes": 5390336
+            },
+            "1920x1080": {
+              "offFrameMS": {
+                "median": 42.858999979216605,
+                "p95": 50.28550000861287
+              },
+              "onFrameMS": {
+                "median": 43.71591698145494,
+                "p95": 48.873166961129755
+              },
+              "pairedFrameDeltaMS": {
+                "median": 2.331750001758337,
+                "p95": 7.7379170106723905
+              },
+              "extractMS": {
+                "median": 0.437,
+                "p95": 0.658625
+              },
+              "downMS": {
+                "median": 0.489833,
+                "p95": 4.32392
+              },
+              "upMS": {
+                "median": 0.486208,
+                "p95": 3.19546
+              },
+              "presentMS": {
+                "median": 2.26742,
+                "p95": 3.19813
+              },
+              "scratchBytes": 11616256
+            },
+            "3840x2160": {
+              "offFrameMS": {
+                "median": 109.43825001595542,
+                "p95": 114.57512498600408
+              },
+              "onFrameMS": {
+                "median": 100.63958296086639,
+                "p95": 106.3699169899337
+              },
+              "pairedFrameDeltaMS": {
+                "median": -8.16241605207324,
+                "p95": -1.8171250121667981
+              },
+              "extractMS": {
+                "median": 1.78321,
+                "p95": 4.44733
+              },
+              "downMS": {
+                "median": 0.512958,
+                "p95": 5.4145
+              },
+              "upMS": {
+                "median": 0.61325,
+                "p95": 5.20058
+              },
+              "presentMS": {
+                "median": 3.04738,
+                "p95": 6.67604
+              },
+              "scratchBytes": 45301760
+            }
+          }
+        },
+        "opengl": {
+          "rawCsv": "opengl-timing-run-1.csv",
+          "extent": {
+            "1280x720": {
+              "offFrameMS": {
+                "median": 86.531749,
+                "p95": 97.276958
+              },
+              "onFrameMS": {
+                "median": 86.998875,
+                "p95": 93.18025
+              },
+              "pairedFrameDeltaMS": {
+                "median": 2.9656240000000054,
+                "p95": 15.901540999999995
+              },
+              "extractMS": {
+                "median": 0.065584,
+                "p95": 0.0915
+              },
+              "downMS": {
+                "median": 0.310834,
+                "p95": 0.440208
+              },
+              "upMS": {
+                "median": 0.396126,
+                "p95": 0.668251
+              },
+              "presentMS": {
+                "median": 0.51225,
+                "p95": 0.744
+              },
+              "scratchBytes": 4867200
+            },
+            "1920x1080": {
+              "offFrameMS": {
+                "median": 37.941291,
+                "p95": 38.97075
+              },
+              "onFrameMS": {
+                "median": 39.083875,
+                "p95": 40.133459
+              },
+              "pairedFrameDeltaMS": {
+                "median": 1.1217910000000018,
+                "p95": 2.413125000000001
+              },
+              "extractMS": {
+                "median": 0.0855,
+                "p95": 0.101666
+              },
+              "downMS": {
+                "median": 0.336374,
+                "p95": 0.436875
+              },
+              "upMS": {
+                "median": 0.388125,
+                "p95": 0.561459
+              },
+              "presentMS": {
+                "median": 1.11175,
+                "p95": 1.21938
+              },
+              "scratchBytes": 10951680
+            },
+            "3840x2160": {
+              "offFrameMS": {
+                "median": 62.070876,
+                "p95": 62.550875
+              },
+              "onFrameMS": {
+                "median": 64.953041,
+                "p95": 65.856458
+              },
+              "pairedFrameDeltaMS": {
+                "median": 3.0146250000000023,
+                "p95": 3.3455410000000043
+              },
+              "extractMS": {
+                "median": 0.09575,
+                "p95": 0.129541
+              },
+              "downMS": {
+                "median": 0.609084,
+                "p95": 0.92625
+              },
+              "upMS": {
+                "median": 0.798875,
+                "p95": 1.07275
+              },
+              "presentMS": {
+                "median": 3.50887,
+                "p95": 3.63238
+              },
+              "scratchBytes": 44129280
+            }
+          }
+        }
+      },
+      "metalCompletion": "METAL_FINAL submitted=114 completed=114 presented=0 completed_presented=0 errors=0 peak_frame_bytes=1708463240 peak_attachment_bytes=960405760 peak_allocator_bytes=10759720 live_attachment_generations=0 pending_bytes=0"
+    },
+    {
+      "run": 2,
+      "warmupPerState": 4,
+      "samplesPerState": 15,
+      "backends": {
+        "metal": {
+          "rawCsv": "metal-timing-run-2.csv",
+          "extent": {
+            "1280x720": {
+              "offFrameMS": {
+                "median": 9.975416993256658,
+                "p95": 10.122916952241212
+              },
+              "onFrameMS": {
+                "median": 10.35724999383092,
+                "p95": 10.492583038285375
+              },
+              "pairedFrameDeltaMS": {
+                "median": 0.39362499956041574,
+                "p95": 0.5636250134557486
+              },
+              "extractMS": {
+                "median": 0.205333,
+                "p95": 0.218583
+              },
+              "downMS": {
+                "median": 0.020375,
+                "p95": 0.0217917
+              },
+              "upMS": {
+                "median": 0.023,
+                "p95": 0.0239583
+              },
+              "presentMS": {
+                "median": 0.308458,
+                "p95": 0.334958
+              },
+              "scratchBytes": 5390336
+            },
+            "1920x1080": {
+              "offFrameMS": {
+                "median": 21.229166944976896,
+                "p95": 21.37712499825284
+              },
+              "onFrameMS": {
+                "median": 21.91599999787286,
+                "p95": 21.96366700809449
+              },
+              "pairedFrameDeltaMS": {
+                "median": 0.6532080005854368,
+                "p95": 0.7870420231483877
+              },
+              "extractMS": {
+                "median": 0.419542,
+                "p95": 0.426708
+              },
+              "downMS": {
+                "median": 0.029875,
+                "p95": 0.0311667
+              },
+              "upMS": {
+                "median": 0.0385417,
+                "p95": 0.0439583
+              },
+              "presentMS": {
+                "median": 0.656458,
+                "p95": 0.701875
+              },
+              "scratchBytes": 11616256
+            },
+            "3840x2160": {
+              "offFrameMS": {
+                "median": 58.646082994528115,
+                "p95": 59.338250022847205
+              },
+              "onFrameMS": {
+                "median": 60.60824997257441,
+                "p95": 61.042332963552326
+              },
+              "pairedFrameDeltaMS": {
+                "median": 1.9937920733354986,
+                "p95": 2.435249974951148
+              },
+              "extractMS": {
+                "median": 1.55479,
+                "p95": 1.67142
+              },
+              "downMS": {
+                "median": 0.085125,
+                "p95": 0.0908333
+              },
+              "upMS": {
+                "median": 0.132458,
+                "p95": 0.137458
+              },
+              "presentMS": {
+                "median": 2.59858,
+                "p95": 2.72792
+              },
+              "scratchBytes": 45301760
+            }
+          }
+        },
+        "opengl": {
+          "rawCsv": "opengl-timing-run-2.csv",
+          "extent": {
+            "1280x720": {
+              "offFrameMS": {
+                "median": 34.123875,
+                "p95": 34.94625
+              },
+              "onFrameMS": {
+                "median": 34.538709,
+                "p95": 35.007042
+              },
+              "pairedFrameDeltaMS": {
+                "median": 0.21870899999999693,
+                "p95": 2.5267079999999993
+              },
+              "extractMS": {
+                "median": 0.083874,
+                "p95": 0.0915
+              },
+              "downMS": {
+                "median": 0.302875,
+                "p95": 0.46975
+              },
+              "upMS": {
+                "median": 0.415791,
+                "p95": 0.68725
+              },
+              "presentMS": {
+                "median": 0.665625,
+                "p95": 0.740666
+              },
+              "scratchBytes": 4867200
+            },
+            "1920x1080": {
+              "offFrameMS": {
+                "median": 37.268416,
+                "p95": 37.883375
+              },
+              "onFrameMS": {
+                "median": 38.538791,
+                "p95": 38.955124
+              },
+              "pairedFrameDeltaMS": {
+                "median": 1.1658740000000023,
+                "p95": 1.7854150000000004
+              },
+              "extractMS": {
+                "median": 0.087875,
+                "p95": 0.141084
+              },
+              "downMS": {
+                "median": 0.321834,
+                "p95": 0.361375
+              },
+              "upMS": {
+                "median": 0.412875,
+                "p95": 0.660749
+              },
+              "presentMS": {
+                "median": 1.13829,
+                "p95": 1.3105
+              },
+              "scratchBytes": 10951680
+            },
+            "3840x2160": {
+              "offFrameMS": {
+                "median": 61.34175,
+                "p95": 61.897875
+              },
+              "onFrameMS": {
+                "median": 64.544041,
+                "p95": 65.590626
+              },
+              "pairedFrameDeltaMS": {
+                "median": 3.386917000000004,
+                "p95": 5.212249000000007
+              },
+              "extractMS": {
+                "median": 0.090459,
+                "p95": 0.161709
+              },
+              "downMS": {
+                "median": 0.50425,
+                "p95": 0.935375
+              },
+              "upMS": {
+                "median": 0.80425,
+                "p95": 1.16437
+              },
+              "presentMS": {
+                "median": 3.56838,
+                "p95": 3.70613
+              },
+              "scratchBytes": 44129280
+            }
+          }
+        }
+      },
+      "metalCompletion": "METAL_FINAL submitted=114 completed=114 presented=0 completed_presented=0 errors=0 peak_frame_bytes=1708463240 peak_attachment_bytes=960405760 peak_allocator_bytes=10759720 live_attachment_generations=0 pending_bytes=0"
+    }
+  ],
+  "untested": [
+    "Windows",
+    "Linux",
+    "Intel or other GPUs",
+    "native 2x desktop presentation",
+    "4K full-effects with TAA and full-FP32 readback (historical 2 GiB budget limit)"
+  ],
+  "desktop": {
+    "debug-Hazelnut-metal": {
+      "cleanTeardown": true,
+      "renderedMinimum": true,
+      "metalCompletion": "METAL_FINAL submitted=73 completed=73 presented=67 completed_presented=67 errors=0 peak_frame_bytes=243478072 peak_attachment_bytes=338100224 peak_allocator_bytes=14331432 live_attachment_generations=0 pending_bytes=0"
+    },
+    "debug-Hazelnut-opengl": {
+      "cleanTeardown": true,
+      "renderedMinimum": true,
+      "metalCompletion": null
+    },
+    "debug-Nutella-metal": {
+      "cleanTeardown": true,
+      "renderedMinimum": true,
+      "metalCompletion": "METAL_FINAL submitted=63 completed=63 presented=61 completed_presented=61 errors=0 peak_frame_bytes=279731688 peak_attachment_bytes=254164992 peak_allocator_bytes=12807720 live_attachment_generations=0 pending_bytes=0"
+    },
+    "debug-Nutella-opengl": {
+      "cleanTeardown": true,
+      "renderedMinimum": true,
+      "metalCompletion": null
+    },
+    "release-Hazelnut-metal": {
+      "cleanTeardown": true,
+      "renderedMinimum": true,
+      "metalCompletion": "METAL_FINAL submitted=73 completed=73 presented=69 completed_presented=69 errors=0 peak_frame_bytes=451786888 peak_attachment_bytes=377356288 peak_allocator_bytes=14331432 live_attachment_generations=0 pending_bytes=0"
+    },
+    "release-Hazelnut-opengl": {
+      "cleanTeardown": true,
+      "renderedMinimum": true,
+      "metalCompletion": null
+    },
+    "release-relocated-Nutella-metal": {
+      "cleanTeardown": true,
+      "renderedMinimum": true,
+      "metalCompletion": "METAL_FINAL submitted=67 completed=67 presented=62 completed_presented=62 errors=0 peak_frame_bytes=337108472 peak_attachment_bytes=281231360 peak_allocator_bytes=12807720 live_attachment_generations=0 pending_bytes=0"
+    },
+    "release-relocated-Nutella-opengl": {
+      "cleanTeardown": true,
+      "renderedMinimum": true,
+      "metalCompletion": null
+    }
+  }
+}

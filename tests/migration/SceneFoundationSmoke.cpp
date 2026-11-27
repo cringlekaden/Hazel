@@ -32,6 +32,73 @@ static void Check(bool condition, const char* message)
 {
     if (!condition) throw std::runtime_error(message);
 }
+static void PhysicalCameraContracts()
+{
+    using namespace Hazel;
+    PhysicalCamera lens;
+    const auto close = [](double x, double y) { return std::abs(x - y) <= 2e-6; };
+    Check(close(lens.EV100(), 10), "Reference camera is not EV100 10");
+    for (float stops : {-16.f, -1.f, 0.f, 1.f, 16.f})
+        Check(lens.Log2ExposureGain(stops) == stops, "Reference camera changed authored compensation");
+    lens.Aperture = 8;
+    Check(close(lens.EV100(), 12) && close(lens.Log2ExposureGain(1), -1), "Aperture reciprocity or compensation sign differs");
+    lens.ShutterSeconds = 1.f / 128;
+    Check(close(lens.EV100(), 13), "Shutter reciprocity differs");
+    lens.ISO = 800;
+    Check(close(lens.EV100(), 10), "ISO reciprocity differs");
+    lens.Aperture = 2.8f;
+    lens.ShutterSeconds = 1.f / 125;
+    lens.ISO = 400;
+    Check(close(lens.EV100(), std::log(245.) / std::log(2.)), "Non-dyadic EV100 differs");
+    Check(lens.Log2ExposureGain(-16) >= -16 && lens.Log2ExposureGain(16) == 16, "Presentation gain escaped its limits");
+
+    lens.LensProjection = true;
+    auto scene = CreateRef<Scene>();
+    auto entity = scene->CreateEntityWithUUID(17, "Physical camera");
+    auto& camera = entity.AddComponent<CameraComponent>().Camera;
+    camera.SetViewportSize(1600, 900);
+    camera.SetPerspective(glm::radians(60.f), .25f, 320);
+    const auto compatibilityProjection = camera.GetProjection();
+    const auto before = SceneSerializer(scene).CaptureAuthoredState();
+    const auto legacyText = SceneSerializer(scene).SerializeText();
+    camera.SetPhysicalCamera(lens);
+    const double aspect = 16. / 9;
+    Check(close(lens.HorizontalFOV(aspect), 2 * std::atan(.36)) &&
+          close(lens.VerticalFOV(aspect), 2 * std::atan(.2025)), "Wide sensor crop differs");
+    Check(close(lens.VerticalFOV(1), 2 * std::atan(.24)) &&
+          close(lens.HorizontalFOV(.5), 2 * std::atan(.12)), "Tall sensor crop differs");
+    const auto projection = camera.GetProjection();
+    Check(close(2 * std::atan(1. / projection[0][0]), 2 * std::atan(.36)) &&
+          close(2 * std::atan(1. / projection[1][1]), 2 * std::atan(.2025)), "Camera projection ignored active sensor");
+    Check(projection[2] == compatibilityProjection[2] && projection[3] == compatibilityProjection[3],
+          "Physical framing changed clipping");
+    Check(SceneSerializer(scene).CaptureAuthoredState() != before, "Physical settings did not dirty authored state");
+    const auto text = SceneSerializer(scene).SerializeText();
+    auto loaded = CreateRef<Scene>();
+    SceneSerializer reader(loaded);
+    Check(reader.DeserializeText(text), "Physical camera document failed to load");
+    Check(reader.CaptureAuthoredState() == SceneSerializer(scene).CaptureAuthoredState(),
+          "Physical camera serialization lost data");
+    auto invalid = YAML::Load(text);
+    invalid["Entities"][0]["CameraComponent"]["Camera"]["PhysicalLens"]["Version"] = 2;
+    Check(!reader.DeserializeText(YAML::Dump(invalid)) && reader.SerializeText() == text,
+          "Unknown physical lens version mutated the loaded scene");
+    auto copy = Scene::Copy(scene);
+    Check(SceneSerializer(copy).CaptureAuthoredState() == SceneSerializer(scene).CaptureAuthoredState(),
+          "Play copy lost physical camera settings");
+    Check(SceneSerializer(loaded).DeserializeText(legacyText) &&
+          !loaded->GetEntityByUUID(17).GetComponent<CameraComponent>().Camera.GetPhysicalCamera(),
+          "Older camera unexpectedly acquired a physical lens");
+    camera.SetPhysicalCamera(std::nullopt);
+    Check(camera.GetProjection() == compatibilityProjection &&
+          SceneSerializer(scene).CaptureAuthoredState() == before, "Removing lens did not restore camera state");
+    lens.FocusDistance = .01f;
+    bool rejected = false;
+    try { camera.SetPhysicalCamera(lens); }
+    catch (const std::runtime_error&) { rejected = true; }
+    Check(rejected && !camera.GetPhysicalCamera(), "Invalid optical focus mutated the camera");
+    std::cout << "PASS: physical camera EV100, sensor crop, clipping, persistence, compatibility and Play copy\n";
+}
 static void LocalLightContracts() {
     using namespace Hazel;
     auto scene=CreateRef<Scene>();auto e=scene->CreateEntityWithUUID(4242,"Point and spot");
@@ -296,7 +363,7 @@ int main()
         StorageChecks();
         AssetCookingChecks();ImportCookingChecks();
         Hazel::Log::Init();
-        LocalLightContracts();AuthoredComparisonContracts();ImportPublicationChecks();
+        PhysicalCameraContracts();LocalLightContracts();AuthoredComparisonContracts();ImportPublicationChecks();
         CPUFontFamilyDocument();
         Hazel::EditorDocumentChecks();
         Hazel::EditorStateChecks();

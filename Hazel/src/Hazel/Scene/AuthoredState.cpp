@@ -139,6 +139,18 @@ std::string SceneSerializer::CaptureAuthoredState(Entity only, const std::type_i
             state.Value(a.GetOrthographicSize());
             state.Value(a.GetOrthographicNearClip());
             state.Value(a.GetOrthographicFarClip());
+            const auto& lens = a.GetPhysicalCamera();
+            state.Value(lens.has_value());
+            if (lens) {
+                state.Value(lens->LensProjection);
+                state.Value(lens->FocalLengthMM);
+                state.Value(lens->SensorWidthMM);
+                state.Value(lens->SensorHeightMM);
+                state.Value(lens->Aperture);
+                state.Value(lens->ShutterSeconds);
+                state.Value(lens->ISO);
+                state.Value(lens->FocusDistance);
+            }
             state.Value(c.Primary);
             state.Value(c.FixedAspectRatio);
         });

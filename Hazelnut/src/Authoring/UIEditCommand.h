@@ -22,6 +22,7 @@ struct UIImageValue
 struct CameraEditValue {
     int Projection=1;float FOV=0,Near=0,Far=0,Size=0,OrthoNear=0,OrthoFar=0;
     bool Primary=true,FixedAspect=false;
+    std::optional<PhysicalCamera> Physical;
 };
 struct UIEditValues
 {
@@ -69,7 +70,7 @@ struct UIEditValues
         else if constexpr (std::is_same_v<T,MeshRendererComponent>)Mesh=static_cast<const MeshBinding&>(value);
         else if constexpr (std::is_same_v<T,CircleRendererComponent>)Circle=value;
         else if constexpr (std::is_same_v<T,CameraComponent>) {
-            const auto& c=value.Camera;Camera=CameraEditValue{int(c.GetProjectionType()),c.GetPerspectiveVerticalFOV(),c.GetPerspectiveNearClip(),c.GetPerspectiveFarClip(),c.GetOrthographicSize(),c.GetOrthographicNearClip(),c.GetOrthographicFarClip(),value.Primary,value.FixedAspectRatio};
+            const auto& c=value.Camera;Camera=CameraEditValue{int(c.GetProjectionType()),c.GetPerspectiveVerticalFOV(),c.GetPerspectiveNearClip(),c.GetPerspectiveFarClip(),c.GetOrthographicSize(),c.GetOrthographicNearClip(),c.GetOrthographicFarClip(),value.Primary,value.FixedAspectRatio,c.GetPhysicalCamera()};
         }
         else if constexpr (std::is_same_v<T, UICanvasComponent>)
             Canvas = value;
