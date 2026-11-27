@@ -1,9 +1,11 @@
 #pragma once
 #include "MetalProof.h"
+#include "MetalMemoryAdmissionError.h"
 #include "Hazel/Renderer/Resources/EditorTexture.h"
 #include <glm/glm.hpp>
 #include <Metal/Metal.hpp>
 #include <QuartzCore/QuartzCore.hpp>
+#include <dispatch/dispatch.h>
 #include <array>
 #include <atomic>
 #include <cstddef>
@@ -44,14 +46,21 @@ public:
     std::function<void()> GateQueue();
     void StartCapture(const std::filesystem::path& path);
     void StopCapture();
+    void SetCriticalMemoryPressureForTesting(bool critical) { m_MemoryPressure.store(critical ? DISPATCH_MEMORYPRESSURE_CRITICAL : DISPATCH_MEMORYPRESSURE_NORMAL); }
     static void FailNextStartup(MetalStartupFailure point);
     static void CheckStartupFailure(MetalStartupFailure point);
 private:
     friend class MetalRendererAPI;
     friend class MetalFramebuffer;
-    // Includes idle view generations, in-flight storage, uploads and editor UI.
-    // Full-resolution Retina HDR + AO + TAA exceeds the original M1 proof's 1 GiB.
-    static constexpr uint64_t ResourceLimit=2ULL*1024*1024*1024;
+    uint64_t m_TrackedBudget=0, m_NativeBudget=0, m_WorkingSet=0, m_PhysicalMemory=0;
+    bool m_MemoryTrace=false;
+    uint64_t m_LastMemoryRejectionSerial=0;
+    void ReportPresentationRejection(const MetalMemoryAdmissionError& error);
+    dispatch_queue_t m_MemoryPressureQueue=nullptr;
+    dispatch_source_t m_MemoryPressureSource=nullptr;
+    std::atomic<unsigned long> m_MemoryPressure{DISPATCH_MEMORYPRESSURE_NORMAL};
+    void CheckMemoryGrowth(const char* resource) const;
+    bool TrimIdleMemory() const { return m_MemoryPressure.load() != DISPATCH_MEMORYPRESSURE_NORMAL; }
     void PresentEditor(CA::MetalLayer* layer, bool visible);
     std::shared_ptr<MetalEditorCapture> m_EditorCapture;
     bool m_EditorReadbackEnabled = false;
@@ -100,7 +109,7 @@ private:
     void Verify(Frame& frame);
     void EncodeTransfers(Frame& frame, uint64_t serial);
     std::vector<std::weak_ptr<MetalAOResources>> m_AOGenerations;
-    void Account(const MetalRenderer2DFrame* preparing = nullptr);
+    void Account(const MetalRenderer2DFrame* preparing = nullptr, bool admit = false);
     NS::SharedPtr<MTL::Device> m_Device;
     NS::SharedPtr<MTL4::CommandQueue> m_Queue;
     NS::SharedPtr<MTL4::CommandBuffer> m_Commands;

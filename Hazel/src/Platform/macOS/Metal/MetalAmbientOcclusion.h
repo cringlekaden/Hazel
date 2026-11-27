@@ -23,19 +23,23 @@ struct MetalAOPipelines {
     std::array<NS::SharedPtr<MTL::ComputePipelineState>,7> States;
     explicit MetalAOPipelines(MetalDevice& device);
 };
-// Mutable only while exclusively view-owned. Submitted packets retain a generation.
+// Queue-ordered private scratch. Submitted packets retain their extent generation.
 struct MetalAOResources {
     uint32_t Width=0, Height=0;
     std::shared_ptr<MetalAOPipelines> Pipelines;
     NS::SharedPtr<MTL::Texture> Depth, Raw, Edges, Scratch, Visibility;
     std::vector<NS::SharedPtr<MTL::Texture>> DepthMips;
+    MetalAOResources(MetalDevice& device, std::shared_ptr<MetalAOPipelines> pipelines, uint32_t width, uint32_t height);
+};
+struct MetalAOCounters {
     NS::SharedPtr<MTL4::CounterHeap> Counters;
     uint64_t TimestampFrequency=0;
-    MetalAOResources(MetalDevice& device, std::shared_ptr<MetalAOPipelines> pipelines, uint32_t width, uint32_t height);
+    explicit MetalAOCounters(MetalDevice& device);
 };
 struct MetalAOPass {
     unsigned DebugView=0;
     std::shared_ptr<MetalAOResources> Resources;
+    std::shared_ptr<MetalAOCounters> CounterOwner;
     MetalAOConstants Constants;
     std::shared_ptr<AmbientOcclusionTiming> Timing;
     NS::SharedPtr<MTL4::CounterHeap> Counters;

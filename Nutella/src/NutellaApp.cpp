@@ -7,6 +7,7 @@
 #include <iostream>
 #include <Hazel/Renderer/Resources/Framebuffer.h>
 #include <Hazel/Renderer/Cameras/OrthographicProjection.h>
+#include "Platform/macOS/Metal/MetalMemoryAdmissionError.h"
 
 namespace Hazel {
     class RuntimeLayer : public Layer {
@@ -29,7 +30,7 @@ namespace Hazel {
         }
         void OnEvent(Event& e) override {m_Session.SubmitUIEvent(e,Input::GetMousePosition(),Application::Get().GetWindow().IsFocused());}
         void OnDetach() override { m_Session.Stop(); m_Composite.reset(); Project::SetActive(nullptr); }
-        void OnUpdate(Timestep timestep) override {
+        void OnUpdate(Timestep timestep) override try {
             auto& window = Application::Get().GetWindow();
             m_Session.Resize(window.GetWidth(), window.GetHeight());
             m_Session.SetInput(Input::GetMousePosition(), window.IsFocused());
@@ -59,13 +60,20 @@ namespace Hazel {
                 Renderer2D::EndScene();
             }
             m_Composite->Unbind();m_Composite->EncodeOutput();
+            m_MemoryError.clear();
             if(m_Session.ConsumeExitRequest())Application::Get().Close();
+        }
+        catch (const MetalMemoryAdmissionError& error) {
+            if (m_Composite) m_Composite->Cancel();
+            if (m_MemoryError != error.what()) HZ_CORE_WARN("Nutella frame deferred: {}", error.what());
+            m_MemoryError = error.what();
         }
     private:
         bool m_Inspect=false;
         Ref<Project> m_Project;
         RuntimeSession m_Session;
         Ref<Framebuffer> m_Composite;
+        std::string m_MemoryError;
     };
     class Nutella : public Application {
     public:

@@ -408,7 +408,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
                     ensure(view.Jittered);ensure(view.Motion);
 #ifdef HZ_PLATFORM_MACOS
                     std::static_pointer_cast<MetalFramebuffer>(view.Jittered)->SetTemporalProducer();
-                    std::static_pointer_cast<MetalFramebuffer>(view.Motion)->SetTemporalProducer();
+                    std::static_pointer_cast<MetalFramebuffer>(view.Motion)->SetTemporalProducer(true);
 #endif
                     drawOpaque(view.Jittered,sample);view.Jittered->Unbind();
                     view.Motion->Bind();view.Motion->Clear(glm::vec4(0));Renderer3D::Render(motion,false,false,true);view.Motion->Unbind();

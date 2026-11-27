@@ -187,8 +187,11 @@ These are added Release GPU medians in milliseconds for 720p / 1080p /
 3840×2160 on the M4, with a p95 ceiling of twice the median budget. Measure
 the phase itself and the paired change in complete GPU frame time using
 identical inputs and settings. Scratch caps are incremental live per-view
-allocation at 3840×2160. Include replacement generations retained by the GPU
-when enforcing the existing aggregate 2 GiB cap.
+allocation at 3840×2160. Count replacement generations retained by the GPU
+against the native device's renderer budget. On Metal, the renderer uses
+working-set guidance, physical memory on unified devices, and per-allocation
+limits. The phase scratch caps still apply.
+[Metal memory policy](metal-memory-admission.md)
 
 | Phase | Metal 4 ms | OpenGL 4.1 ms | Scratch cap |
 | --- | --- | --- | --- |

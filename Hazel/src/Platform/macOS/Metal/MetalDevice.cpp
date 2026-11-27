@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <stdexcept>
 #include <set>
+#include <map>
 
 namespace Hazel {
 namespace {
@@ -43,10 +44,24 @@ std::string MetalDevice::AvailabilityReason() {
 }
 MetalDevice::MetalDevice() {
     m_Trace = std::getenv("HAZEL_METAL_TRACE") != nullptr;
+    m_MemoryTrace = std::getenv("HAZEL_METAL_MEMORY_TRACE") != nullptr;
     auto pool=NS::TransferPtr(NS::AutoreleasePool::alloc()->init());
     m_Device=NS::TransferPtr(MTL::CreateSystemDefaultDevice());
     Require(bool(m_Device),"Metal device unavailable");
     Require(m_Device->supportsFamily(MTL::GPUFamilyMetal4),"Metal 4 is required; no classic Metal fallback");
+    m_WorkingSet = m_Device->recommendedMaxWorkingSetSize();
+    m_PhysicalMemory = NS::ProcessInfo::processInfo()->physicalMemory();
+    constexpr uint64_t fallbackWorkingSet = 2ULL * 1024 * 1024 * 1024;
+    const auto guidance = m_WorkingSet ? m_WorkingSet : fallbackWorkingSet;
+    m_TrackedBudget = guidance - guidance / 4;
+    m_NativeBudget = guidance - guidance / 8;
+    if (m_Device->hasUnifiedMemory() && m_PhysicalMemory) {
+        m_TrackedBudget = std::min(m_TrackedBudget, m_PhysicalMemory / 3);
+        m_NativeBudget = std::min(m_NativeBudget, m_PhysicalMemory / 2);
+    }
+    auto& proof = m_Observer->Value;
+    proof.TrackedBudget = m_TrackedBudget; proof.NativeBudget = m_NativeBudget;
+    proof.RecommendedWorkingSet = m_WorkingSet; proof.PhysicalMemory = m_PhysicalMemory;
     CheckStartupFailure(MetalStartupFailure::AfterDevice);
     m_Queue=NS::TransferPtr(m_Device->newMTL4CommandQueue());
     Require(bool(m_Queue),"Cannot create Metal 4 command queue");
@@ -68,8 +83,26 @@ MetalDevice::MetalDevice() {
         Require(bool(frame.Allocator)&&bool(frame.Arguments),"Cannot allocate Metal 4 frame slot");
     }
     HZ_CORE_INFO("Metal 4 device: {}; one MTL4CommandQueue, three allocators; OpenGL not initialized",m_Device->name()->utf8String());
+    m_MemoryPressureQueue = dispatch_queue_create("Hazel Metal memory pressure", DISPATCH_QUEUE_SERIAL);
+    m_MemoryPressureSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_MEMORYPRESSURE, 0,
+        DISPATCH_MEMORYPRESSURE_NORMAL | DISPATCH_MEMORYPRESSURE_WARN | DISPATCH_MEMORYPRESSURE_CRITICAL,
+        m_MemoryPressureQueue);
+    if (m_MemoryPressureSource) {
+        dispatch_set_context(m_MemoryPressureSource, this);
+        dispatch_source_set_event_handler_f(m_MemoryPressureSource, [](void* context) {
+            auto& device = *static_cast<MetalDevice*>(context);
+            device.m_MemoryPressure.store(dispatch_source_get_data(device.m_MemoryPressureSource));
+        });
+        dispatch_activate(m_MemoryPressureSource);
+    }
 }
 MetalDevice::~MetalDevice() {
+    if (m_MemoryPressureSource) {
+        dispatch_source_cancel(m_MemoryPressureSource);
+        dispatch_sync_f(m_MemoryPressureQueue, nullptr, [](void*) {});
+        dispatch_release(m_MemoryPressureSource);
+    }
+    dispatch_release(m_MemoryPressureQueue);
     // Application drains while the surface and all resource owners are alive.
     // Also covers context-construction failures before Renderer::Init.
     Drain();
@@ -110,7 +143,21 @@ void MetalDevice::EnableTransferProof() {
     }
     m_Residency->commit(); m_Transfers=true; Account();
 }
-void MetalDevice::Account(const MetalRenderer2DFrame* preparing) {
+void MetalDevice::CheckMemoryGrowth(const char* resource) const {
+    if (m_MemoryPressure.load() & DISPATCH_MEMORYPRESSURE_CRITICAL)
+        throw MetalMemoryAdmissionError(std::string("Metal deferred ") + resource + " allocation during critical system memory pressure");
+}
+void MetalDevice::ReportPresentationRejection(const MetalMemoryAdmissionError& error) {
+    {
+        std::lock_guard<std::mutex> lock(m_Observer->Mutex);
+        ++m_Observer->Value.AbortedReservations;
+    }
+    if (m_LastMemoryRejectionSerial != m_Serial + 1) {
+        HZ_CORE_WARN("Metal frame deferred: {}", error.what());
+        m_LastMemoryRejectionSerial = m_Serial + 1;
+    }
+}
+void MetalDevice::Account(const MetalRenderer2DFrame* preparing, bool admit) {
     uint64_t resources=0,allocators=0,quadAllocations=0;
     std::set<const MTL::Allocation*> allocations;
     std::vector<const MetalRenderer2DFrame*> scenes;
@@ -140,7 +187,41 @@ void MetalDevice::Account(const MetalRenderer2DFrame* preparing) {
         for(const auto& target:generation->Targets)if(target)ownedAllocations.insert(target.get());
     uint64_t ownedBytes=0;for(const auto* allocation:ownedAllocations)ownedBytes+=allocation->allocatedSize();
     const uint64_t uiBytes = m_Editor ? ImGui_ImplMetal4_ResourceBytes() : 0;
-    Require(ownedBytes+uiBytes<=ResourceLimit&&allocators<=AllocatorLimit,"Metal renderer storage budget exceeded (2 GiB resources / 64 MiB allocators, including idle and in-flight storage)");
+    const bool sampleNative = admit || m_MemoryTrace;
+    const uint64_t nativeBytes = sampleNative ? m_Device->currentAllocatedSize() : 0;
+    if (m_MemoryTrace) {
+        std::map<const MTL::Allocation*, const char*> roles;
+        for (const auto& weak : m_AttachmentGenerations)
+            if (auto generation = weak.lock())
+                for (const auto& target : generation->Targets)
+                    if (target) roles.emplace(target.get(), generation->Role);
+        for (const auto& weak : m_AOGenerations)
+            if (auto ao = weak.lock())
+                for (auto texture : {ao->Depth, ao->Raw, ao->Edges, ao->Scratch, ao->Visibility})
+                    roles.emplace(texture.get(), "ao_compute");
+        struct Totals { uint64_t Active=0, Other=0, Count=0; };
+        std::map<std::string, Totals> totals;
+        for (const auto* allocation : ownedAllocations) {
+            const auto role = roles.find(allocation);
+            auto& subtotal = totals[role == roles.end() ? "other_frame_resources" : role->second];
+            (allocations.count(allocation) ? subtotal.Active : subtotal.Other) += allocation->allocatedSize();
+            ++subtotal.Count;
+        }
+        std::printf("METAL_MEMORY serial=%llu tracked=%llu native=%llu recommended=%llu physical=%llu ui=%llu allocators=%llu\n",
+            (unsigned long long)m_Serial, (unsigned long long)ownedBytes,
+            (unsigned long long)nativeBytes, (unsigned long long)m_WorkingSet,
+            (unsigned long long)m_PhysicalMemory, (unsigned long long)uiBytes, (unsigned long long)allocators);
+        for (const auto& [role, total] : totals)
+            std::printf("METAL_MEMORY_ROLE %s count=%llu active=%llu other=%llu\n", role.c_str(),
+                (unsigned long long)total.Count, (unsigned long long)total.Active, (unsigned long long)total.Other);
+    }
+    if (admit && (ownedBytes + uiBytes > m_TrackedBudget || nativeBytes > m_NativeBudget || allocators > AllocatorLimit)) {
+        std::lock_guard<std::mutex> lock(m_Observer->Mutex);
+        ++m_Observer->Value.MemoryRejections;
+        throw MetalMemoryAdmissionError(fmt::format(
+            "Metal resource admission exceeded: tracked {}/{}, native {}/{}, allocator {}/{} bytes (working-set guidance {})",
+            ownedBytes + uiBytes, m_TrackedBudget, nativeBytes, m_NativeBudget, allocators, AllocatorLimit, m_WorkingSet));
+    }
     uint64_t attachmentBytes = 0, generations = 0;
     for (const auto& weak : m_AttachmentGenerations) if (auto generation = weak.lock()) {
         ++generations;
@@ -151,6 +232,10 @@ void MetalDevice::Account(const MetalRenderer2DFrame* preparing) {
     s.AttachmentBytes=attachmentBytes; s.AttachmentGenerations=generations;
     s.PeakAttachmentBytes=std::max(s.PeakAttachmentBytes,attachmentBytes);
     s.ResourceBytes=resources; s.AllocatorBytes=allocators; s.ResidencyAllocations=m_Residency->allocationCount()+quadAllocations;
+    s.TrackedBytes = ownedBytes + uiBytes;
+    if (sampleNative) s.NativeBytes = nativeBytes;
+    s.PeakTrackedBytes = std::max(s.PeakTrackedBytes, s.TrackedBytes);
+    s.PeakNativeBytes = std::max(s.PeakNativeBytes, nativeBytes);
     s.PeakResourceBytes=std::max(s.PeakResourceBytes,resources); s.PeakAllocatorBytes=std::max(s.PeakAllocatorBytes,allocators);
 }
 void MetalDevice::EncodeTransfers(Frame& f,uint64_t serial) {
@@ -249,7 +334,9 @@ void MetalDevice::Present(CA::MetalLayer* layer,uint32_t w,uint32_t h,uint32_t l
             if (!visible && m_Serial) ++state.SkippedHidden;
             if (state.Errors) throw std::runtime_error(state.Error);
         }
-        PresentEditor(layer, visible); return;
+        try { PresentEditor(layer, visible); }
+        catch (const MetalMemoryAdmissionError& error) { ReportPresentationRejection(error); }
+        return;
     }
     const auto cpuStart=std::chrono::steady_clock::now();
     auto pool=NS::TransferPtr(NS::AutoreleasePool::alloc()->init());
@@ -275,7 +362,10 @@ void MetalDevice::Present(CA::MetalLayer* layer,uint32_t w,uint32_t h,uint32_t l
     if (scene) {
         auto& slot=m_Frames[m_Next];
         slot.Renderer2DCursor=0;slot.LocalLightCursor=0;
-        try { PrepareRenderer2DFrame(scene); slot.Renderer2DBuffers.resize(slot.Renderer2DCursor); Account(scene.get()); }
+        try { PrepareRenderer2DFrame(scene); slot.Renderer2DBuffers.resize(slot.Renderer2DCursor); Account(scene.get(), true); }
+        catch (const MetalMemoryAdmissionError& error) {
+            slot.Renderer2DBuffers.clear(); ReportPresentationRejection(error); return;
+        }
         catch (...) { slot.Renderer2DBuffers.clear(); Account(); throw; }
     }
     auto& f=m_Frames[m_Next];

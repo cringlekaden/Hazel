@@ -82,6 +82,9 @@ MetalAOResources::MetalAOResources(MetalDevice& device,std::shared_ptr<MetalAOPi
     }
     descriptor->setPixelFormat(MTL::PixelFormatRGBA8Unorm);
     Edges=NS::TransferPtr(device.NativeDevice()->newTexture(descriptor.get()));Check(bool(Edges),"Cannot allocate XeGTAO edges");
+}
+MetalAOCounters::MetalAOCounters(MetalDevice& device)
+{
     TimestampFrequency=device.NativeDevice()->queryTimestampFrequency();
     auto counters=NS::TransferPtr(MTL4::CounterHeapDescriptor::alloc()->init());
     counters->setType(MTL4::CounterHeapTypeTimestamp);counters->setCount(6);
@@ -124,7 +127,7 @@ MetalAOConstants AmbientOcclusionConstants(const SceneCameraView& camera,const A
 void MetalDevice::PrepareAmbientOcclusion(const std::shared_ptr<MetalRenderer2DFrame>& frame)
 {
     auto& pass=*frame->AO;auto& r=*pass.Resources;
-    pass.TimestampFrequency=r.TimestampFrequency;pass.Counters=r.Counters;
+    pass.TimestampFrequency=pass.CounterOwner->TimestampFrequency;pass.Counters=pass.CounterOwner->Counters;
     pass.Trace=m_Trace;pass.Serial=m_Serial+1;
     if(pass.Counters)pass.Counters->invalidateCounterRange(NS::Range::Make(0,6));
     for(auto texture:{r.Depth,r.Raw,r.Edges,r.Scratch,r.Visibility})frame->Residency->addAllocation(texture.get());

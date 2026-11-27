@@ -90,6 +90,7 @@ namespace Hazel {
 
         SceneRenderView m_RenderView;
         Ref<Framebuffer> m_Framebuffer;
+        std::string m_ViewportMemoryError;
         Ref<Framebuffer> m_ViewportOutput;
 
 		Ref<Scene> m_ActiveScene;

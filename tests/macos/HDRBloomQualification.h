@@ -10,10 +10,14 @@
 #include <chrono>
 #include <cmath>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <thread>
 #ifdef HZ_PLATFORM_MACOS
 #include "Platform/macOS/Metal/MetalRendererAPI.h"
+#endif
+#if defined(HZ_PLATFORM_MACOS) && __has_include(<Metal/Metal.hpp>)
+#include "Platform/macOS/Metal/MetalDevice.h"
 #endif
 
 inline void HDRBloomQualification(const std::filesystem::path& output,
@@ -90,6 +94,131 @@ inline void HDRBloomQualification(const std::filesystem::path& output,
         }
         if (!file) throw std::runtime_error("Could not save HDR readback");
     };
+
+#if defined(HZ_PLATFORM_MACOS) && __has_include(<Metal/Metal.hpp>)
+    const auto admission = FileSystem::GetEnvironmentPath("HAZEL_CAMERA_ADMISSION").string();
+    if (!admission.empty()) {
+        if (!metal)
+            throw std::runtime_error("Camera admission study requires Metal");
+        const bool serial = admission == "4k-serial";
+        const bool hd = admission == "1080p-queued";
+        const bool spatial = admission == "4k-queued-spatial";
+        const bool sustained = admission == "4k-sustained";
+        if (!serial && !hd && !spatial && !sustained && admission != "4k-queued")
+            throw std::runtime_error("Unknown camera admission case");
+        const glm::uvec2 extent = hd ? glm::uvec2(1920, 1080) : glm::uvec2(3840, 2160);
+        auto& backend = static_cast<MetalRendererAPI&>(RenderCommand::Backend());
+        auto device = backend.Device();
+        auto layer = NS::RetainPtr(CA::MetalLayer::layer());
+        layer->setDevice(device->NativeDevice());
+        layer->setPixelFormat(MTL::PixelFormatBGRA8Unorm);
+        layer->setDrawableSize({double(extent.x), double(extent.y)});
+        target->Resize(extent.x, extent.y);
+        SceneRenderView view;
+        auto frame = study(0, extent);
+        if (spatial)
+            frame.Presentation.TemporalAA = false;
+        auto observer = backend.Observe();
+        auto waitForCompletion = [&] {
+            for (unsigned i = 0; i < 2500 && observer->Snapshot().InFlight; ++i) {
+                target->Poll();
+                if (observer->Snapshot().InFlight)
+                    std::this_thread::sleep_for(std::chrono::milliseconds(2));
+            }
+        };
+        auto unblock = serial ? std::function<void()>{} : backend.GateQueueForTesting();
+        const char* step = "world";
+        try {
+            for (unsigned i = 0; i < 3; ++i) {
+                step = "world";
+                draw(frame, view);
+                target->Unbind();
+                step = "output";
+                target->EncodeOutput();
+                step = "admission";
+                device->Present(layer.get(), extent.x, extent.y, extent.x / 2, extent.y / 2, 2., true);
+                const auto state = observer->Snapshot();
+                std::cout << "CAMERA_ADMISSION case=" << admission << " submitted=" << state.Submitted
+                          << " inFlight=" << state.InFlight
+                          << " frameBytes=" << state.ResourceBytes << " attachmentBytes=" << state.AttachmentBytes
+                          << std::endl;
+                if (state.Submitted != i + 1 || state.InFlight != (serial ? 1u : i + 1))
+                    throw std::runtime_error("Camera admission did not submit to the drawable");
+                if (serial)
+                    waitForCompletion();
+            }
+            if (sustained) {
+                const auto oldSize = target->GetSpecification();
+                device->SetCriticalMemoryPressureForTesting(true);
+                bool rejected = false;
+                try { target->Resize(1023, 575); }
+                catch (const MetalMemoryAdmissionError&) { rejected = true; }
+                device->SetCriticalMemoryPressureForTesting(false);
+                if (!rejected || target->GetSpecification().Width != oldSize.Width)
+                    throw std::runtime_error("Pressure rejection changed the current surface");
+                // Independent view, different extent and settings, while three
+                // older packets still own the original framebuffer generations.
+                SceneRenderView detached;
+                target->Resize(1023, 575);
+                auto replacement = study(.5f, {1023, 575});
+                replacement.Presentation.Bloom.Enabled = false;
+                replacement.Presentation.AmbientOcclusion.Quality = 1;
+                draw(replacement, detached);
+                target->Cancel();
+                detached.Reset();
+                target->Resize(extent.x, extent.y);
+                if (observer->Snapshot().InFlight != 3)
+                    throw std::runtime_error("Resize/cancellation did not cover three queued frames");
+                std::cout << "CAMERA_MEMORY pressure=pass pendingResize=pass cancellation=pass\n";
+            }
+        } catch (...) {
+            std::cout << "CAMERA_ADMISSION case=" << admission << " failedStep=" << step << std::endl;
+            if (unblock)
+                unblock();
+            waitForCompletion();
+            throw;
+        }
+        if (unblock)
+            unblock();
+        waitForCompletion();
+        const auto state = observer->Snapshot();
+        if (state.Completed != 3 || state.Errors != 0)
+            throw std::runtime_error("Camera admission did not complete on the GPU");
+        if (sustained) {
+            for (unsigned i = 3; i < 30; ++i) {
+                // A cut at the start of the second burst exercises history reset.
+                if (i == 3) frame.Camera.Identity = 77;
+                draw(frame, view);
+                if (i == 3 && view.Temporal.Phase != 1)
+                    throw std::runtime_error("4K camera cut reused temporal history");
+                target->Unbind();
+                target->EncodeOutput();
+                device->Present(layer.get(), extent.x, extent.y, extent.x / 2, extent.y / 2, 2., true);
+                if (observer->Snapshot().Submitted != i + 1)
+                    throw std::runtime_error("Sustained camera admission skipped a frame");
+                if (i % 3 == 2) waitForCompletion();
+            }
+            const auto full = observer->Snapshot();
+            if (full.Completed != 30 || full.Errors || full.MemoryRejections || full.PeakInFlight != 3 ||
+                full.PeakTrackedBytes > full.TrackedBudget || full.PeakNativeBytes > full.NativeBudget)
+                throw std::runtime_error("Sustained camera memory qualification failed");
+            std::cout << "CAMERA_MEMORY sustained=" << full.Completed << " peakInFlight=" << full.PeakInFlight
+                      << " tracked=" << full.PeakTrackedBytes << '/' << full.TrackedBudget
+                      << " native=" << full.PeakNativeBytes << '/' << full.NativeBudget << '\n';
+
+            view.Reset();
+            target->Resize(1, 1);
+            target->Poll();
+            if (observer->Snapshot().InFlight || observer->Snapshot().Errors)
+                throw std::runtime_error("Cancelled view retained GPU work");
+            std::cout << "CAMERA_MEMORY cameraCut=pass retirement=pass\n";
+        }
+        const auto final = observer->Snapshot();
+        std::cout << "CAMERA_ADMISSION case=" << admission << " completed=" << final.Completed
+                  << " errors=" << final.Errors << '\n';
+        return;
+    }
+#endif
 
     if (!FileSystem::GetEnvironmentPath("HAZEL_BLOOM_BENCHMARK").empty()) {
         struct Query {

@@ -42,6 +42,7 @@ MetalFramebuffer::MetalFramebuffer(std::shared_ptr<MetalDevice> device, const Fr
 std::shared_ptr<const MetalFramebufferAttachments> MetalFramebuffer::Allocate(uint32_t width, uint32_t height, bool temporalHistory) const
 {
     Check(!m_Device->m_Stopped, "Cannot allocate framebuffer attachments after Metal device shutdown");
+    m_Device->CheckMemoryGrowth("framebuffer");
     auto pool = NS::TransferPtr(NS::AutoreleasePool::alloc()->init());
     auto generation = std::make_shared<MetalFramebufferAttachments>();
     generation->Width = width; generation->Height = height;
@@ -51,6 +52,11 @@ std::shared_ptr<const MetalFramebufferAttachments> MetalFramebuffer::Allocate(ui
     const MTL::PixelFormat formats[] = {MTL::PixelFormatRGBA32Float, MTL::PixelFormatR32Sint, MTL::PixelFormatDepth32Float,
         MTL::PixelFormatRGBA16Float, MTL::PixelFormatRGBA16Float, MTL::PixelFormatRGBA32Float};
     const bool depthOnly=m_Specification.Attachments.Attachments.size()==1 && m_Specification.Attachments.Attachments[0].TextureFormat==FramebufferTextureFormat::DEPTH32F;
+    if (temporalHistory) generation->Role = "taa_history";
+    else if (depthOnly) generation->Role = "depth_prepass";
+    else if (m_Specification.Attachments.Attachments.size() == 6) generation->Role = "ssr_surface";
+    else if (m_Specification.Attachments.Attachments.size() == 1)
+        generation->Role = m_Specification.Attachments.Attachments[0].TextureFormat == FramebufferTextureFormat::RGBA16F ? "bloom" : "encoded_output";
     for (size_t i = depthOnly?2u:0u; i < (depthOnly?3u:temporalHistory?2u:m_Specification.Attachments.Attachments.size()); ++i)
     {
         descriptor->setUsage(MTL::TextureUsageRenderTarget | MTL::TextureUsageShaderRead | ((i == 0 && m_Specification.Attachments.Attachments.size() == 3) || temporalHistory ? MTL::TextureUsageShaderWrite : 0));
@@ -60,18 +66,15 @@ std::shared_ptr<const MetalFramebufferAttachments> MetalFramebuffer::Allocate(ui
                 ? MTL::PixelFormatRGBA16Float : MTL::PixelFormatBGRA8Unorm;
         descriptor->setPixelFormat(format);
         generation->Targets[i] = NS::TransferPtr(m_Device->NativeDevice()->newTexture(descriptor.get()));
-        if (!generation->Targets[i]) throw std::runtime_error("Cannot allocate Metal framebuffer attachment generation");
+        if (!generation->Targets[i])
+            throw MetalMemoryAdmissionError("Metal could not allocate framebuffer attachments at " +
+                std::to_string(width) + "×" + std::to_string(height));
     }
-    uint64_t bytes = 0;
     auto& live = m_Device->m_AttachmentGenerations;
     live.erase(std::remove_if(live.begin(), live.end(), [](const auto& weak) { return weak.expired(); }), live.end());
-    for (const auto& weak : live) if (auto current = weak.lock())
-        for (const auto& target : current->Targets) if (target) bytes += target->allocatedSize();
-    for (const auto& target : generation->Targets) if (target) bytes += target->allocatedSize();
-    Check(bytes <= MetalDevice::ResourceLimit, "Metal framebuffer owner/in-flight attachments exceed the 2 GiB renderer budget");
     live.push_back(generation);
+    m_Device->Account(nullptr, true);
     { std::lock_guard<std::mutex> lock(m_Device->m_Observer->Mutex); ++m_Device->m_Observer->Value.AttachmentAllocations; }
-    m_Device->Account();
     return generation;
 }
 MetalRendererAPI& MetalFramebuffer::Backend() const
@@ -91,21 +94,26 @@ void MetalFramebuffer::PrepareAmbientOcclusion(const Ref<Framebuffer>& depth, co
     auto constants=AmbientOcclusionConstants(camera,settings,m_Frame->Width,m_Frame->Height,temporalPhase);
     constants.Quality.w=temporalPhase?288u*((temporalPhase-1)%64):0u;
     if(!source->m_AOPipelines)source->m_AOPipelines=std::make_shared<MetalAOPipelines>(*m_Device);
-    std::shared_ptr<MetalAOResources> resources;
-    for(auto& candidate:source->m_AOResources)
-        if(candidate.use_count()==1 && candidate->Width==m_Frame->Width && candidate->Height==m_Frame->Height) {resources=candidate;break;}
-    source->m_AOResources.erase(std::remove_if(source->m_AOResources.begin(),source->m_AOResources.end(),[&](const auto& candidate){
-        return candidate.use_count()==1 && (candidate->Width!=m_Frame->Width || candidate->Height!=m_Frame->Height);
-    }),source->m_AOResources.end());
-    if(!resources) {
-        Check(source->m_AOResources.size()<4,"XeGTAO exceeds bounded view generations");
-        resources=std::make_shared<MetalAOResources>(*m_Device,source->m_AOPipelines,m_Frame->Width,m_Frame->Height);
+    auto& scratch = source->m_AOResources;
+    if (!scratch || scratch->Width != m_Frame->Width || scratch->Height != m_Frame->Height) {
+        m_Device->CheckMemoryGrowth("ambient occlusion scratch");
+        auto resources=std::make_shared<MetalAOResources>(*m_Device,source->m_AOPipelines,m_Frame->Width,m_Frame->Height);
         m_Device->m_AOGenerations.push_back(resources);
-        m_Device->Account(); // Includes retained idle and in-flight AO generations.
-        source->m_AOResources.push_back(resources);
+        m_Device->Account(nullptr, true);
+        scratch = std::move(resources);
     }
-    auto pass=std::make_shared<MetalAOPass>();pass->DebugView=debugView;pass->Timing=timing;pass->Resources=std::move(resources);pass->Constants=constants;
+    auto pass=std::make_shared<MetalAOPass>();pass->DebugView=debugView;pass->Timing=timing;pass->Resources=scratch;pass->Constants=constants;
+    for (const auto& candidate : source->m_AOCounters)
+        if (candidate.use_count() == 1) { pass->CounterOwner = candidate; break; }
+    if (!pass->CounterOwner) {
+        Check(source->m_AOCounters.size() < 4, "XeGTAO counter heaps exceed three slots and a CPU packet");
+        pass->CounterOwner = std::make_shared<MetalAOCounters>(*m_Device);
+        source->m_AOCounters.push_back(pass->CounterOwner);
+    }
     m_Frame->AO=std::move(pass);m_Frame->AOSource=std::move(source->m_Frame);
+    // The private depth and compute producers order writes after earlier readers.
+    source->m_DepthProducer = true;
+    m_Frame->AOSource->QueueOrderedProducer = true;
     m_Frame->AOSource->Readback=false;source->m_SubmittedGeneration=true;
 }
 void MetalFramebuffer::Bind()
@@ -114,7 +122,7 @@ void MetalFramebuffer::Bind()
     auto& backend = Backend();
     Check(!backend.m_Stopped, "Cannot bind framebuffer after Metal backend shutdown");
     m_Device->Poll();
-    if (m_SubmittedGeneration && (m_TemporalProducer || m_WorldProducer || m_ShadowProducer)) {
+    if (m_SubmittedGeneration && (m_TemporalProducer || m_WorldProducer || m_DepthProducer)) {
         m_SubmittedGeneration=false;
         std::lock_guard<std::mutex> lock(m_Device->m_Observer->Mutex);++m_Device->m_Observer->Value.AttachmentReuses;
     }
@@ -134,11 +142,14 @@ void MetalFramebuffer::Bind()
             generation = Allocate(m_Specification.Width, m_Specification.Height);
         }
     }
+    if (m_Device->TrimIdleMemory())
+        m_Available.erase(std::remove_if(m_Available.begin(), m_Available.end(),
+            [](const auto& candidate) { return candidate.use_count() == 1; }), m_Available.end());
     auto frame = std::make_shared<MetalRenderer2DFrame>();
     frame->Width = generation->Width; frame->Height = generation->Height;
     frame->Attachments = generation;
     frame->Readback = bool(generation->Targets[0]);
-    frame->QueueOrderedProducer=m_TemporalProducer || m_WorldProducer || m_ShadowProducer;
+    frame->QueueOrderedProducer=m_TemporalProducer || m_WorldProducer || m_DepthProducer;
     backend.BindFramebuffer(frame);
     m_Frame = std::move(frame); m_Attachments = std::move(generation); m_SubmittedGeneration = false;
     m_Readback.reset(); // this pass must not expose an older generation as current pixels
@@ -156,11 +167,13 @@ void MetalFramebuffer::PrepareShadowDepth(const Ref<Framebuffer>& depth, ShadowM
         !source->m_Attachments->Targets[0] && !producer,
         "Shadows require an unbound depth-only producer and bound lighting view");
     producer = std::move(source->m_Frame);
+    producer->Attachments->Role = kind == ShadowMapKind::Directional ? "directional_shadow" :
+        kind == ShadowMapKind::Spot ? "spot_shadow" : "point_shadow";
     // A private atlas has no direct readback/editor consumers. Each captured
     // parent encodes its own depth producer immediately before sampling it on
     // the same queue. Reuse storage with the existing all-stage queue barrier;
     // packets, uniforms and resized generations still retain their own lifetime.
-    source->m_ShadowProducer = true;
+    source->m_DepthProducer = true;
     producer->QueueOrderedProducer = true;
     producer->Readback = false;
     source->m_SubmittedGeneration = true;
@@ -227,8 +240,8 @@ void MetalFramebuffer::Resize(uint32_t width, uint32_t height)
     if (width == m_Specification.Width && height == m_Specification.Height) return;
     // Retired caches are disposable; keep the current target intact if allocation fails.
     m_Available.erase(std::remove_if(m_Available.begin(),m_Available.end(),[](const auto& value){return value.use_count()==1;}),m_Available.end());
-    m_TemporalPrevious.reset();m_TemporalColors.clear();
     auto generation = Allocate(width, height); // publish only on complete allocation success
+    m_TemporalPrevious.reset();m_TemporalColors.clear();
     m_Available.clear();
     m_Attachments = std::move(generation); m_Specification = specification;
     m_SubmittedGeneration = false; m_Readback.reset(); ResetEditorReadback();
@@ -327,6 +340,8 @@ void MetalFramebuffer::SetWorldProducer()
         "Private world scratch requires an empty HDR framebuffer");
     if(!m_WorldProducer)Check(!m_SubmittedGeneration && m_Available.empty(),"World scratch must be configured before first use");
     m_WorldProducer=true;
+    if (m_Specification.Attachments.Attachments.size() == 3)
+        m_Attachments->Role = "world_radiance";
 }
 void MetalFramebuffer::ResolveReflectionsTo(const Ref<Framebuffer>& destination,
                                           const ScreenReflectionResolve& parameters)

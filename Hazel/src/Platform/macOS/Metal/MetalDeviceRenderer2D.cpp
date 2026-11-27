@@ -177,7 +177,7 @@ std::shared_ptr<const FramebufferReadback> MetalDevice::SubmitRenderer2DFrame(co
     if (slot.Pending) { std::lock_guard<std::mutex> lock(m_Observer->Mutex); ++m_Observer->Value.SkippedBusy; return {}; }
     Check(!quad->Result, "Cannot resubmit an already encoded quad frame");
     slot.Renderer2DCursor = 0;slot.LocalLightCursor=0;
-    try { PrepareRenderer2DFrame(quad); slot.Renderer2DBuffers.resize(slot.Renderer2DCursor); Account(quad.get()); }
+    try { PrepareRenderer2DFrame(quad); slot.Renderer2DBuffers.resize(slot.Renderer2DCursor); Account(quad.get(), true); }
     catch (...) { slot.Renderer2DBuffers.clear(); Account(); throw; }
     const auto serial = m_Serial + 1;
     auto result = std::make_shared<FramebufferReadback>();
@@ -221,8 +221,15 @@ NS::SharedPtr<MTL::Buffer> MetalDevice::AcquireRenderer2DBuffer(size_t bytes, co
     if (slot.Renderer2DCursor == slot.Renderer2DBuffers.size()) slot.Renderer2DBuffers.emplace_back();
     auto& buffer = slot.Renderer2DBuffers[slot.Renderer2DCursor++];
     const bool reuse = buffer && buffer->length() >= bytes && buffer->length() / 4 <= bytes;
-    if (!reuse) buffer = NS::TransferPtr(m_Device->newBuffer(bytes, MTL::ResourceStorageModeShared));
-    Check(bool(buffer), "Cannot allocate Renderer2D frame-slot storage");
+    if (!reuse) {
+        CheckMemoryGrowth("frame-slot buffer");
+        if (bytes > m_Device->maxBufferLength())
+            throw MetalMemoryAdmissionError("Renderer2D frame-slot buffer exceeds Metal maxBufferLength");
+        auto replacement = NS::TransferPtr(m_Device->newBuffer(bytes, MTL::ResourceStorageModeShared));
+        if (!replacement)
+            throw MetalMemoryAdmissionError("Metal could not allocate a " + std::to_string(bytes) + "-byte frame-slot buffer");
+        buffer = std::move(replacement);
+    }
     if (data) std::memcpy(buffer->contents(), data, bytes);
     { std::lock_guard<std::mutex> lock(m_Observer->Mutex);
       if (reuse) ++m_Observer->Value.BufferReuses; else ++m_Observer->Value.BufferAllocations; }

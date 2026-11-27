@@ -12,6 +12,7 @@ struct AmbientOcclusionTiming;
 struct AmbientOcclusionSettings;
 struct MetalAOPipelines;
 struct MetalAOResources;
+struct MetalAOCounters;
 struct MetalTemporalPipeline;
 struct MetalTemporalHistory;
 struct MetalTemporalCounters;
@@ -23,6 +24,7 @@ struct MetalFramebufferAttachments
 {
     uint32_t Width = 0, Height = 0;
     std::array<NS::SharedPtr<MTL::Texture>, 6> Targets;
+    mutable const char* Role = "display_readback";
 
 };
 class MetalFramebuffer final : public Framebuffer
@@ -33,7 +35,7 @@ public:
     MetalFramebuffer(const MetalFramebuffer&) = delete;
     MetalFramebuffer& operator=(const MetalFramebuffer&) = delete;
     void PrepareAmbientOcclusion(const Ref<Framebuffer>& depth, const SceneCameraView& camera, const AmbientOcclusionSettings& settings, unsigned debugView, const std::shared_ptr<AmbientOcclusionTiming>& timing, unsigned temporalPhase = 0);
-    void SetTemporalProducer(); // Private same-queue scratch; never a presentation/readback target.
+    void SetTemporalProducer(bool motion = false); // Private same-queue scratch; never a presentation/readback target.
     void SetWorldProducer(); // Private world intermediate, consumed only by CompositeWorldTo.
     void ResolveTemporal(const Ref<Framebuffer>& radiance, const Ref<Framebuffer>& motion,
         glm::vec2 jitter, bool valid, unsigned debug, const glm::mat4& skyMotion, unsigned skyMode,
@@ -77,12 +79,13 @@ private:
     Ref<const FramebufferReadback> m_Readback, m_EditorReadback;
     std::vector<Ref<const FramebufferReadback>> m_EditorPendingReadbacks;
     std::shared_ptr<MetalAOPipelines> m_AOPipelines;
-    std::vector<std::shared_ptr<MetalAOResources>> m_AOResources;
+    std::shared_ptr<MetalAOResources> m_AOResources;
+    std::vector<std::shared_ptr<MetalAOCounters>> m_AOCounters;
     std::shared_ptr<MetalTemporalPipeline> m_TemporalPipeline;
     std::shared_ptr<MetalTemporalHistory> m_TemporalPrevious;
     std::vector<std::shared_ptr<const MetalFramebufferAttachments>> m_TemporalColors;
     std::vector<std::shared_ptr<MetalTemporalCounters>> m_TemporalCounters;
-    bool m_TemporalProducer=false, m_WorldProducer=false, m_ShadowProducer=false;
+    bool m_TemporalProducer=false, m_WorldProducer=false, m_DepthProducer=false;
     bool m_SubmittedGeneration = false;
     std::vector<std::shared_ptr<const MetalFramebufferAttachments>> m_Available;
 };

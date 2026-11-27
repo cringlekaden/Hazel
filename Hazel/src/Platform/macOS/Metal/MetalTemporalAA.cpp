@@ -55,11 +55,12 @@ MetalTemporalCounters::MetalTemporalCounters(MetalDevice& device)
     NS::Error* error=nullptr;Heap=NS::TransferPtr(device.NativeDevice()->newCounterHeap(descriptor.get(),&error));
     Frequency=device.NativeDevice()->queryTimestampFrequency();
 }
-void MetalFramebuffer::SetTemporalProducer()
+void MetalFramebuffer::SetTemporalProducer(bool motion)
 {
     Check(!m_Frame && !m_WorldProducer && m_Specification.Attachments.Attachments.size()==3,"Temporal scratch requires an empty HDR framebuffer");
     if(!m_TemporalProducer)Check(!m_SubmittedGeneration&&m_Available.empty(),"Temporal scratch must be configured before first use");
     m_TemporalProducer=true;
+    m_Attachments->Role = motion ? "taa_motion" : "taa_jittered";
 }
 void MetalFramebuffer::ResolveTemporal(const Ref<Framebuffer>& radiance,const Ref<Framebuffer>& motion,
     glm::vec2 jitter,bool valid,unsigned debug,const glm::mat4& skyMotion,unsigned skyMode,const std::shared_ptr<std::atomic<bool>>& submitted,

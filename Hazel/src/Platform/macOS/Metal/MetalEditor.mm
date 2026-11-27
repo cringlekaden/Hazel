@@ -205,7 +205,7 @@ void MetalDevice::PresentEditor(CA::MetalLayer* mainLayer, bool visible) {
     // work starts while the slot still appears unsubmitted.
     slot.EditorDrawables.reserve(views.size()); slot.EditorLayers.reserve(views.size());
     for (const auto& view : views) { slot.EditorDrawables.push_back(view.Drawable); slot.EditorLayers.push_back(view.Layer); }
-    Account();
+    Account(nullptr, true);
     slot.Allocator->reset();
     m_Commands->beginCommandBuffer(slot.Allocator.get());
     m_Commands->useResidencySet(residency.get());
@@ -269,7 +269,7 @@ void MetalDevice::PresentEditor(CA::MetalLayer* mainLayer, bool visible) {
     }
     m_Commands->endCommandBuffer();
     const auto uiEncoded = std::chrono::steady_clock::now();
-    Account(); // includes official backend UI buffers before commit
+    Account(nullptr, true); // includes official backend UI buffers before commit
     const auto serial = m_Serial + 1;
     if (slot.EditorCapture) slot.EditorCapture->Serial = serial;
     auto observer = m_Observer;

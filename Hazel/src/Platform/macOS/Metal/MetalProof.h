@@ -25,6 +25,8 @@ struct MetalProofSnapshot {
     uint64_t InFlight=0, PeakInFlight=0, Reservations=0, AbortedReservations=0, SlotReuses=0;
     uint64_t SkippedZero=0, SkippedUnavailable=0, SkippedHidden=0, SkippedBusy=0;
     uint64_t ResourceBytes=0, PeakResourceBytes=0, AllocatorBytes=0, PeakAllocatorBytes=0;
+    uint64_t TrackedBytes=0, PeakTrackedBytes=0, NativeBytes=0, PeakNativeBytes=0;
+    uint64_t TrackedBudget=0, NativeBudget=0, RecommendedWorkingSet=0, PhysicalMemory=0, MemoryRejections=0;
     uint64_t ResidencyAllocations=0, PendingAtShutdown=0;
     uint64_t BufferAllocations=0, BufferReuses=0;
     uint64_t AttachmentBytes=0, PeakAttachmentBytes=0, AttachmentGenerations=0, AttachmentAllocations=0, AttachmentReuses=0;

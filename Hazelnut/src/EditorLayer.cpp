@@ -16,6 +16,7 @@
 #include "Hazel/Scripting/ScriptEngine.h"
 #include "Hazel/Utils/PlatformUtils.h"
 #include "UI/PropertyUI.h"
+#include "Platform/macOS/Metal/MetalMemoryAdmissionError.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -93,6 +94,7 @@ namespace Hazel {
     }
 
 	void EditorLayer::OnUpdate(Timestep ts)
+    try
 	{
 		HZ_PROFILE_FUNCTION();
         if(m_Authoring) m_Authoring->Tick(ts);
@@ -104,13 +106,13 @@ namespace Hazel {
         m_NavigationCamera.SetViewportSize(m_ViewportSize.x,m_ViewportSize.y);
         const auto pixels=ViewportFramebufferExtent();
 		// Camera/UI layout remain logical; only the render target uses pixels.
-		if (FramebufferSpecification spec = m_Framebuffer->GetSpecification();
-            pixels.x>0 && pixels.y>0 && (spec.Width!=pixels.x || spec.Height!=pixels.y))
+		if (pixels.x>0 && pixels.y>0)
 		{
-			m_Framebuffer->Resize(pixels.x,pixels.y);
-            m_ViewportOutput->Resize(pixels.x,pixels.y);
-
-			m_NavigationCamera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
+            for (const auto& surface : {m_Framebuffer, m_ViewportOutput}) {
+                const auto& spec = surface->GetSpecification();
+                if (spec.Width != pixels.x || spec.Height != pixels.y)
+                    surface->Resize(pixels.x, pixels.y);
+            }
 		}
 
 		// Render
@@ -179,7 +181,14 @@ namespace Hazel {
             if(selected&&selected.BelongsTo(m_ActiveScene.get())&&selected.HasComponent<MeshRendererComponent>())
                 m_Framebuffer->DrawEntityOutlineTo(m_ViewportOutput,int(entt::entity(selected)),std::clamp(int(std::ceil(2*std::max(m_ViewportPixelScale.x,m_ViewportPixelScale.y))),1,8),ColorSpace::ToSRGB(glm::vec4(1,.5f,0,1)));
         }
+        m_ViewportMemoryError.clear();
 	}
+    catch (const MetalMemoryAdmissionError& error)
+    {
+        m_Framebuffer->Cancel();
+        if (m_ViewportMemoryError != error.what()) HZ_CORE_WARN("Hazelnut viewport frame deferred: {}", error.what());
+        m_ViewportMemoryError = error.what();
+    }
 
 	void EditorLayer::OnImGuiRender()
 	{

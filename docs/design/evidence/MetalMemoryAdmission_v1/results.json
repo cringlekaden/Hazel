@@ -1,0 +1,129 @@
+{
+  "base": "b7760975e680f3bfc3e01f115e0da3af32f5936c",
+  "device": "Apple M4",
+  "macOS": "27.3",
+  "frozenHDRCapturesExact": 144,
+  "admission": {
+    "Debug-4k-sustained-1": [
+      "CAMERA_ADMISSION case=4k-sustained submitted=1 inFlight=1 frameBytes=1680981032 attachmentBytes=1530700032",
+      "CAMERA_ADMISSION case=4k-sustained submitted=2 inFlight=2 frameBytes=2050044224 attachmentBytes=1899405568",
+      "CAMERA_ADMISSION case=4k-sustained submitted=3 inFlight=3 frameBytes=2251990616 attachmentBytes=2100994304",
+      "CAMERA_MEMORY pressure=pass pendingResize=pass cancellation=pass",
+      "CAMERA_MEMORY sustained=30 peakInFlight=3 tracked=2467825496/5726623061 native=2605285376/8589934592",
+      "CAMERA_MEMORY cameraCut=pass retirement=pass",
+      "CAMERA_ADMISSION case=4k-sustained completed=3 errors=0",
+      "METAL_FINAL submitted=30 completed=30 presented=0 completed_presented=0 errors=0 peak_frame_bytes=2261280344 peak_attachment_bytes=2316804352 peak_allocator_bytes=11382312 live_attachment_generations=0 pending_bytes=0"
+    ],
+    "Release-4k-sustained-1": [
+      "CAMERA_ADMISSION case=4k-sustained submitted=1 inFlight=1 frameBytes=1680981032 attachmentBytes=1530700032",
+      "CAMERA_ADMISSION case=4k-sustained submitted=2 inFlight=2 frameBytes=2050044224 attachmentBytes=1899405568",
+      "CAMERA_ADMISSION case=4k-sustained submitted=3 inFlight=3 frameBytes=2251990616 attachmentBytes=2100994304",
+      "CAMERA_MEMORY pressure=pass pendingResize=pass cancellation=pass",
+      "CAMERA_MEMORY sustained=30 peakInFlight=3 tracked=2467825496/5726623061 native=2605285376/8589934592",
+      "CAMERA_MEMORY cameraCut=pass retirement=pass",
+      "CAMERA_ADMISSION case=4k-sustained completed=3 errors=0",
+      "METAL_FINAL submitted=30 completed=30 presented=0 completed_presented=0 errors=0 peak_frame_bytes=2261280344 peak_attachment_bytes=2316804352 peak_allocator_bytes=11382312 live_attachment_generations=0 pending_bytes=0"
+    ],
+    "Release-4k-sustained-0": [
+      "CAMERA_ADMISSION case=4k-sustained submitted=1 inFlight=1 frameBytes=1680981032 attachmentBytes=1530700032",
+      "CAMERA_ADMISSION case=4k-sustained submitted=2 inFlight=2 frameBytes=2050044224 attachmentBytes=1899405568",
+      "CAMERA_ADMISSION case=4k-sustained submitted=3 inFlight=3 frameBytes=2251990616 attachmentBytes=2100994304",
+      "CAMERA_MEMORY pressure=pass pendingResize=pass cancellation=pass",
+      "CAMERA_MEMORY sustained=30 peakInFlight=3 tracked=2467825496/5726623061 native=2578743296/8589934592",
+      "CAMERA_MEMORY cameraCut=pass retirement=pass",
+      "CAMERA_ADMISSION case=4k-sustained completed=30 errors=0",
+      "METAL_FINAL submitted=30 completed=30 presented=0 completed_presented=0 errors=0 peak_frame_bytes=2261280344 peak_attachment_bytes=2316804352 peak_allocator_bytes=10890792 live_attachment_generations=0 pending_bytes=0"
+    ]
+  },
+  "workingSetRecommendedBytes": 12713115648,
+  "physicalMemoryBytes": 17179869184,
+  "tests": {
+    "hdr-debug": "PASS",
+    "hdr-release": "PASS",
+    "taa-debug": "PASS",
+    "taa-release": "PASS",
+    "consumers-debug": {
+      "consumers": {
+        "status": "PASS",
+        "submitted": 881,
+        "completed": 881,
+        "positivePresentationsAtSnapshot": 869,
+        "completedPositivePresentationsAtSnapshot": 869,
+        "nativeBackingScale": 1,
+        "perHostPositivePresentations": {
+          "2876130032": 863,
+          "845615946": 865,
+          "286331153": 869,
+          "3697898086": 790
+        }
+      }
+    },
+    "consumers-release": {
+      "consumers": {
+        "status": "PASS",
+        "submitted": 874,
+        "completed": 874,
+        "positivePresentationsAtSnapshot": 860,
+        "completedPositivePresentationsAtSnapshot": 860,
+        "nativeBackingScale": 1,
+        "perHostPositivePresentations": {
+          "3697898086": 786,
+          "286331153": 860,
+          "845615946": 862,
+          "2876130032": 858
+        }
+      }
+    },
+    "recovery-debug": {
+      "recovery": {
+        "status": "PASS",
+        "submitted": 885,
+        "completed": 885,
+        "positivePresentationsAtSnapshot": 872,
+        "completedPositivePresentationsAtSnapshot": 872
+      }
+    },
+    "recovery-release": {
+      "recovery": {
+        "status": "PASS",
+        "submitted": 872,
+        "completed": 872,
+        "positivePresentationsAtSnapshot": 858,
+        "completedPositivePresentationsAtSnapshot": 858
+      }
+    }
+  },
+  "relocation": {
+    "archiveIntegrity": "PASS",
+    "metalSourceFree": {
+      "exitCode": 0,
+      "results": [
+        "BLOOM_ORACLE uniformCases=27 maxLinearError=1.43051e-08",
+        "BLOOM_IMPULSE fourPhases=pass minEnergy=6.47153 maxEnergy=6.47153",
+        "BLOOM_DISOCCLUSION maxResidual=0",
+        "BLOOM_LIFETIME queue=3 reset=pass oddResize=pass onePixel=pass",
+        "BLOOM_STUDY poses=17 ID/depth=pass disabled=pass UI=pass AO/TAA=pass exposureHistory=pass"
+      ]
+    },
+    "openglSourceFree": {
+      "exitCode": 0,
+      "results": [
+        "BLOOM_ORACLE uniformCases=27 maxLinearError=1.43051e-08",
+        "BLOOM_IMPULSE fourPhases=pass minEnergy=6.47153 maxEnergy=6.47153",
+        "BLOOM_STUDY poses=17 ID/depth=pass disabled=pass UI=pass"
+      ]
+    },
+    "metalPlayer": "PASS",
+    "openglPlayer": "PASS"
+  },
+  "memoryPressureObservation": {
+    "before": [
+      "The system has 17179869184 (1048576 pages with a page size of 16384).",
+      "System-wide memory free percentage: 66%"
+    ],
+    "after": [
+      "The system has 17179869184 (1048576 pages with a page size of 16384).",
+      "System-wide memory free percentage: 52%"
+    ]
+  }
+}

@@ -1,0 +1,16 @@
+METAL_MEMORY serial=1 tracked=2212338984 native=2255863808 recommended=12713115648 physical=17179869184 ui=0 allocators=3681832
+METAL_MEMORY_ROLE ao_compute count=10 active=257359872 other=0
+METAL_MEMORY_ROLE bloom count=9 active=45301760 other=0
+METAL_MEMORY_ROLE depth_prepass count=2 active=33947648 other=33947648
+METAL_MEMORY_ROLE directional_shadow count=1 active=4227072 other=0
+METAL_MEMORY_ROLE display_readback count=9 active=201588736 other=201613568
+METAL_MEMORY_ROLE other_frame_resources count=385 active=21625896 other=0
+METAL_MEMORY_ROLE point_shadow count=1 active=1589248 other=0
+METAL_MEMORY_ROLE spot_shadow count=1 active=1064960 other=0
+METAL_MEMORY_ROLE ssr_surface count=6 active=471072768 other=0
+METAL_MEMORY_ROLE taa_history count=4 active=167116800 other=167116800
+METAL_MEMORY_ROLE taa_jittered count=3 active=201588736 other=0
+METAL_MEMORY_ROLE taa_motion count=3 active=201588736 other=0
+METAL_MEMORY_ROLE world_radiance count=3 active=201588736 other=0
+CAMERA_ADMISSION case=4k-queued failedStep=world
+FAIL: Metal renderer storage budget exceeded (2 GiB resources / 64 MiB allocators, including idle and in-flight storage)
