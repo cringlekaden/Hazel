@@ -1,6 +1,7 @@
 #pragma once
 #include "SceneSubmission.h"
 #include "Bloom.h"
+#include "DepthOfField.h"
 #include "ExposureMeter.h"
 #include "Hazel/Renderer/Resources/Framebuffer.h"
 #include <functional>
@@ -38,6 +39,14 @@ struct ExposureViewState {
     unsigned Latest = 0;
     std::shared_ptr<std::atomic<bool>> Submitted;
 };
+struct FocusViewState {
+    DepthOfFieldPass Pass;
+    SceneCameraView Camera;
+    uint64_t Scene = 0;
+    glm::uvec2 Extent{0};
+    double InverseDistance = 0;
+    double TrackedGoal = 0;
+};
 class SceneRenderView
 {
   public:
@@ -64,6 +73,8 @@ class SceneRenderView
     Ref<Framebuffer> AmbientDepth; // Per-view masked mesh depth preparation.
     BloomPyramid Bloom;
     ExposureViewState Exposure;
+    FocusViewState Focus;
+    std::shared_ptr<DepthOfFieldTiming> DefocusTiming; // Explicit qualification instrumentation.
     std::shared_ptr<ExposureMeterTiming> ExposureTiming; // Explicit qualification instrumentation.
     std::shared_ptr<BloomTiming> BloomMetrics;
     Ref<Framebuffer> Radiance; // Optional per-view world target, never authored/history.
@@ -73,6 +84,7 @@ class SceneRenderView
         Radiance.reset();
         Bloom = {};
         Exposure = {};
+        Focus = {};
         ReflectionSurface.reset();
         ReflectionProbes = {};
         Jittered.reset();Motion.reset();Temporal={};

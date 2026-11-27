@@ -56,6 +56,13 @@ void MetalRenderer2DFrame::CollectAllocations(std::set<const MTL::Allocation*>& 
     if (ExposureMeter)
         for (const auto& target : {ExposureMeter->Histogram, ExposureMeter->Previous, ExposureMeter->Current})
             allocations.insert(target->Targets[0].get());
+    if (Defocus) {
+        allocations.insert(Defocus->Tiles->Targets[0].get());
+        allocations.insert(Defocus->DilatedTiles->Targets[0].get());
+        allocations.insert(Defocus->Prefiltered->Targets[0].get());
+        allocations.insert(Defocus->Layers->Targets[0].get());
+        allocations.insert(Defocus->Layers->Targets[1].get());
+    }
     if (World) World->CollectAllocations(allocations);
     if (DisplaySource) DisplaySource->CollectAllocations(allocations);
 }
@@ -101,6 +108,26 @@ void MetalRenderer2DFrame::ResolveAmbientOcclusionTimings()
         BloomCounters.reset();
     }
     if (ExposureMeter) ExposureMeter->ResolveTiming();
+    if (Defocus && Defocus->Counters && Defocus->TimestampFrequency) {
+        std::array<MTL4::TimestampHeapEntry, 8> entries{};
+        const auto values = NS::RetainPtr(Defocus->Counters->resolveCounterRange(NS::Range::Make(0, entries.size())));
+        if (values && values->length() == sizeof(entries)) {
+            std::memcpy(entries.data(), values->bytes(), sizeof(entries));
+            DepthOfFieldTiming result;
+            bool valid = true;
+            for (size_t i = 0; i < result.Milliseconds.size(); ++i) {
+                const auto start = entries[2 * i].timestamp, end = entries[2 * i + 1].timestamp;
+                valid &= start && end > start;
+                if (end > start)
+                    result.Milliseconds[i] = double(end - start) * 1000. / Defocus->TimestampFrequency;
+            }
+            for (const auto& target : {Defocus->Tiles, Defocus->DilatedTiles, Defocus->Prefiltered, Defocus->Layers})
+                for (const auto& texture : target->Targets)
+                    if (texture) result.WorkingBytes += texture->allocatedSize();
+            if (valid) *Defocus->Timing = result;
+        }
+        Defocus->Counters.reset();
+    }
     if(AO)AO->ResolveTimings();
     if(ShadowSource)ShadowSource->ResolveAmbientOcclusionTimings();
     if(SpotShadowSource)SpotShadowSource->ResolveAmbientOcclusionTimings();
@@ -259,6 +286,84 @@ NS::SharedPtr<MTL::DepthStencilState> MetalDevice::GetDepthState(const RasterSta
     }
     return state;
 }
+void MetalDevice::PrepareDefocus(const std::shared_ptr<MetalRenderer2DFrame>& frame)
+{
+    auto& pass = *frame->Defocus;
+    const auto& world = frame->World->Attachments;
+    auto table = NS::TransferPtr(MTL4::ArgumentTableDescriptor::alloc()->init());
+    table->setInitializeBindings(true);
+    table->setMaxBufferBindCount(6);
+    table->setMaxTextureBindCount(3);
+    table->setMaxSamplerStateBindCount(2);
+    NS::Error* error = nullptr;
+    if (pass.Timing) {
+        auto counters = NS::TransferPtr(MTL4::CounterHeapDescriptor::alloc()->init());
+        counters->setType(MTL4::CounterHeapTypeTimestamp);
+        counters->setCount(8);
+        pass.Counters = NS::TransferPtr(m_Device->newCounterHeap(counters.get(), &error));
+        if (pass.Counters) pass.Counters->invalidateCounterRange(NS::Range::Make(0, 8));
+        pass.TimestampFrequency = m_Device->queryTimestampFrequency();
+    }
+    for (size_t i = 0; i < pass.Arguments.size(); ++i) {
+        auto& arguments = pass.Arguments[i];
+        arguments = NS::TransferPtr(m_Device->newArgumentTable(table.get(), &error));
+        Check(bool(arguments), "Cannot allocate defocus arguments");
+        auto params = pass.Parameters;
+        params.Lens.w = i == 1 || (i == 2 && frame->DefocusFallbackSampler) ? 1.f : 0.f;
+        params.Gather.y = frame->DefocusFallbackSampler ? 1.f : 0.f;
+        auto uniform = AcquireRenderer2DBuffer(i == 3 ? sizeof(params) : sizeof(params.Lens), &params);
+        arguments->setAddress(uniform->gpuAddress(), 5);
+        frame->Residency->addAllocation(uniform.get());
+        frame->Buffers.push_back(std::move(uniform));
+    }
+    pass.Arguments[0]->setTexture(world->Targets[2]->gpuResourceID(), 0);
+    pass.Arguments[1]->setTexture(pass.Tiles->Targets[0]->gpuResourceID(), 0);
+    pass.Arguments[0]->setSamplerState(frame->OutputSampler->gpuResourceID(), 0);
+    pass.Arguments[1]->setSamplerState(frame->OutputSampler->gpuResourceID(), 0);
+    pass.Arguments[2]->setTexture(world->Targets[0]->gpuResourceID(), 0);
+    pass.Arguments[2]->setTexture(world->Targets[2]->gpuResourceID(), 1);
+    pass.Arguments[2]->setTexture(pass.DilatedTiles->Targets[0]->gpuResourceID(), 2);
+    pass.Arguments[3]->setTexture(pass.Prefiltered->Targets[0]->gpuResourceID(), 0);
+    pass.Arguments[3]->setTexture(pass.DilatedTiles->Targets[0]->gpuResourceID(), 2);
+    const auto& sampler = frame->DefocusFallbackSampler ? frame->DefocusFallbackSampler : frame->LinearClampSampler;
+    pass.Arguments[2]->setSamplerState(sampler->gpuResourceID(), 0);
+    pass.Arguments[2]->setSamplerState(frame->OutputSampler->gpuResourceID(), 1);
+    pass.Arguments[3]->setSamplerState(sampler->gpuResourceID(), 0);
+    for (const auto& target : {pass.Tiles, pass.DilatedTiles, pass.Prefiltered, pass.Layers})
+        for (const auto& texture : target->Targets)
+            if (texture) frame->Residency->addAllocation(texture.get());
+}
+
+void MetalDevice::EncodeDefocus(const std::shared_ptr<MetalRenderer2DFrame>& frame)
+{
+    const auto& pass = *frame->Defocus;
+    const std::array outputs{pass.Tiles, pass.DilatedTiles, pass.Prefiltered, pass.Layers};
+    const std::array shaders{pass.TileShader, pass.TileShader, pass.PrefilterShader, pass.GatherShader};
+    for (size_t stage = 0; stage < outputs.size(); ++stage) {
+        const auto& output = outputs[stage];
+        auto spec = NS::TransferPtr(MTL4::RenderPassDescriptor::alloc()->init());
+        spec->setRenderTargetWidth(output->Width);
+        spec->setRenderTargetHeight(output->Height);
+        for (unsigned i = 0; i < (stage == 3 ? 2u : 1u); ++i) {
+            auto* color = spec->colorAttachments()->object(i);
+            color->setTexture(output->Targets[i].get());
+            color->setLoadAction(MTL::LoadActionDontCare);
+            color->setStoreAction(MTL::StoreActionStore);
+        }
+        auto* render = m_Commands->renderCommandEncoder(spec.get());
+        Check(render != nullptr, "Cannot encode depth of field");
+        // Respect the previous frame's reads of these view-local attachments.
+        render->barrierAfterQueueStages(MTL::StageAll, MTL::StageAll, MTL4::VisibilityOptionDevice);
+        render->setRenderPipelineState(shaders[stage]->Pipeline());
+        render->setArgumentTable(pass.Arguments[stage].get(), MTL::RenderStageFragment);
+        auto* counters = pass.Counters.get();
+        if (counters) render->writeTimestamp(MTL4::TimestampGranularityPrecise, MTL::RenderStageFragment, counters, stage * 2);
+        render->drawPrimitives(MTL::PrimitiveTypeTriangle, NS::UInteger(0), NS::UInteger(3));
+        if (counters) render->writeTimestamp(MTL4::TimestampGranularityPrecise, MTL::RenderStageFragment, counters, stage * 2 + 1);
+        render->endEncoding();
+    }
+}
+
 void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFrame>& quad)
 {
     if(quad->TemporalSource)PrepareRenderer2DFrame(quad->TemporalSource);
@@ -448,6 +553,36 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
         quad->OutputArguments->setTexture((quad->DisplaySource ? quad->DisplaySource : quad)->Attachments->Targets[0]->gpuResourceID(), 0);
         quad->OutputArguments->setSamplerState(quad->OutputSampler->gpuResourceID(), 0);
     }
+    if (!quad->BloomPasses.empty() || quad->Defocus) {
+        auto sampler = NS::TransferPtr(MTL::SamplerDescriptor::alloc()->init());
+        sampler->setMinFilter(MTL::SamplerMinMagFilterLinear);
+        sampler->setMagFilter(MTL::SamplerMinMagFilterLinear);
+        sampler->setSAddressMode(MTL::SamplerAddressModeClampToEdge);
+        sampler->setTAddressMode(MTL::SamplerAddressModeClampToEdge);
+        quad->LinearClampSampler = NS::TransferPtr(m_Device->newSamplerState(sampler.get()));
+        Check(bool(quad->LinearClampSampler), "Cannot allocate world post-process sampler");
+        if (quad->Defocus && !m_Device->supports32BitFloatFiltering()) {
+            sampler->setMinFilter(MTL::SamplerMinMagFilterNearest);
+            sampler->setMagFilter(MTL::SamplerMinMagFilterNearest);
+            quad->DefocusFallbackSampler = NS::TransferPtr(m_Device->newSamplerState(sampler.get()));
+            Check(bool(quad->DefocusFallbackSampler), "Cannot allocate defocus fallback sampler");
+        }
+    }
+    glm::vec4 defocusLens = quad->Defocus ? quad->Defocus->Parameters.Lens : glm::vec4(0);
+    if (quad->DefocusFallbackSampler) defocusLens.w = 2;
+    const auto bindDefocusLayers = [&](MTL4::ArgumentTable& arguments, bool enabled, MTL::SamplerState& sampler) {
+        const auto& world = quad->World->Attachments;
+        const auto& layers = enabled ? quad->Defocus->Layers : world;
+        arguments.setTexture(world->Targets[2]->gpuResourceID(), 4);
+        arguments.setTexture(layers->Targets[0]->gpuResourceID(), 5);
+        arguments.setTexture(layers->Targets[enabled ? 1 : 0]->gpuResourceID(), 6);
+        const auto& bounds = enabled ? quad->Defocus->DilatedTiles : world;
+        arguments.setTexture(bounds->Targets[0]->gpuResourceID(), 7);
+        const auto defocusSampler = enabled && quad->DefocusFallbackSampler
+            ? quad->DefocusFallbackSampler->gpuResourceID() : sampler.gpuResourceID();
+        arguments.setSamplerState(defocusSampler, 5);
+        arguments.setSamplerState(defocusSampler, 6);
+    };
     if (!quad->BloomPasses.empty()) {
         if (quad->BloomMetrics) {
             auto counters = NS::TransferPtr(MTL4::CounterHeapDescriptor::alloc()->init());
@@ -460,27 +595,23 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
                 quad->BloomTimestampFrequency = m_Device->queryTimestampFrequency();
             }
         }
-        auto sampler = NS::TransferPtr(MTL::SamplerDescriptor::alloc()->init());
-        sampler->setMinFilter(MTL::SamplerMinMagFilterLinear);
-        sampler->setMagFilter(MTL::SamplerMinMagFilterLinear);
-        sampler->setSAddressMode(MTL::SamplerAddressModeClampToEdge);
-        sampler->setTAddressMode(MTL::SamplerAddressModeClampToEdge);
-        quad->BloomSampler = NS::TransferPtr(m_Device->newSamplerState(sampler.get()));
-        Check(bool(quad->BloomSampler), "Cannot allocate bloom sampler");
         auto table = NS::TransferPtr(MTL4::ArgumentTableDescriptor::alloc()->init());
         table->setInitializeBindings(true);
         table->setMaxBufferBindCount(6);
-        table->setMaxTextureBindCount(2);
-        table->setMaxSamplerStateBindCount(2);
+        table->setMaxTextureBindCount(8);
+        table->setMaxSamplerStateBindCount(7);
         for (auto& pass : quad->BloomPasses) {
             pass.Arguments = NS::TransferPtr(m_Device->newArgumentTable(table.get(), &error));
             Check(bool(pass.Arguments), "Cannot allocate bloom filter bindings");
-            auto uniform = AcquireRenderer2DBuffer(sizeof(pass.Parameters), &pass.Parameters);
+            const bool defocus = quad->Defocus && pass.Parameters.x == 0;
+            const glm::vec4 parameters[]{pass.Parameters, defocus ? defocusLens : glm::vec4(0)};
+            auto uniform = AcquireRenderer2DBuffer(sizeof(parameters), parameters);
             pass.Arguments->setAddress(uniform->gpuAddress(), 5);
             pass.Arguments->setTexture(pass.Source->Targets[0]->gpuResourceID(), 0);
             pass.Arguments->setTexture(pass.Fine->Targets[0]->gpuResourceID(), 1);
-            pass.Arguments->setSamplerState(quad->BloomSampler->gpuResourceID(), 0);
-            pass.Arguments->setSamplerState(quad->BloomSampler->gpuResourceID(), 1);
+            pass.Arguments->setSamplerState(quad->LinearClampSampler->gpuResourceID(), 0);
+            pass.Arguments->setSamplerState(quad->LinearClampSampler->gpuResourceID(), 1);
+            bindDefocusLayers(*pass.Arguments.get(), defocus, *quad->LinearClampSampler.get());
             quad->Residency->addAllocation(pass.Output->Targets[0].get());
             quad->Residency->addAllocation(uniform.get());
             quad->Buffers.push_back(std::move(uniform));
@@ -488,15 +619,16 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
     }
     if (quad->World) {
         auto table = NS::TransferPtr(MTL4::ArgumentTableDescriptor::alloc()->init());
-        table->setInitializeBindings(true); table->setMaxBufferBindCount(6); table->setMaxTextureBindCount(quad->Reflections ? 6 : 4); table->setMaxSamplerStateBindCount(quad->Reflections ? 1 : 3);
+        table->setInitializeBindings(true); table->setMaxBufferBindCount(6); table->setMaxTextureBindCount(quad->Reflections ? 6 : 8); table->setMaxSamplerStateBindCount(quad->Reflections ? 1 : 7);
         quad->PresentationArguments = NS::TransferPtr(m_Device->newArgumentTable(table.get(), &error));
         auto sampler = NS::TransferPtr(MTL::SamplerDescriptor::alloc()->init());
         sampler->setMinFilter(MTL::SamplerMinMagFilterNearest); sampler->setMagFilter(MTL::SamplerMinMagFilterNearest);
         sampler->setSAddressMode(MTL::SamplerAddressModeClampToEdge); sampler->setTAddressMode(MTL::SamplerAddressModeClampToEdge);
         if (!quad->OutputSampler) quad->OutputSampler = NS::TransferPtr(m_Device->newSamplerState(sampler.get()));
-        glm::vec4 presentation(quad->Exposure, quad->BloomIntensity, quad->ExposureMeter ? 1.f : 0.f, 0);
+        const glm::vec4 presentation[]{glm::vec4(quad->Exposure, quad->BloomIntensity, quad->ExposureMeter ? 1.f : 0.f, 0),
+            defocusLens};
         auto uniform = quad->Reflections ? AcquireRenderer2DBuffer(sizeof(*quad->Reflections), &*quad->Reflections) :
-            AcquireRenderer2DBuffer(sizeof(presentation), &presentation);
+            AcquireRenderer2DBuffer(sizeof(presentation), presentation);
         Check(bool(quad->PresentationArguments) && bool(quad->OutputSampler) && bool(uniform), "Cannot allocate world presentation bindings");
         quad->PresentationArguments->setAddress(uniform->gpuAddress(), 5);
         for (unsigned slot=0; slot<(quad->Reflections ? 6u : 2u); ++slot)
@@ -504,11 +636,12 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
         quad->PresentationArguments->setSamplerState(quad->OutputSampler->gpuResourceID(), 0);
         if (!quad->Reflections) {
             auto glow = quad->BloomPasses.empty() ? quad->World->Attachments : quad->BloomPasses.back().Output;
-            auto sampler = quad->BloomSampler ? quad->BloomSampler : quad->OutputSampler;
+            const auto& sampler = quad->LinearClampSampler ? quad->LinearClampSampler : quad->OutputSampler;
             quad->PresentationArguments->setTexture(glow->Targets[0]->gpuResourceID(), 2);
             quad->PresentationArguments->setSamplerState(sampler->gpuResourceID(), 2);
             const auto gain = quad->ExposureMeter ? quad->ExposureMeter->Current : quad->World->Attachments;
             quad->PresentationArguments->setTexture(gain->Targets[0]->gpuResourceID(), 3);
+            bindDefocusLayers(*quad->PresentationArguments.get(), quad->Defocus.has_value(), *sampler.get());
         }
         quad->Residency->addAllocation(uniform.get()); quad->Buffers.push_back(std::move(uniform));
     }
@@ -536,6 +669,7 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
         quad->Residency->addAllocation(buffer.get()); quad->Buffers.push_back(std::move(buffer));
     }
     if (quad->ExposureMeter) PrepareExposure(quad);
+    if (quad->Defocus) PrepareDefocus(quad);
     if(quad->AO) PrepareAmbientOcclusion(quad);
     if(quad->Temporal)PrepareTemporal(quad);
     quad->Residency->commit();
@@ -611,6 +745,7 @@ void MetalDevice::EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFra
         m_Commands->useResidencySet(quad->World->Residency.get());
         EncodeRenderer2DFrame(quad->World);
         if (quad->ExposureMeter) EncodeExposure(quad);
+        if (quad->Defocus) EncodeDefocus(quad);
         auto* counters = quad->BloomCounters.get();
         size_t timestamp = 0;
         for (const auto& bloom : quad->BloomPasses) {

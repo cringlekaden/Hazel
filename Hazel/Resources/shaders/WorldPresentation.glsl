@@ -12,7 +12,43 @@ layout(binding=0) uniform sampler2D u_World;
 layout(binding=1) uniform isampler2D u_Picking;
 layout(binding=2) uniform sampler2D u_Bloom;
 layout(binding=3) uniform sampler2D u_AdaptedGain;
-layout(std140,binding=5) uniform Presentation {vec4 u_Presentation;};
+layout(binding=4) uniform sampler2D u_DefocusDepth;
+layout(binding=5) uniform sampler2D u_DefocusNear;
+layout(binding=6) uniform sampler2D u_DefocusFar;
+layout(binding=7) uniform sampler2D u_DefocusBounds;
+layout(std140,binding=5) uniform Presentation {vec4 u_Presentation, u_Defocus;};
+// DEFOCUS RECONSTRUCTION
+vec4 sampleDefocusLayer(sampler2D layer, vec2 uv, bool explicitFiltering)
+{
+    if (!explicitFiltering) return texture(layer, uv);
+    ivec2 size = textureSize(layer, 0);
+    vec2 point = uv * vec2(size) - .5;
+    ivec2 base = ivec2(floor(point));
+    ivec2 last = size - 1;
+    vec2 t = fract(point);
+    vec4 a = texelFetch(layer, clamp(base, ivec2(0), last), 0);
+    vec4 b = texelFetch(layer, clamp(base + ivec2(1, 0), ivec2(0), last), 0);
+    vec4 c = texelFetch(layer, clamp(base + ivec2(0, 1), ivec2(0), last), 0);
+    vec4 d = texelFetch(layer, clamp(base + ivec2(1, 1), ivec2(0), last), 0);
+    return mix(mix(a, b, t.x), mix(c, d, t.x), t.y);
+}
+vec3 reconstructDefocus(vec3 world, ivec2 pixel, vec4 lens, bool nearInfluences)
+{
+    float depth = texelFetch(u_DefocusDepth, pixel, 0).r;
+    float coc = (depth - lens.x) * lens.y;
+    vec2 uv = (vec2(pixel) + .5) / (2.0 * vec2(textureSize(u_DefocusNear, 0)));
+    if (abs(coc) > .75) {
+        vec4 farLayer = sampleDefocusLayer(u_DefocusFar, uv, lens.w > 1.5);
+        float farMask = smoothstep(.75, 2.0, abs(coc));
+        world = world * (1.0 - farMask * farLayer.a) + farMask * farLayer.rgb;
+    }
+    if (nearInfluences) {
+        vec4 nearLayer = sampleDefocusLayer(u_DefocusNear, uv, lens.w > 1.5);
+        world = world * (1.0 - nearLayer.a) + nearLayer.rgb;
+    }
+    return world;
+}
+// END DEFOCUS RECONSTRUCTION
 vec3 neutral(vec3 radiance){
     float minimum=min(radiance.x,min(radiance.y,radiance.z));
     vec3 value=radiance-(minimum<.08?minimum-6.25*minimum*minimum:.04);
@@ -25,6 +61,11 @@ vec3 neutral(vec3 radiance){
 }
 void main() {
     vec4 world=texture(u_World,v_UV);
+    if (u_Defocus.w > .5) {
+        ivec2 pixel = ivec2(gl_FragCoord.xy);
+        bool nearInfluences = texelFetch(u_DefocusBounds, pixel / 16, 0).x >= .5;
+        world.rgb = reconstructDefocus(world.rgb, pixel, u_Defocus, nearInfluences);
+    }
     if (u_Presentation.y>0.0) world.rgb+=u_Presentation.y*texture(u_Bloom,v_UV).rgb;
     float gain = u_Presentation.x;
     if (u_Presentation.z > .5)

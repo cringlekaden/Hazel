@@ -427,10 +427,10 @@ def diagnostic_resources(resources, destination, config):
         "    if (u_Camera.z > 1) o_Color.rgb += replacement - fallback;"))
     shader=destination/"shaders/WorldPresentation.glsl"
     source=shader.read_text()
-    output="neutral(world.rgb*exp2(u_Presentation.x))"
+    output="neutral(world.rgb*exp2(gain))"
     if source.count(output)!=1:
         raise RuntimeError("Trace instrumentation needs the qualified HDR presentation layout")
-    shader.write_text(source.replace(output,"world.rgb*exp2(u_Presentation.x)"))
+    shader.write_text(source.replace(output,"world.rgb*exp2(gain)"))
     produce(config,destination/"shaders/metal",sources=destination/"shaders")
     return destination
 

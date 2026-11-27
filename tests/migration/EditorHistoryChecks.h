@@ -33,6 +33,7 @@ static void EditorHistoryChecks()
         DocumentHistory history;
         history.Bind(fixture.World->GetIdentity());
         auto entity = fixture.World->CreateEntity("Physical camera history");
+        auto target = fixture.World->CreateEntity("Focus marker");
         auto& camera = entity.AddComponent<CameraComponent>().Camera;
         camera.SetPerspective(glm::radians(45.f), .1f, 100);
         const auto original = fixture.State();
@@ -47,6 +48,8 @@ static void EditorHistoryChecks()
         exposure.Metering = ExposureMetering::Spot;
         exposure.SpotCenter = {.3f, .7f};
         proposed.Camera->ExposureOverride = exposure;
+        const DepthOfFieldSettings defocus{true, DepthOfFieldQuality::Cinematic, 8, .3f, .25f, target.GetUUID()};
+        proposed.Camera->DepthOfField = defocus;
         std::string error;
         Check(history.Begin(*fixture.World, CreateScope<UIEditCommand>(
             *fixture.World, entity.GetUUID(), "Physical camera", before)), "Camera history begin failed");
@@ -55,7 +58,8 @@ static void EditorHistoryChecks()
         const auto changed = fixture.State();
         Check(camera.GetPhysicalCamera() && *camera.GetPhysicalCamera() == lens &&
             entity.GetComponent<CameraComponent>().ExposureOverride == std::optional<CameraExposure>(exposure) &&
-            changed != original, "Inspector did not apply the physical camera and exposure override");
+            entity.GetComponent<CameraComponent>().DepthOfField == defocus &&
+            changed != original, "Inspector did not apply the camera optics and exposure");
         Check(history.Undo(*fixture.World) && fixture.State() == original &&
             history.Redo(*fixture.World) && fixture.State() == changed, "Physical camera Undo/Redo lost authored values");
         std::cout << "PASS physical camera Inspector history and exact Undo/Redo\n";

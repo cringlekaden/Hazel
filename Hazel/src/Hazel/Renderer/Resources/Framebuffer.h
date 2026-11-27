@@ -11,6 +11,7 @@
 
 namespace Hazel {
     struct ExposureMeterPass;
+    struct DepthOfFieldPass;
 
 	enum class FramebufferTextureFormat
 	{
@@ -51,11 +52,13 @@ namespace Hazel {
 
 	struct FramebufferSpecification
 	{
+        enum class CameraScratch { None, Exposure, Defocus };
 		uint32_t Width = 0, Height = 0;
 		FramebufferAttachmentSpecification Attachments;
 		uint32_t Samples = 1;
 
 		bool SwapChainTarget = false;
+        CameraScratch Scratch = CameraScratch::None;
 	};
 
     // Render-thread polling publishes CPU-owned data only after GPU completion.
@@ -110,7 +113,9 @@ namespace Hazel {
         // writes only a separate encoded RGBA8 output. Radius is framebuffer pixels.
         virtual void DrawEntityOutlineTo(const Ref<Framebuffer>& destination,int entity,int radius,glm::vec4 encodedColor) = 0;
         virtual void ResolveReflectionsTo(const Ref<Framebuffer>& destination, const ScreenReflectionResolve& parameters) = 0;
-        virtual void CompositeWorldTo(const Ref<Framebuffer> &destination, float exposure, const BloomPyramid* bloom = nullptr, const ExposureMeterPass* meter = nullptr) = 0;
+        virtual void CompositeWorldTo(const Ref<Framebuffer> &destination, float exposure,
+            const BloomPyramid* bloom = nullptr, const ExposureMeterPass* meter = nullptr,
+            const DepthOfFieldPass* defocus = nullptr) = 0;
         virtual glm::vec4 ReadColorPixel(uint32_t attachment, int x, int y) = 0;
         virtual void ResetEditorReadback() {}
         virtual int ReadEditorEntity(int x, int y) { return ReadPixel(1, x, y); }

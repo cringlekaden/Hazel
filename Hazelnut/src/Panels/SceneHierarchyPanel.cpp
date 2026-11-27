@@ -638,11 +638,12 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         });
 
     // Named, document-local choices; no cross-document drag payloads or stored pointers.
-    auto targetPicker=[&](const char *key,const char *label,uint64_t &id,std::function<bool(Entity)> allowed){
-        auto target=m_Context->GetEntityByUUID(id);auto current=!id?std::string("None / automatic"):target?target.GetName():"Missing #"+std::to_string(id);
+    auto targetPicker=[&](const char *key,const char *label,uint64_t &id,std::function<bool(Entity)> allowed,
+                         const char* none = "None / automatic"){
+        auto target=m_Context->GetEntityByUUID(id);auto current=!id?std::string(none):target?target.GetName():"Missing #"+std::to_string(id);
         PropertyUI::Row row(key,label);bool changed=false;
         if(ImGui::BeginCombo("##value",current.c_str())){
-            if(ImGui::Selectable("None / automatic",!id)){id=0;changed=true;}
+            if(ImGui::Selectable(none,!id)){id=0;changed=true;}
             for(auto handle:m_Context->GetAllEntitiesWith<IDComponent>()){
                 Entity candidate(handle,m_Context.get());if(!m_Context->IsEntityValid(candidate.GetUUID())||!allowed(candidate))continue;
                 auto value=uint64_t(candidate.GetUUID());auto name=candidate.GetName()+"##"+std::to_string(value);
@@ -993,7 +994,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
     }
     DrawUIComponent<CameraComponent>(
         "Camera", entity, m_Sections,m_RestoreSections,
-        [this](auto &component)
+        [this, entity, &targetPicker](auto &component)
         {
             auto &camera = component.Camera;
 
@@ -1066,6 +1067,34 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             }
             if (component.ExposureOverride) DrawCameraExposure(*component.ExposureOverride);
 
+            auto& defocus = component.DepthOfField;
+            if (camera.GetProjectionType() == SceneCamera::ProjectionType::Perspective)
+            {
+                PropertyUI::Checkbox("depth-of-field", "Depth of field", defocus.Enabled);
+                if (defocus.Enabled && ImGui::TreeNode("Depth of field settings"))
+                {
+                    targetPicker("focus-subject", "Focus subject", defocus.TrackedSubject,
+                        [entity](Entity candidate) { return candidate != entity; }, "Manual focus");
+                    int quality = int(defocus.Quality);
+                    if (PropertyUI::Combo("depth-of-field-quality", "Quality", quality, "Balanced\0Cinematic\0"))
+                        defocus.Quality = DepthOfFieldQuality(quality);
+                    bool polygon = defocus.ApertureBlades != 0;
+                    if (PropertyUI::Checkbox("pupil-outlined", "Polygonal aperture", polygon))
+                        defocus.ApertureBlades = polygon ? 6u : 0u;
+                    if (polygon)
+                    {
+                        int blades = int(defocus.ApertureBlades);
+                        if (PropertyUI::DragInt("aperture-blades", "Blades", blades, 1, 3, 11))
+                            defocus.ApertureBlades = unsigned(blades);
+                        float degrees = glm::degrees(defocus.ApertureRotation);
+                        if (PropertyUI::DragFloat("aperture-rotation", "Blade rotation (degrees)", degrees, 1, -360, 360))
+                            defocus.ApertureRotation = glm::radians(degrees);
+                    }
+                    PropertyUI::DragFloat("focus-half-life", "Focus half-life (s)", defocus.FocusHalfLife, .01f, 0, 5);
+                    ImGui::TreePop();
+                }
+            }
+
             bool usePhysical = camera.GetPhysicalCamera().has_value();
             if (PropertyUI::Checkbox("physical-camera", "Physical camera", usePhysical))
             {
@@ -1088,9 +1117,12 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
                     changed |= bool(PropertyUI::DragFloat("focal-length", "Focal length (mm)", lens.FocalLengthMM, .2f, 1, 2000));
                     changed |= bool(PropertyUI::DragFloat("sensor-width", "Sensor width (mm)", lens.SensorWidthMM, .1f, 1, 200));
                     changed |= bool(PropertyUI::DragFloat("sensor-height", "Sensor height (mm)", lens.SensorHeightMM, .1f, 1, 200));
-                    changed |= bool(PropertyUI::DragFloat("focus-distance", "Focus distance (world units)", lens.FocusDistance, .05f, .001f, 100000));
                     ImGui::TreePop();
                 }
+                if (defocus.Enabled && camera.GetProjectionType() == SceneCamera::ProjectionType::Perspective)
+                    changed |= bool(PropertyUI::DragFloat("focus-distance",
+                        defocus.TrackedSubject ? "Fallback focus (world units)" : "Focus distance (world units)",
+                        lens.FocusDistance, .05f, lens.FocalLengthMM / 1000.f + .001f, 100000));
                 if (changed)
                     camera.SetPhysicalCamera(lens);
             }

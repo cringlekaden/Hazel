@@ -2,6 +2,7 @@
 #include "MetalShaderArtifact.h"
 #include "Hazel/Renderer/Drawing/Renderer3DUniforms.h"
 #include "Hazel/Renderer/Resources/Framebuffer.h"
+#include "Hazel/Renderer/Scene/DepthOfField.h"
 #include "Hazel/Renderer/Scene/DirectionalShadows.h"
 #include "Hazel/Renderer/Scene/SpotShadows.h"
 #include "Hazel/Renderer/Scene/PointShadows.h"
@@ -38,7 +39,10 @@ Layout CPUContract(const std::string& name)
     if (name == "SpotShadows") return {sizeof(SpotShadowData), {offsetof(SpotShadowData, VP),
         offsetof(SpotShadowData, Tiles), offsetof(SpotShadowData, LightIndices)}};
     if (name == "LocalLights") return {sizeof(Renderer3DUniforms::LocalLightData), {0, 16}};
-    if (name == "Presentation" || name == "Bloom") return {sizeof(glm::vec4), {0}};
+    if (name == "Presentation" || name == "Bloom") return {2 * sizeof(glm::vec4), {0, 16}};
+    if (name == "DefocusGather") return {sizeof(DefocusParameters),
+        {offsetof(DefocusParameters, Lens), offsetof(DefocusParameters, Gather), offsetof(DefocusParameters, Taps)}};
+    if (name == "DefocusTiles") return {sizeof(glm::vec4), {0}};
     if (name == "Reflections") return {sizeof(ScreenReflectionResolve), {
         offsetof(ScreenReflectionResolve,Projection), offsetof(ScreenReflectionResolve,InverseProjection),
         offsetof(ScreenReflectionResolve,View), offsetof(ScreenReflectionResolve,Trace),

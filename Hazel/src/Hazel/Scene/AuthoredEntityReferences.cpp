@@ -5,6 +5,8 @@
 namespace Hazel {
 void VisitAuthoredEntityReferences(Entity entity, ScriptFieldMap& fields,
     const std::function<void(uint64_t&, std::string_view)>& visit) {
+    if (entity.HasComponent<CameraComponent>())
+        visit(entity.GetComponent<CameraComponent>().DepthOfField.TrackedSubject, "DepthOfField.TrackedSubject");
     if (entity.HasComponent<UICanvasComponent>()) {
         auto& c = entity.GetComponent<UICanvasComponent>().Screen;
         visit(c.InitialFocus, "Screen.InitialFocus");

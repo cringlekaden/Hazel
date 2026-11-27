@@ -70,6 +70,14 @@ without authored lens settings uses the reference combination above. Existing
 scene files with the earlier signed exposure field retain their manual gain.
 [Camera and image formation](design/camera-image-formation.md)
 
+For a perspective shot, enable **Depth of field** on its Camera Inspector.
+Use the lens focus distance for manual focus or choose a scene entity as the
+**Focus subject**. The camera tracks the entity's world pivot, with the
+authored lens distance as its fallback. **Balanced** uses narrower blur
+support and fewer samples than **Cinematic**. The optional aperture polygon
+controls highlight shape. The effect uses HDR world color before bloom and
+leaves screen UI sharp. [Depth of field](design/camera-depth-of-field.md)
+
 A final pass applies the piecewise sRGB transfer into RGBA8, or into Nutella's
 window with `GL_FRAMEBUFFER_SRGB` disabled. Alpha is copied. The editor's output
 texture has RGBA8 storage, so ImGui samples the encoded values unchanged. Prefab,

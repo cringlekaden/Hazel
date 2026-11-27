@@ -83,7 +83,7 @@ template <class A, class B, class C, class F> void Fields(A &a, B &b, C &c, F f)
     }
     COMPONENT(Mesh) {FIELD(Mesh,Mesh);FIELD(Mesh,Materials);}
     COMPONENT(Circle) {FIELD(Circle,Color);FIELD(Circle,Thickness);FIELD(Circle,Fade);}
-    COMPONENT(Camera) {FIELD(Camera,Projection);FIELD(Camera,FOV);FIELD(Camera,Near);FIELD(Camera,Far);FIELD(Camera,Size);FIELD(Camera,OrthoNear);FIELD(Camera,OrthoFar);FIELD(Camera,Primary);FIELD(Camera,FixedAspect);FIELD(Camera,Physical);FIELD(Camera,ExposureOverride);}
+    COMPONENT(Camera) {FIELD(Camera,Projection);FIELD(Camera,FOV);FIELD(Camera,Near);FIELD(Camera,Far);FIELD(Camera,Size);FIELD(Camera,OrthoNear);FIELD(Camera,OrthoFar);FIELD(Camera,Primary);FIELD(Camera,FixedAspect);FIELD(Camera,Physical);FIELD(Camera,ExposureOverride);FIELD(Camera,DepthOfField);}
     COMPONENT(Canvas)
     {
         FIELD(Canvas, ReferenceSize);
@@ -259,6 +259,7 @@ void Validate(Scene &scene, const UIEditValues &v, const UIEditValues &old)
     if (v.Camera && v.Camera->Physical)
         v.Camera->Physical->Validate();
     if (v.Camera && v.Camera->ExposureOverride) v.Camera->ExposureOverride->Validate();
+    if (v.Camera) v.Camera->DepthOfField.Validate();
     if(v.Appearance){v.Appearance->Selection.Validate();if(v.Appearance->Overrides&~UIStyleAll)throw std::invalid_argument("Invalid override mask");}
     if (v.Canvas){
         GameUI::FitCanvas({1280, 720}, *v.Canvas);
@@ -391,11 +392,12 @@ FIELD(Light, Enabled);
     if(old.Camera && next.Camera) {
         auto& live=e.GetComponent<CameraComponent>();auto value=UIEditValues::Capture(e).Camera.value();
 #define CAMERA(field) change(value.field,old.Camera->field,next.Camera->field)
-        CAMERA(Projection);CAMERA(FOV);CAMERA(Near);CAMERA(Far);CAMERA(Size);CAMERA(OrthoNear);CAMERA(OrthoFar);CAMERA(Primary);CAMERA(FixedAspect);CAMERA(Physical);CAMERA(ExposureOverride);
+        CAMERA(Projection);CAMERA(FOV);CAMERA(Near);CAMERA(Far);CAMERA(Size);CAMERA(OrthoNear);CAMERA(OrthoFar);CAMERA(Primary);CAMERA(FixedAspect);CAMERA(Physical);CAMERA(ExposureOverride);CAMERA(DepthOfField);
 #undef CAMERA
         live.Camera.SetPerspective(value.FOV,value.Near,value.Far);live.Camera.SetOrthographic(value.Size,value.OrthoNear,value.OrthoFar);live.Camera.SetProjectionType(SceneCamera::ProjectionType(value.Projection));live.Primary=value.Primary;live.FixedAspectRatio=value.FixedAspect;
         live.Camera.SetPhysicalCamera(value.Physical);
         live.ExposureOverride = value.ExposureOverride;
+        live.DepthOfField = value.DepthOfField;
     }
     COMPONENT(Canvas, UICanvasComponent) FIELD(Canvas, ReferenceSize);
     FIELD(Canvas, SafeInsets);

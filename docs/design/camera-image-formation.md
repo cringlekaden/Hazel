@@ -152,6 +152,7 @@ quantization error within its range.
    focal length so perspective defocus agrees with the image framing. Follow
    [AMD's production DOF technique](https://gpuopen.com/manuals/fidelityfx_sdk/techniques/depth-of-field/)
    for separable responsibilities and occlusion examples.
+   [Phase 3 implementation and native evidence](camera-depth-of-field.md)
 4. **Motion blur.** Reuse or decouple the opaque motion producer from TAA so
    Metal and GL can submit unjittered velocities independently of AA. Use
    depth-aware shutter reconstruction with tile and neighbor maxima, gated by

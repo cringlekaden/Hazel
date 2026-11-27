@@ -3,7 +3,7 @@
 #include <initializer_list>
 #include <string>
 
-namespace Hazel { struct PhysicalCamera; }
+namespace Hazel { struct DepthOfFieldSettings; struct PhysicalCamera; }
 
 namespace Hazel::DocumentSchema
 {
@@ -15,4 +15,5 @@ void Keys(const YAML::Node& node, std::initializer_list<const char*> allowed,
 bool Scene(const YAML::Node& root, bool prefabDocument = false); // true: known legacy/default encoding
 bool Project(const YAML::Node& root);
 PhysicalCamera ReadPhysicalLens(const YAML::Node& node);
+DepthOfFieldSettings ReadDepthOfField(const YAML::Node& node);
 }

@@ -1,7 +1,7 @@
 #pragma once
 #include "Hazel/Assets/ImportedAsset.h"
 #include "Hazel/Assets/Environment.h"
-#include "Hazel/Renderer/Cameras/PhysicalCamera.h"
+#include "Hazel/Renderer/Cameras/CameraDefocus.h"
 #include "Hazel/Scene/SceneDefaults.h"
 #include "SpotShadows.h"
 #include "PointShadows.h"
@@ -45,6 +45,8 @@ struct SceneCameraView
     uint64_t Identity = 0; // Navigation and direct submissions default to a view-local camera.
     std::optional<PhysicalCamera> Physical{};
     std::optional<CameraExposure> ExposureOverride{};
+    DepthOfFieldSettings DepthOfField{};
+    std::optional<float> FocusSubjectDepth{};
 };
 struct SubmittedMesh
 {

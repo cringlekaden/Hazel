@@ -1,4 +1,5 @@
 #pragma once
+#include "Hazel/Renderer/Cameras/CameraDefocus.h"
 #include "Hazel/Renderer/Cameras/CameraExposure.h"
 #include "Hazel/Renderer/Scene/Lighting.h"
 #include "Hazel/Renderer/Scene/ReflectionProbe.h"
@@ -129,6 +130,7 @@ namespace Hazel {
 	{
 		SceneCamera Camera;
 		std::optional<CameraExposure> ExposureOverride;
+		DepthOfFieldSettings DepthOfField;
 		bool Primary = true; // TODO: think about moving to Scene
 		bool FixedAspectRatio = false;
 

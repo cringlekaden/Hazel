@@ -162,6 +162,12 @@ std::string SceneSerializer::CaptureAuthoredState(Entity only, const std::type_i
             }
             state.Value(c.ExposureOverride.has_value());
             if (c.ExposureOverride) state.Value(*c.ExposureOverride);
+            state.Value(c.DepthOfField.Enabled);
+            state.Value(unsigned(c.DepthOfField.Quality));
+            state.Value(c.DepthOfField.ApertureBlades);
+            state.Value(c.DepthOfField.ApertureRotation);
+            state.Value(c.DepthOfField.FocusHalfLife);
+            state.Value(c.DepthOfField.TrackedSubject);
             state.Value(c.Primary);
             state.Value(c.FixedAspectRatio);
         });

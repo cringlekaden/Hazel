@@ -7,7 +7,7 @@
 #include "Hazel/Project/Project.h"
 #include "Hazel/Project/RendererRequestsSerializer.h"
 #include "Hazel/Project/RuntimeStorage.h"
-#include "Hazel/Renderer/Cameras/PhysicalCamera.h"
+#include "Hazel/Renderer/Cameras/CameraDefocus.h"
 #include "Hazel/Renderer/Scene/Lighting.h"
 #include "Hazel/Renderer/Scene/ReflectionProbe.h"
 #include "Hazel/Scripting/ScriptEngine.h"
@@ -49,6 +49,25 @@ PhysicalCamera ReadPhysicalLens(const YAML::Node& node)
     lens.FocusDistance = node["FocusDistance"].as<float>();
     lens.Validate();
     return lens;
+}
+DepthOfFieldSettings ReadDepthOfField(const YAML::Node& node)
+{
+    Keys(node, {"Version", "Enabled", "Quality", "ApertureBlades", "ApertureRotationRadians", "FocusHalfLifeSeconds", "TrackedSubject"},
+         "DepthOfField");
+    if (node["Version"].as<unsigned>() != 1)
+        throw std::runtime_error("Unsupported DepthOfField version");
+    DepthOfFieldSettings settings;
+    settings.Enabled = node["Enabled"].as<bool>();
+    const auto quality = node["Quality"].as<std::string>();
+    if (quality == "Cinematic") settings.Quality = DepthOfFieldQuality::Cinematic;
+    else if (quality != "Balanced") throw std::runtime_error("Unknown depth of field quality");
+    settings.ApertureBlades = node["ApertureBlades"].as<unsigned>();
+    settings.ApertureRotation = node["ApertureRotationRadians"].as<float>();
+    settings.FocusHalfLife = node["FocusHalfLifeSeconds"].as<float>();
+    if (const auto subject = node["TrackedSubject"])
+        settings.TrackedSubject = subject.as<uint64_t>();
+    settings.Validate();
+    return settings;
 }
 bool Project(const YAML::Node& root)
 {
@@ -150,7 +169,9 @@ bool Scene(const YAML::Node& root, bool prefabDocument)
         else legacy = true; // documented identity transform
         if (auto n = entity["CameraComponent"])
         {
-            Keys(n, {"Camera", "Primary", "FixedAspectRatio", "CameraExposure"}, "CameraComponent");
+            Keys(n, {"Camera", "Primary", "FixedAspectRatio", "CameraExposure", "DepthOfField"}, "CameraComponent");
+            if (const auto defocus = n["DepthOfField"])
+                ReadDepthOfField(defocus);
             if (const auto exposure = n["CameraExposure"]) SceneDefaults::ReadExposure(exposure);
             auto camera = n["Camera"];
             Keys(camera, {"ProjectionType", "PerspectiveFOV", "PerspectiveNear", "PerspectiveFar",

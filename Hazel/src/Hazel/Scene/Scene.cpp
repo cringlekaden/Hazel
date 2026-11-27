@@ -656,11 +656,13 @@ namespace Hazel {
             cameraView.Identity = entity.GetUUID();
             cameraView.Physical = camera.GetPhysicalCamera();
             cameraView.ExposureOverride = entity.GetComponent<CameraComponent>().ExposureOverride;
+            cameraView.DepthOfField = entity.GetComponent<CameraComponent>().DepthOfField;
             if (inspection)
             {
                 auto inspected = *inspection;
                 inspected.Physical = cameraView.Physical;
                 inspected.ExposureOverride = cameraView.ExposureOverride;
+                inspected.DepthOfField = cameraView.DepthOfField;
                 if (inspected.Physical && inspected.Physical->LensProjection && !cameraView.Orthographic)
                 {
                     inspected.Projection = cameraView.Projection;

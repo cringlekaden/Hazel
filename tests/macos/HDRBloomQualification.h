@@ -95,6 +95,301 @@ inline void HDRBloomQualification(const std::filesystem::path& output,
         if (!file) throw std::runtime_error("Could not save HDR readback");
     };
 
+    if (!FileSystem::GetEnvironmentPath("HAZEL_CAMERA_DEFOCUS_BENCHMARK").empty()) {
+        struct FrameQuery {
+            GLuint ID = 0;
+            ~FrameQuery() { if (ID) glDeleteQueries(1, &ID); }
+        } query;
+        if (!metal) glGenQueries(1, &query.ID);
+        PhysicalCamera lens;
+        lens.FocalLengthMM = 85;
+        lens.Aperture = 1.4f;
+        lens.FocusDistance = 2.75f;
+        for (const auto extent : {glm::uvec2(1280,720), glm::uvec2(1920,1080), glm::uvec2(3840,2160)}) {
+            target->Resize(extent.x, extent.y);
+            auto frame = study(0, extent);
+            frame.Camera.Physical = lens;
+            frame.FrameSeconds = 1.f / 60;
+            {
+                auto isolated = frame;
+                isolated.Presentation.TemporalAA = false;
+                isolated.Presentation.Bloom.Enabled = false;
+                isolated.Presentation.AmbientOcclusion.Enabled = false;
+                isolated.Presentation.ScreenReflections.Enabled = false;
+                isolated.Presentation.Shadows.Enabled = false;
+                isolated.LocalLights.clear();
+                isolated.ReflectionProbes.clear();
+                isolated.Camera.DepthOfField.Enabled = true;
+                SceneRenderView view;
+                view.DefocusTiming = std::make_shared<DepthOfFieldTiming>();
+                for (int i = -4; i < 15; ++i) {
+                    *view.DefocusTiming = {};
+                    render(isolated, view);
+                    if (i >= 0) {
+                        const auto& timing = *view.DefocusTiming;
+                        if (timing.WorkingBytes == 0 || timing.WorkingBytes > 112 * 1024 * 1024 ||
+                            *std::min_element(timing.Milliseconds.begin(), timing.Milliseconds.end()) <= 0)
+                            throw std::runtime_error("Defocus timing or scratch outside the measurement contract");
+                        std::cout << "DEFOCUS_PASS_TIMING " << extent.x << ' ' << extent.y << ' ' << i;
+                        for (auto ms : timing.Milliseconds) std::cout << ' ' << ms;
+                        std::cout << ' ' << timing.WorkingBytes << '\n';
+                    }
+                }
+            }
+            std::array<SceneRenderView, 2> views;
+            for (int i = -4; i < 15; ++i) {
+                // Preserve each mode's history and reverse order on alternate
+                // pairs to limit queue and thermal drift in the frame delta.
+                for (bool enabled : {i % 2 != 0, i % 2 == 0}) {
+                    frame.Camera.DepthOfField.Enabled = enabled;
+                    const auto result = render(frame, views[enabled], query.ID);
+                    GLuint64 ns = 0;
+                    if (query.ID) glGetQueryObjectui64v(query.ID, GL_QUERY_RESULT, &ns);
+                    if (i >= 0)
+                        std::cout << "DEFOCUS_FRAME_TIMING " << extent.x << ' ' << extent.y << ' ' << enabled << ' '
+                                  << i << ' ' << result->Serial << ' ' << ns << '\n';
+                }
+            }
+        }
+        return;
+    }
+
+    if (!FileSystem::GetEnvironmentPath("HAZEL_CAMERA_DEFOCUS_TEST").empty()) {
+        constexpr glm::uvec2 extent(1280, 720);
+        target->Resize(extent.x, extent.y);
+        SceneSubmission frame;
+        frame.Assets = assets;
+        frame.FrameSeconds = 1.f / 60;
+        frame.Presentation.SceneReferred = true;
+        PhysicalCamera lens;
+        lens.LensProjection = true;
+        lens.FocalLengthMM = 50;
+        lens.Aperture = 1.8f;
+        lens.FocusDistance = 2;
+        frame.Camera.Physical = lens;
+        frame.Camera.Projection = glm::perspective(float(lens.VerticalFOV(double(extent.x) / extent.y)),
+            float(extent.x) / extent.y, .2f, 100.f);
+        frame.Camera.ViewProjection = frame.Camera.Projection;
+        frame.Presentation.Exposure.CompensationStops = float(lens.EV100() - PhysicalCamera::ReferenceEV100);
+        auto cube = assets->Mesh("Native/Direct_v1/UnitCube.hmesh");
+        if (!cube.Accepted) throw std::runtime_error(cube.Error);
+        const auto addCard = [&](float depth, glm::vec2 size, float luminance, int id, glm::vec3 color = glm::vec3(1)) {
+            auto material = CreateRef<MaterialDefinition>();
+            material->BaseColor = {0, 0, 0, 1};
+            material->Emissive = color;
+            material->EmissiveStrength = luminance;
+            SubmittedMesh card;
+            card.Geometry = cube.Accepted;
+            card.Materials = {material};
+            card.Identity = card.Picking = id;
+            card.SetWorld(glm::translate(glm::mat4(1), glm::vec3(0, 0, -depth - .0005f)) *
+                glm::scale(glm::mat4(1), glm::vec3(size, .001f)));
+            frame.Meshes.push_back(std::move(card));
+        };
+        const auto measure = [](const auto& image) {
+            constexpr double baseline = .06;
+            double energy = 0, moment = 0;
+            for (int dy = -22; dy <= 22; ++dy) for (int dx = -22; dx <= 22; ++dx) {
+                const size_t index = size_t(int(image->Height / 2) + dy) * image->Width +
+                                     size_t(int(image->Width / 2) + dx);
+                const double v = image->Color[index].r;
+                const double radiance = v < .04 ? std::sqrt(std::max(v, 0.0) / 6.25) : v + .04;
+                const double weight = std::max(0.0, radiance - baseline - 1e-6);
+                energy += weight;
+                moment += weight * ((dx + .5) * (dx + .5) + (dy + .5) * (dy + .5));
+            }
+            if (energy < .001) throw std::runtime_error("Defocus reconstruction lost the emitter");
+            return std::array{moment / energy, energy};
+        };
+        SceneRenderView view;
+        double worstRadiusError = 0;
+        for (const float depth : {1.2f, 6.f, 3.2f}) {
+            const bool balanced = depth == 3.2f;
+            frame.Meshes.clear();
+            addCard(depth + .002f, {30, 30}, .06f, 1);
+            const float pixelWidth = 2 * depth / (frame.Camera.Projection[1][1] * extent.y);
+            addCard(depth, glm::vec2(3 * pixelWidth), .25f, 2);
+            frame.Camera.DepthOfField.Enabled = false;
+            const auto sharp = render(frame, view);
+            if (view.Focus.Pass.Gathered)
+                throw std::runtime_error("Disabled depth of field allocated scratch");
+            frame.Camera.DepthOfField.Enabled = true;
+            frame.Camera.DepthOfField.Quality = balanced ? DepthOfFieldQuality::Balanced : DepthOfFieldQuality::Cinematic;
+            const auto blurred = render(frame, view);
+            coverage(sharp, blurred);
+            const bool nearer = depth < lens.FocusDistance;
+            save(balanced ? "defocus-balanced-sharp" : nearer ? "defocus-near-sharp" : "defocus-far-sharp", sharp);
+            save(balanced ? "defocus-balanced" : nearer ? "defocus-near" : "defocus-far", blurred);
+            const auto conjugate = [](double distance) { return 1 / (1. / 50 - 1 / distance); };
+            const double expected = std::abs(conjugate(2000) / conjugate(depth * 1000.) - 1) *
+                50. / (2 * lens.Aperture) * extent.y / 20.25;
+            const auto [sharpMoment, sharpEnergy] = measure(sharp);
+            const auto [blurredMoment, blurredEnergy] = measure(blurred);
+            const double measured = std::sqrt(std::max(0.0, 2 * (blurredMoment - sharpMoment)));
+            worstRadiusError = std::max(worstRadiusError, std::abs(measured - expected));
+            std::cout << "DEFOCUS_DISC depth=" << depth << " referenceRadius=" << expected
+                      << " measuredRadius=" << measured << " energyRatio=" << blurredEnergy / sharpEnergy << std::endl;
+        }
+        if (worstRadiusError > 1)
+            throw std::runtime_error("Native defocus radius exceeded the one-pixel gate");
+        frame.Meshes.clear();
+        constexpr float front = 1.2f;
+        const float pixelWidth = 2 * front / (frame.Camera.Projection[1][1] * extent.y);
+        // A narrow red occluder in front of a green plate. Integrate the
+        // visible fraction of a uniform thin-lens pupil analytically.
+        addCard(6, {30, 30}, .25f, 1, {0, 1, 0});
+        addCard(front, {4 * pixelWidth, 2}, .5f, 2, {1, 0, 0});
+        frame.Camera.DepthOfField.Enabled = false;
+        const auto stripeSharp = render(frame, view);
+        frame.Camera.DepthOfField.Enabled = true;
+        frame.Camera.DepthOfField.Quality = DepthOfFieldQuality::Cinematic;
+        const auto stripe = render(frame, view);
+        coverage(stripeSharp, stripe);
+        save("defocus-stripe-sharp", stripeSharp);
+        save("defocus-stripe", stripe);
+        constexpr double pi = 3.141592653589793;
+        const double radius = 50 * 50. * (2000 - 1200) / (2 * 1.8 * 1200 * (2000 - 50)) * extent.y / 20.25;
+        const auto section = [&](double x) {
+            x = std::clamp(x, -radius, radius);
+            return x * std::sqrt(std::max(0.0, radius * radius - x * x)) +
+                radius * radius * std::asin(std::clamp(x / radius, -1.0, 1.0));
+        };
+        double coverageError = 0, colorError = 0, maximumOutside = 0;
+        for (int dy = -10; dy < 10; ++dy) {
+            for (int dx = -14; dx < 14; ++dx) {
+                const double x = dx + .5;
+                const auto expected = (section(x + 2) - section(x - 2)) / (pi * radius * radius);
+                const size_t i = size_t(int(extent.y / 2) + dy) * extent.x + int(extent.x / 2) + dx;
+                const auto& color = stripe->Color[i];
+                coverageError += std::abs(color.r * 2 - expected);
+                colorError += std::abs(color.g * 4 - (1 - expected));
+                if (std::abs(x) >= radius + 3)
+                    maximumOutside = std::max(maximumOutside, double(color.r));
+            }
+        }
+        coverageError /= 560;
+        colorError /= 560;
+        std::cout << "DEFOCUS_OCCLUSION coverageMAE=" << coverageError << " farMAE=" << colorError
+                  << " outside=" << maximumOutside << std::endl;
+        if (!(coverageError <= .09 && colorError <= .09 && maximumOutside <= .01))
+            throw std::runtime_error("Thin foreground coverage exceeded the independent pupil-area gate");
+
+        frame.Camera.DepthOfField.FocusHalfLife = .25f;
+        frame.FrameSeconds = .125f;
+        frame.Camera.Physical->FocusDistance = 6;
+        render(frame, view);
+        const auto focus = [&] { return view.Focus.InverseDistance; };
+        if (std::abs(focus() - (1. / 6 + (1. / 2 - 1. / 6) * std::sqrt(.5))) > 1e-6)
+            throw std::runtime_error("Manual focus pull missed the independent optical-power step");
+        frame.CameraDiscontinuity = true;
+        render(frame, view);
+        if (std::abs(focus() - 1. / 6) > 1e-6)
+            throw std::runtime_error("Camera cut did not snap the focus");
+        frame.CameraDiscontinuity = false;
+        target->Resize(641, 359);
+        frame.Camera.Physical->FocusDistance = 4;
+        render(frame, view);
+        if (focus() != .25 || view.Focus.Pass.Gathered->GetSpecification().Width != 321)
+            throw std::runtime_error("Odd resize did not reset focus and scratch");
+        frame.Camera.DepthOfField.TrackedSubject = 42;
+        frame.Camera.FocusSubjectDepth = .5f;
+        render(frame, view);
+        if (std::abs(focus() - .5) > 1e-6 || view.Focus.TrackedGoal != 2)
+            throw std::runtime_error("Autofocus exceeded its bounded optical-power change");
+        frame.Camera.FocusSubjectDepth = .5001f;
+        render(frame, view);
+        if (view.Focus.TrackedGoal != 2)
+            throw std::runtime_error("Autofocus ignored its subject-depth hysteresis");
+        frame.Camera.FocusSubjectDepth = 6;
+        frame.CameraDiscontinuity = true;
+        render(frame, view);
+        if (std::abs(focus() - 1. / 6) > 1e-6)
+            throw std::runtime_error("Camera cut retained the previous tracked focus");
+        frame.CameraDiscontinuity = false;
+        frame.Camera.FocusSubjectDepth.reset();
+        render(frame, view);
+        if (!(focus() > 1. / 6 && focus() < .25))
+            throw std::runtime_error("Autofocus did not pull toward manual focus after losing the subject");
+        std::cout << "DEFOCUS_FOCUS halfLife=pass tracking=pass hysteresis=pass cameraCut=pass oddResize=pass pickingDepth=exact\n";
+
+        target->Resize(640, 360);
+        SceneRenderView baseScene, opticalScene;
+        for (unsigned pose = 0; pose < 7; ++pose) {
+            auto shot = study(float(pose) * .075f, {640, 360});
+            shot.Presentation.Exposure.Mode = ExposureMode::Automatic;
+            shot.FrameSeconds = 1.f / 60;
+            shot.Camera.Physical = lens;
+            shot.Camera.Physical->FocalLengthMM = 135;
+            shot.Camera.Physical->Aperture = 1.2f;
+            shot.Camera.Physical->FocusDistance = 3.5f + .7f * pose;
+            shot.CameraDiscontinuity = pose == 4;
+            auto sharp = render(shot, baseScene);
+            shot.Camera.DepthOfField = {true, DepthOfFieldQuality::Cinematic, 6, .24f, .08f};
+            auto blurred = render(shot, opticalScene);
+            coverage(sharp, blurred);
+            if (sharp->Color == blurred->Color)
+                throw std::runtime_error("Combined shot did not exercise depth of field");
+            if (pose == 0 || pose == 4) {
+                save("defocus-gallery-sharp-" + std::to_string(pose), sharp);
+                save("defocus-gallery-" + std::to_string(pose), blurred);
+            }
+        }
+        std::cout << "DEFOCUS_COMBINED focalPull=pass autoExposure=pass pickingDepth=exact"
+                  << (metal ? " TAA_AO_SSR=pass" : " spatialSSR=pass") << '\n';
+
+#if defined(HZ_PLATFORM_MACOS) && __has_include(<Metal/Metal.hpp>)
+        if (metal) {
+            auto& backend = static_cast<MetalRendererAPI&>(RenderCommand::Backend());
+            target->Resize(257, 149);
+            std::array<Ref<const FramebufferReadback>, 3> queued, serial;
+            auto get = [&](unsigned step) {
+                auto shot = study(.03f * step, {257, 149});
+                shot.FrameSeconds = 1.f / 60;
+                shot.Presentation.TemporalAA = false;
+                shot.Presentation.Exposure.Mode = ExposureMode::Automatic;
+                shot.Camera.Physical = lens;
+                shot.Camera.Physical->FocalLengthMM = 85;
+                shot.Camera.Physical->FocusDistance = 1.f + .5f * step;
+                shot.Camera.DepthOfField = {true, DepthOfFieldQuality::Cinematic, 5, .2f, .12f};
+                return shot;
+            };
+            SceneRenderView queuedView;
+            for (unsigned i = 0; i < serial.size(); ++i)
+                serial[i] = render(get(i), queuedView);
+            queuedView.Reset();
+            auto unblock = backend.GateQueueForTesting();
+            try {
+                for (unsigned i = 0; i < queued.size(); ++i) {
+                    draw(get(i), queuedView);
+                    target->Unbind();
+                    queued[i] = target->Submit();
+                    if (!queued[i] || queued[i]->Completed)
+                        throw std::runtime_error("Depth of field lifetime did not hold all three submissions");
+                }
+                queuedView.Reset();
+                target->Resize(1, 1);
+                if (backend.Observe()->Snapshot().InFlight != queued.size())
+                    throw std::runtime_error("Depth of field lifetime did not exercise the full queue");
+            } catch (...) {
+                unblock();
+                throw;
+            }
+            unblock();
+            for (unsigned i = 0; i < queued.size(); ++i) {
+                for (unsigned tries = 0; !queued[i]->Completed && tries < 2500; ++tries) {
+                    target->Poll();
+                    if (!queued[i]->Completed) std::this_thread::sleep_for(std::chrono::milliseconds(2));
+                }
+                if (!queued[i]->Completed || !queued[i]->Error.empty() || queued[i]->Color != serial[i]->Color)
+                    throw std::runtime_error("Queued defocus differed from the serial reference");
+                coverage(queued[i], serial[i]);
+            }
+            std::cout << "DEFOCUS_LIFETIME queue=3 reset=pass resize=pass history=exact\n";
+        }
+#endif
+        return;
+    }
+
 #if defined(HZ_PLATFORM_MACOS) && __has_include(<Metal/Metal.hpp>)
     const auto admission = FileSystem::GetEnvironmentPath("HAZEL_CAMERA_ADMISSION").string();
     if (!admission.empty()) {

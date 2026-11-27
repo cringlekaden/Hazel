@@ -21,17 +21,20 @@ void Check(bool value, const char* message) { if (!value) throw std::logic_error
 void MetalFramebuffer::Validate(const FramebufferSpecification& specification)
 {
     const auto& attachments = specification.Attachments.Attachments;
+    const bool defocusLayers = specification.Scratch == FramebufferSpecification::CameraScratch::Defocus &&
+        attachments.size() == 2 && attachments[0].TextureFormat == FramebufferTextureFormat::RGBA32F &&
+        attachments[1].TextureFormat == FramebufferTextureFormat::RGBA32F;
     const bool depthOnly=attachments.size()==1 && attachments[0].TextureFormat==FramebufferTextureFormat::DEPTH32F;
     const bool reflectionSurface=attachments.size()==6 &&
         attachments[3].TextureFormat==FramebufferTextureFormat::RGBA16F &&
         attachments[4].TextureFormat==FramebufferTextureFormat::RGBA16F &&
         attachments[5].TextureFormat==FramebufferTextureFormat::RGBA32F;
     Check(specification.Width && specification.Height && specification.Width <= 4096 && specification.Height <= 4096 && uint64_t(specification.Width) * specification.Height <= (depthOnly?16777216u:8388608u) &&
-        specification.Samples == 1 && !specification.SwapChainTarget && ((attachments.size() == 1 && (attachments[0].TextureFormat == FramebufferTextureFormat::RGBA8 || attachments[0].TextureFormat == FramebufferTextureFormat::RGBA32F || attachments[0].TextureFormat == FramebufferTextureFormat::RGBA16F || attachments[0].TextureFormat == FramebufferTextureFormat::DEPTH32F)) || ((attachments.size() == 3 || reflectionSurface) &&
+        specification.Samples == 1 && !specification.SwapChainTarget && (defocusLayers || (attachments.size() == 1 && (attachments[0].TextureFormat == FramebufferTextureFormat::RGBA8 || attachments[0].TextureFormat == FramebufferTextureFormat::RGBA32F || attachments[0].TextureFormat == FramebufferTextureFormat::RGBA16F || attachments[0].TextureFormat == FramebufferTextureFormat::DEPTH32F)) || ((attachments.size() == 3 || reflectionSurface) &&
         attachments[0].TextureFormat == FramebufferTextureFormat::RGBA32F &&
         attachments[1].TextureFormat == FramebufferTextureFormat::RED_INTEGER &&
         attachments[2].TextureFormat == FramebufferTextureFormat::DEPTH32F)),
-        "Metal framebuffer requires 1..4096 extent / at most 8M color or 16M depth-only pixels, one sample, ordered RGBA32F/R32Sint/Depth32F, optional reflection surface data, depth-only preparation, RGBA16F bloom or RGBA8 output attachments and no swapchain target");
+        "Metal framebuffer requires 1..4096 extent / at most 8M color or 16M depth-only pixels, one sample, ordered RGBA32F/R32Sint/Depth32F, optional reflection surface data, depth-only preparation, two RGBA32F defocus layers, RGBA16F bloom or RGBA8 output and no swapchain target");
 }
 MetalFramebuffer::MetalFramebuffer(std::shared_ptr<MetalDevice> device, const FramebufferSpecification& specification)
     : m_Device(std::move(device)), m_Specification(specification)
@@ -53,19 +56,26 @@ std::shared_ptr<const MetalFramebufferAttachments> MetalFramebuffer::Allocate(ui
     const MTL::PixelFormat formats[] = {MTL::PixelFormatRGBA32Float, MTL::PixelFormatR32Sint, MTL::PixelFormatDepth32Float,
         MTL::PixelFormatRGBA16Float, MTL::PixelFormatRGBA16Float, MTL::PixelFormatRGBA32Float};
     const bool depthOnly=m_Specification.Attachments.Attachments.size()==1 && m_Specification.Attachments.Attachments[0].TextureFormat==FramebufferTextureFormat::DEPTH32F;
-    const bool meter = m_Specification.Attachments.Attachments.size() == 1 &&
+    const bool singleFloat = m_Specification.Attachments.Attachments.size() == 1 &&
         m_Specification.Attachments.Attachments[0].TextureFormat == FramebufferTextureFormat::RGBA32F;
-    if (meter) generation->Role = "exposure_meter";
+    const bool defocusLayers = m_Specification.Attachments.Attachments.size() == 2;
+    if (m_Specification.Scratch == FramebufferSpecification::CameraScratch::Exposure) generation->Role = "exposure_meter";
+    else if (m_Specification.Scratch == FramebufferSpecification::CameraScratch::Defocus)
+        generation->Role = defocusLayers ? "defocus_layers" : "defocus_scratch";
     else if (temporalHistory) generation->Role = "taa_history";
     else if (depthOnly) generation->Role = "depth_prepass";
+    else if (singleFloat) generation->Role = "float_scratch";
     else if (m_Specification.Attachments.Attachments.size() == 6) generation->Role = "ssr_surface";
     else if (m_Specification.Attachments.Attachments.size() == 1)
         generation->Role = m_Specification.Attachments.Attachments[0].TextureFormat == FramebufferTextureFormat::RGBA16F ? "bloom" : "encoded_output";
     for (size_t i = depthOnly?2u:0u; i < (depthOnly?3u:temporalHistory?2u:m_Specification.Attachments.Attachments.size()); ++i)
     {
-        descriptor->setUsage(MTL::TextureUsageRenderTarget | MTL::TextureUsageShaderRead | ((i == 0 && m_Specification.Attachments.Attachments.size() == 3) || temporalHistory || meter ? MTL::TextureUsageShaderWrite : 0));
+        descriptor->setUsage(MTL::TextureUsageRenderTarget | MTL::TextureUsageShaderRead |
+            ((i == 0 && m_Specification.Attachments.Attachments.size() == 3) || temporalHistory ||
+             (singleFloat && m_Specification.Scratch != FramebufferSpecification::CameraScratch::Defocus) ? MTL::TextureUsageShaderWrite : 0));
         auto format = formats[i];
-        if (!depthOnly && !meter && m_Specification.Attachments.Attachments.size() == 1)
+        if (defocusLayers) format = MTL::PixelFormatRGBA32Float;
+        if (!depthOnly && !singleFloat && m_Specification.Attachments.Attachments.size() == 1)
             format = m_Specification.Attachments.Attachments[0].TextureFormat == FramebufferTextureFormat::RGBA16F
                 ? MTL::PixelFormatRGBA16Float : MTL::PixelFormatBGRA8Unorm;
         descriptor->setPixelFormat(format);
@@ -365,7 +375,8 @@ void MetalFramebuffer::ResolveReflectionsTo(const Ref<Framebuffer>& destination,
     m_SubmittedGeneration=true;
 }
 void MetalFramebuffer::CompositeWorldTo(const Ref<Framebuffer>& destination, float exposure,
-                                        const BloomPyramid* bloom, const ExposureMeterPass* meter)
+                                        const BloomPyramid* bloom, const ExposureMeterPass* meter,
+                                        const DepthOfFieldPass* defocus)
 {
     auto target = std::dynamic_pointer_cast<MetalFramebuffer>(destination);
     Check(target && target.get() != this && target->m_Device == m_Device && std::isfinite(exposure) && exposure >= -16 && exposure <= 16, "Invalid Metal world destination/exposure");
@@ -374,6 +385,19 @@ void MetalFramebuffer::CompositeWorldTo(const Ref<Framebuffer>& destination, flo
         m_Frame->Width == target->m_Frame->Width && m_Frame->Height == target->m_Frame->Height,
         "World conversion requires an unbound world and a bound empty destination of equal extent");
     target->m_Frame->PresentationShader = std::static_pointer_cast<MetalShader>(Backend().LoadShader("WorldPresentation"));
+    if (defocus) {
+        MetalDefocus pass;
+        pass.Tiles = static_cast<const MetalFramebuffer&>(*defocus->Tiles).m_Attachments;
+        pass.DilatedTiles = static_cast<const MetalFramebuffer&>(*defocus->DilatedTiles).m_Attachments;
+        pass.Prefiltered = static_cast<const MetalFramebuffer&>(*defocus->Prefiltered).m_Attachments;
+        pass.Layers = static_cast<const MetalFramebuffer&>(*defocus->Gathered).m_Attachments;
+        pass.Parameters = defocus->Parameters;
+        pass.Timing = defocus->Timing;
+        pass.TileShader = std::static_pointer_cast<MetalShader>(Backend().LoadShader("DefocusTile"));
+        pass.PrefilterShader = std::static_pointer_cast<MetalShader>(Backend().LoadShader("DefocusPrefilter"));
+        pass.GatherShader = std::static_pointer_cast<MetalShader>(Backend().LoadShader("DefocusGather"));
+        target->m_Frame->Defocus = std::move(pass);
+    }
     if (meter) {
         auto pass = std::make_shared<MetalExposureMeter>();
         pass->Histogram = static_cast<const MetalFramebuffer&>(*meter->Histogram).m_Attachments;

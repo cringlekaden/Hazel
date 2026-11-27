@@ -179,8 +179,14 @@ MetalShader::MetalShader(std::shared_ptr<MetalDevice> deviceOwner, const std::st
             if (reflection.get_decoration(resource.id, spv::DecorationLocation) == 1)
             {
                 const auto& type = reflection.get_type(resource.type_id);
-                Check(type.basetype == spirv_cross::SPIRType::Int && type.vecsize == 1 && type.width == 32, "Picking output must be signed int32");
-                descriptor->colorAttachments()->object(1)->setPixelFormat(MTL::PixelFormatR32Sint);
+                if (shaderName == "DefocusGather") {
+                    Check(type.basetype == spirv_cross::SPIRType::Float && type.vecsize == 4 && type.width == 32,
+                        "Far defocus output must be RGBA32F");
+                    descriptor->colorAttachments()->object(1)->setPixelFormat(MTL::PixelFormatRGBA32Float);
+                } else {
+                    Check(type.basetype == spirv_cross::SPIRType::Int && type.vecsize == 1 && type.width == 32, "Picking output must be signed int32");
+                    descriptor->colorAttachments()->object(1)->setPixelFormat(MTL::PixelFormatR32Sint);
+                }
             }
         if (shaderName == "EnvironmentSky")
         {

@@ -6,6 +6,7 @@
 #include "Hazel/Scene/Scene.h"
 #include <glm/gtc/matrix_inverse.hpp>
 #include <chrono>
+#include <cmath>
 #include <type_traits>
 namespace Hazel
 {
@@ -55,6 +56,16 @@ SceneSubmission SceneRenderer::Collect(Scene &scene, const SceneCameraView &came
 {
     SceneSubmission frame;
     frame.Camera = camera;
+    frame.Camera.FocusSubjectDepth.reset();
+    if (camera.DepthOfField.Enabled && camera.DepthOfField.TrackedSubject && !camera.Orthographic && !captureRadiance) {
+        auto subject = scene.GetEntityByUUID(camera.DepthOfField.TrackedSubject);
+        if (subject && scene.IsEntityValid(subject.GetUUID())) {
+            const auto position = glm::vec3(scene.GetWorldTransform(subject)[3]);
+            const float depth = glm::dot(position - camera.Position, -glm::normalize(camera.ToCamera));
+            if (std::isfinite(depth) && depth > 0)
+                frame.Camera.FocusSubjectDepth = depth;
+        }
+    }
     frame.SceneIdentity = scene.GetIdentity();
     frame.Presentation = scene.Presentation();
     frame.Presentation.Validate();

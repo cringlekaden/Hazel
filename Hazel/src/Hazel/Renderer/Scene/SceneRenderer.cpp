@@ -289,33 +289,81 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
             *view.BloomMetrics = {};
     }
     const auto& exposure = frame.Camera.ExposureOverride ? *frame.Camera.ExposureOverride : frame.Presentation.Exposure;
-    const bool automatic = exposure.Mode == ExposureMode::Automatic && frame.Presentation.SceneReferred &&
+    const bool photographic = frame.Presentation.SceneReferred &&
         !frame.CaptureRadiance && frame.Debug == SurfaceView::Shaded && frame.AmbientOcclusionView == 0 &&
         frame.LocalLightingView == 0 && frame.ShadowView == 0 && view.TemporalDebug == 0;
+    const bool automatic = exposure.Mode == ExposureMode::Automatic && photographic;
+    const bool defocus = frame.Camera.DepthOfField.Enabled && photographic && !frame.Camera.Orthographic;
     if (!automatic) view.Exposure = {};
+    if (!defocus) view.Focus = {};
     auto presentWorld = [&] {
-        const auto lens = frame.Camera.Physical.value_or(PhysicalCamera{});
+        auto lens = frame.Camera.Physical.value_or(PhysicalCamera{});
         lens.Validate();
         exposure.Validate();
         const float gain = automatic ? exposure.CompensationStops : lens.Log2ExposureGain(exposure.CompensationStops);
+        const auto& spec = view.Radiance->GetSpecification();
+        const glm::uvec2 extent(spec.Width, spec.Height);
+        const float seconds = std::isfinite(frame.FrameSeconds) ? std::max(frame.FrameSeconds, 0.f) : 0.f;
         if (useBloom) {
             bloom.Validate();
-            const auto& size = view.Radiance->GetSpecification();
             view.Bloom.Timing = view.BloomMetrics;
-            view.Bloom.Prepare(size.Width, size.Height, bloom.Intensity, bloom.Radius);
+            view.Bloom.Prepare(extent.x, extent.y, bloom.Intensity, bloom.Radius);
         }
+        if (defocus) {
+            const auto& settings = frame.Camera.DepthOfField;
+            settings.Validate();
+            auto& focus = view.Focus;
+            const float subjectDepth = frame.Camera.FocusSubjectDepth.value_or(0);
+            const bool tracked = settings.TrackedSubject && std::isfinite(subjectDepth) &&
+                subjectDepth > lens.FocalLengthMM / 1000.0;
+            const float requestedDistance = tracked ? subjectDepth : lens.FocusDistance;
+            double requested = 1.0 / requestedDistance;
+            const bool continuous = focus.InverseDistance > 0 && focus.Scene == frame.SceneIdentity &&
+                focus.Extent == extent && !frame.CameraDiscontinuity && !CameraCut(frame, focus.Camera);
+            const bool sameSubject = continuous && focus.TrackedGoal > 0 &&
+                settings.TrackedSubject == focus.Camera.DepthOfField.TrackedSubject;
+            if (sameSubject && tracked &&
+                std::abs(requested - focus.TrackedGoal) <= std::max(.002, .02 * focus.TrackedGoal))
+                requested = focus.TrackedGoal;
+            const float halfLife = settings.FocusHalfLife > 0 ? settings.FocusHalfLife :
+                (settings.TrackedSubject ? .18f : 0.f);
+            const double step = continuous && halfLife > 0
+                ? -std::expm1(-std::log(2.0) * seconds / halfLife) : 1.0;
+            double inverse = (1.0 - step) * focus.InverseDistance + step * requested;
+            if (continuous && settings.TrackedSubject) {
+                const double limit = 2.0 * seconds;
+                inverse = std::clamp(inverse, focus.InverseDistance - limit, focus.InverseDistance + limit);
+            }
+            // A changed lens can put the previous focus behind the new pupil.
+            lens.FocusDistance = float(1.0 / inverse);
+            if (lens.FocusDistance <= lens.FocalLengthMM / 1000.0)
+                lens.FocusDistance = requestedDistance;
+            const auto circle = CameraDefocus::FromPerspective(lens, frame.Camera.Projection, extent.y);
+            const bool cinematic = settings.Quality == DepthOfFieldQuality::Cinematic;
+            const float radius = cinematic ? std::min(48.f, extent.y * .0175f) : std::min(32.f, extent.y * .01f);
+            focus.Pass.Prepare(extent);
+            focus.Pass.Timing = view.DefocusTiming;
+            focus.Pass.Parameters.Lens = {float(circle.FocusWindowDepth), float(circle.RadiusPixelsPerDepth), radius, 1};
+            focus.Pass.Parameters.SetPupil(settings.ApertureBlades, settings.ApertureRotation, cinematic ? 32u : 12u);
+            focus.InverseDistance = 1.0 / lens.FocusDistance;
+            focus.TrackedGoal = tracked ? requested : 0;
+            focus.Camera = frame.Camera;
+            focus.Scene = frame.SceneIdentity;
+            focus.Extent = extent;
+        }
+        const auto* bloomPass = useBloom ? &view.Bloom : nullptr;
+        const auto* defocusPass = defocus ? &view.Focus.Pass : nullptr;
         if (!automatic) {
-            view.Radiance->CompositeWorldTo(display, gain, useBloom ? &view.Bloom : nullptr);
+            view.Radiance->CompositeWorldTo(display, gain, bloomPass, nullptr, defocusPass);
             return;
         }
 
         auto& state = view.Exposure;
-        const auto& spec = view.Radiance->GetSpecification();
-        const glm::uvec2 extent(spec.Width, spec.Height);
         const bool valid = state.Submitted && state.Submitted->load() && state.Extent == extent &&
             state.Scene == frame.SceneIdentity && !frame.CameraDiscontinuity && !CameraCut(frame, state.Camera);
         if (!state.Histogram) {
             FramebufferSpecification scratch;
+            scratch.Scratch = FramebufferSpecification::CameraScratch::Exposure;
             scratch.Width = 128;
             scratch.Height = RendererAPI::GetAPI() == RendererAPI::API::Metal ? 72 : 16;
             scratch.Attachments = {FramebufferTextureFormat::RGBA32F};
@@ -325,14 +373,13 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
             state.Histogram = std::move(histogram);
             state.Gain = std::move(luminance);
         }
-        const float seconds = std::isfinite(frame.FrameSeconds) ? std::max(frame.FrameSeconds, 0.f) : 0.f;
         const auto step = [&](float rate) { return exposure.Locked ? 0.f : -std::expm1(-rate * seconds); };
         ExposureMeterPass meter{state.Histogram, state.Gain[state.Latest], state.Gain[1 - state.Latest],
             {{exposure.LowPercentile, exposure.HighPercentile, exposure.MinGainStops, exposure.MaxGainStops},
              {exposure.SpotCenter, exposure.SpotRadius, float(exposure.Metering)},
              {step(exposure.BrighteningRate), step(exposure.DarkeningRate), valid ? 1.f : 0.f, exposure.IncludeSky ? 1.f : 0.f}},
             std::make_shared<std::atomic<bool>>(false), view.ExposureTiming};
-        view.Radiance->CompositeWorldTo(display, gain, useBloom ? &view.Bloom : nullptr, &meter);
+        view.Radiance->CompositeWorldTo(display, gain, bloomPass, &meter, defocusPass);
         state.Latest = 1 - state.Latest;
         state.Submitted = std::move(meter.Submitted);
         state.Camera = frame.Camera;
@@ -493,6 +540,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
         catch (...)
         {
             view.Temporal={};
+            view.Focus = {};
             Renderer2D::CancelScene();
             if(view.Jittered)view.Jittered->Cancel();
             if(view.ReflectionSurface)view.ReflectionSurface->Cancel();

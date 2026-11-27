@@ -2,6 +2,7 @@
 // Adapted upstream framebuffer: binding-based 4.1 allocation, clearing and MSAA resolve.
 #include "Platform/OpenGL/OpenGLFramebuffer.h"
 #include "Hazel/Renderer/Scene/Bloom.h"
+#include "Hazel/Renderer/Scene/DepthOfField.h"
 #include "Hazel/Renderer/Scene/ExposureMeter.h"
 #include "Hazel/Core/Resources.h"
 #include "Hazel/Renderer/RenderCommand.h"
@@ -375,15 +376,107 @@ void OpenGLFramebuffer::ResolveReflectionsTo(const Ref<Framebuffer>& destination
     glBlitFramebuffer(0, 0, width, height, 0, 0, width, height,
                       GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
 }
-uint32_t OpenGLFramebuffer::FilterBloom(const BloomPyramid& bloom, bool timePasses)
+void OpenGLFramebuffer::BindDefocusLayers(Shader& shader, const DepthOfFieldPass* defocus) const
+{
+    shader.SetInt("u_DefocusDepth", 4);
+    shader.SetInt("u_DefocusNear", 5);
+    shader.SetInt("u_DefocusFar", 6);
+    shader.SetInt("u_DefocusBounds", 7);
+    if (!defocus) return;
+    const auto& layers = static_cast<const OpenGLFramebuffer&>(*defocus->Gathered);
+    const auto& bounds = static_cast<const OpenGLFramebuffer&>(*defocus->DilatedTiles);
+    const GLuint inputs[]{m_DepthAttachment, layers.m_ColorAttachments[0], layers.m_ColorAttachments[1],
+        bounds.m_ColorAttachments[0]};
+    for (unsigned i = 0; i < 4; ++i) {
+        glActiveTexture(GL_TEXTURE4 + i);
+        glBindTexture(GL_TEXTURE_2D, inputs[i]);
+        glBindSampler(4 + i, 0);
+    }
+}
+void OpenGLFramebuffer::FilterDefocus(const DepthOfFieldPass& defocus)
+{
+    if (!m_DefocusTiles) {
+        const auto shaders = Resources::Get().Root / "shaders";
+        auto tiles = Shader::Create((shaders / "DefocusTile.glsl").generic_u8string());
+        auto prefilter = Shader::Create((shaders / "DefocusPrefilter.glsl").generic_u8string());
+        auto gather = Shader::Create((shaders / "DefocusGather.glsl").generic_u8string());
+        m_DefocusParameters = UniformBuffer::Create(sizeof(DefocusParameters), 5);
+        m_DefocusTiles = std::move(tiles);
+        m_DefocusPrefilter = std::move(prefilter);
+        m_DefocusGather = std::move(gather);
+    }
+    const auto& tiles = static_cast<const OpenGLFramebuffer&>(*defocus.Tiles);
+    const auto& dilated = static_cast<const OpenGLFramebuffer&>(*defocus.DilatedTiles);
+    const auto& prefiltered = static_cast<const OpenGLFramebuffer&>(*defocus.Prefiltered);
+    const auto& layers = static_cast<const OpenGLFramebuffer&>(*defocus.Gathered);
+    const auto bind = [](unsigned slot, GLuint texture) {
+        glActiveTexture(GL_TEXTURE0 + slot);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glBindSampler(slot, 0);
+    };
+    DepthOfFieldTiming timing;
+    size_t phase = 0;
+    const auto draw = [&](const OpenGLFramebuffer& output) {
+        GLuint query = 0;
+        if (defocus.Timing) {
+            glGenQueries(1, &query);
+            glBeginQuery(GL_TIME_ELAPSED, query);
+        }
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, output.m_RendererID);
+        glViewport(0, 0, output.m_Specification.Width, output.m_Specification.Height);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        if (query) {
+            // Isolated attribution on Apple's GL driver.
+            glFinish();
+            glEndQuery(GL_TIME_ELAPSED);
+            GLuint64 ns = 0;
+            glGetQueryObjectui64v(query, GL_QUERY_RESULT, &ns);
+            glDeleteQueries(1, &query);
+            timing.Milliseconds[phase++] = double(ns) / 1e6;
+            timing.WorkingBytes += uint64_t(output.m_Specification.Width) * output.m_Specification.Height *
+                output.m_ColorAttachments.size() * 16;
+        }
+    };
+    m_DefocusParameters->Bind();
+    auto parameters = defocus.Parameters;
+    parameters.Lens.w = 0;
+    m_DefocusTiles->Bind();
+    m_DefocusTiles->SetInt("u_Input", 0);
+    m_DefocusParameters->SetData(&parameters.Lens, sizeof(parameters.Lens));
+    bind(0, m_DepthAttachment);
+    draw(tiles);
+    parameters.Lens.w = 1;
+    m_DefocusParameters->SetData(&parameters.Lens, sizeof(parameters.Lens));
+    bind(0, tiles.m_ColorAttachments.front());
+    draw(dilated);
+    m_DefocusPrefilter->Bind();
+    parameters.Lens.w = 0;
+    m_DefocusParameters->SetData(&parameters.Lens, sizeof(parameters.Lens));
+    m_DefocusPrefilter->SetInt("u_Source", 0);
+    m_DefocusPrefilter->SetInt("u_Depth", 1);
+    m_DefocusPrefilter->SetInt("u_Tiles", 2);
+    bind(0, m_ColorAttachments.front());
+    bind(1, m_DepthAttachment);
+    bind(2, dilated.m_ColorAttachments.front());
+    draw(prefiltered);
+    m_DefocusGather->Bind();
+    m_DefocusParameters->SetData(&parameters, sizeof(parameters));
+    m_DefocusGather->SetInt("u_Source", 0);
+    m_DefocusGather->SetInt("u_Tiles", 2);
+    bind(0, prefiltered.m_ColorAttachments.front());
+    draw(layers);
+    if (defocus.Timing) *defocus.Timing = timing;
+}
+uint32_t OpenGLFramebuffer::FilterBloom(const BloomPyramid& bloom, bool timePasses, const DepthOfFieldPass* defocus)
 {
     if (!m_BloomShader)
         m_BloomShader = Shader::Create((Resources::Get().Root / "shaders/BloomFilter.glsl").generic_u8string());
     if (!m_BloomParameters)
-        m_BloomParameters = UniformBuffer::Create(sizeof(glm::vec4), 5);
+        m_BloomParameters = UniformBuffer::Create(sizeof(glm::vec4) * 2, 5);
     m_BloomShader->Bind();
     m_BloomShader->SetInt("u_Source", 0);
     m_BloomShader->SetInt("u_Fine", 1);
+    BindDefocusLayers(*m_BloomShader, defocus);
     m_BloomParameters->Bind();
     if (!m_OutputVAO)
         glGenVertexArrays(1, &m_OutputVAO);
@@ -392,8 +485,9 @@ uint32_t OpenGLFramebuffer::FilterBloom(const BloomPyramid& bloom, bool timePass
                     const OpenGLFramebuffer& fine, float mode) {
         const auto& extent = source.GetSpecification();
         const auto& size = output.GetSpecification();
-        const auto parameters = bloom.FilterParameters(mode, extent.Width, extent.Height);
-        m_BloomParameters->SetData(&parameters, sizeof(parameters));
+        const glm::vec4 parameters[]{bloom.FilterParameters(mode, extent.Width, extent.Height),
+            defocus && mode == 0 ? defocus->Parameters.Lens : glm::vec4(0)};
+        m_BloomParameters->SetData(parameters, sizeof(parameters));
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, output.m_RendererID);
         glViewport(0, 0, size.Width, size.Height);
         glActiveTexture(GL_TEXTURE0);
@@ -505,7 +599,8 @@ uint32_t OpenGLFramebuffer::MeterExposure(const ExposureMeterPass& meter)
     return current.m_ColorAttachments[0];
 }
 void OpenGLFramebuffer::CompositeWorldTo(const Ref<Framebuffer> &destination, float exposure,
-                                         const BloomPyramid* bloom, const ExposureMeterPass* meter)
+                                         const BloomPyramid* bloom, const ExposureMeterPass* meter,
+                                         const DepthOfFieldPass* defocus)
 {
     auto target = std::dynamic_pointer_cast<OpenGLFramebuffer>(destination);
     if (!std::isfinite(exposure) || exposure < -16 || exposure > 16 || !target ||
@@ -540,6 +635,7 @@ void OpenGLFramebuffer::CompositeWorldTo(const Ref<Framebuffer> &destination, fl
         glGenVertexArrays(1, &m_OutputVAO);
     glBindVertexArray(m_OutputVAO);
     const auto adaptedGain = meter ? MeterExposure(*meter) : m_ColorAttachments[0];
+    if (defocus) FilterDefocus(*defocus);
     bool timePasses = false;
     if (bloom && bloom->Timing) {
         GLint active = 0;
@@ -570,8 +666,8 @@ void OpenGLFramebuffer::CompositeWorldTo(const Ref<Framebuffer> &destination, fl
             timePasses = m_BloomQueries.front() && !m_BloomQueriesPending;
         }
     }
-    const auto glow = bloom ? FilterBloom(*bloom, timePasses) : m_ColorAttachments[0];
-    if (bloom)
+    const auto glow = bloom ? FilterBloom(*bloom, timePasses, defocus) : m_ColorAttachments[0];
+    if (bloom || defocus)
         glViewport(0, 0, m_Specification.Width, m_Specification.Height);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target->m_RendererID);
     const GLenum outputs[]{GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
@@ -580,15 +676,17 @@ void OpenGLFramebuffer::CompositeWorldTo(const Ref<Framebuffer> &destination, fl
         m_ToneShader = Shader::Create(
             (Resources::Get().Root / "shaders/WorldPresentation.glsl").generic_u8string());
     if (!m_ToneParameters)
-        m_ToneParameters = UniformBuffer::Create(16, 5);
-    glm::vec4 parameters(exposure, bloom ? bloom->Intensity : 0.f, meter ? 1.f : 0.f, 0);
+        m_ToneParameters = UniformBuffer::Create(sizeof(glm::vec4) * 2, 5);
+    const glm::vec4 parameters[]{glm::vec4(exposure, bloom ? bloom->Intensity : 0.f, meter ? 1.f : 0.f, 0),
+        defocus ? defocus->Parameters.Lens : glm::vec4(0)};
     m_ToneParameters->Bind();
-    m_ToneParameters->SetData(&parameters, 16);
+    m_ToneParameters->SetData(parameters, sizeof(parameters));
     m_ToneShader->Bind();
     m_ToneShader->SetInt("u_World", 0);
     m_ToneShader->SetInt("u_Picking", 1);
     m_ToneShader->SetInt("u_Bloom", 2);
     m_ToneShader->SetInt("u_AdaptedGain", 3);
+    BindDefocusLayers(*m_ToneShader, defocus);
     glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_2D, adaptedGain);
     glBindSampler(3, 0);

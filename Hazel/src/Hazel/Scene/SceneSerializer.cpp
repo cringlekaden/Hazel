@@ -262,6 +262,22 @@ namespace Hazel {
 
 			if (cameraComponent.ExposureOverride)
 				out << YAML::Key << "CameraExposure" << YAML::Value << SceneDefaults::EncodeExposure(*cameraComponent.ExposureOverride);
+			const auto& defocus = cameraComponent.DepthOfField;
+			if (!(defocus == DepthOfFieldSettings{}))
+			{
+				defocus.Validate();
+				out << YAML::Key << "DepthOfField" << YAML::Value << YAML::BeginMap;
+				out << YAML::Key << "Version" << YAML::Value << 1;
+				out << YAML::Key << "Enabled" << YAML::Value << defocus.Enabled;
+				out << YAML::Key << "Quality" << YAML::Value
+				    << (defocus.Quality == DepthOfFieldQuality::Cinematic ? "Cinematic" : "Balanced");
+				out << YAML::Key << "ApertureBlades" << YAML::Value << defocus.ApertureBlades;
+				out << YAML::Key << "ApertureRotationRadians" << YAML::Value << defocus.ApertureRotation;
+				out << YAML::Key << "FocusHalfLifeSeconds" << YAML::Value << defocus.FocusHalfLife;
+				if (defocus.TrackedSubject)
+					out << YAML::Key << "TrackedSubject" << YAML::Value << defocus.TrackedSubject;
+				out << YAML::EndMap;
+			}
 			out << YAML::Key << "Primary" << YAML::Value << cameraComponent.Primary;
 			out << YAML::Key << "FixedAspectRatio" << YAML::Value << cameraComponent.FixedAspectRatio;
 
@@ -617,6 +633,8 @@ namespace Hazel {
 
 					if (const auto exposure = cameraComponent["CameraExposure"])
 						cc.ExposureOverride = SceneDefaults::ReadExposure(exposure);
+					if (const auto defocus = cameraComponent["DepthOfField"])
+						cc.DepthOfField = DocumentSchema::ReadDepthOfField(defocus);
 					cc.Primary = cameraComponent["Primary"].as<bool>();
 					cc.FixedAspectRatio = cameraComponent["FixedAspectRatio"].as<bool>();
 				}

@@ -6,6 +6,7 @@
 #include "MetalTexture.h"
 #include "Hazel/Renderer/RendererAPI.h"
 #include "Hazel/Renderer/Resources/Framebuffer.h"
+#include "Hazel/Renderer/Scene/DepthOfField.h"
 #include <Metal/Metal.hpp>
 #include <memory>
 #include <optional>
@@ -23,6 +24,16 @@ struct MetalTemporalPass;
 struct MetalFramebufferAttachments;
 struct LocalLightingMetrics;
 struct BloomTiming;
+struct MetalDefocus
+{
+    std::shared_ptr<const MetalFramebufferAttachments> Tiles, DilatedTiles, Prefiltered, Layers;
+    std::shared_ptr<MetalShader> TileShader, PrefilterShader, GatherShader;
+    DefocusParameters Parameters;
+    std::array<NS::SharedPtr<MTL4::ArgumentTable>, 4> Arguments;
+    std::shared_ptr<DepthOfFieldTiming> Timing;
+    NS::SharedPtr<MTL4::CounterHeap> Counters;
+    uint64_t TimestampFrequency = 0;
+};
 struct MetalBloomPass
 {
     std::shared_ptr<const MetalFramebufferAttachments> Source, Fine, Output;
@@ -78,9 +89,11 @@ struct MetalRenderer2DFrame
     NS::SharedPtr<MTL4::ArgumentTable> PresentationArguments;
     float Exposure = 0, BloomIntensity = 0;
     std::shared_ptr<MetalExposureMeter> ExposureMeter;
+    std::optional<MetalDefocus> Defocus;
     std::shared_ptr<MetalShader> BloomShader;
     std::vector<MetalBloomPass> BloomPasses;
-    NS::SharedPtr<MTL::SamplerState> BloomSampler;
+    NS::SharedPtr<MTL::SamplerState> LinearClampSampler;
+    NS::SharedPtr<MTL::SamplerState> DefocusFallbackSampler;
     std::shared_ptr<BloomTiming> BloomMetrics;
     NS::SharedPtr<MTL4::CounterHeap> BloomCounters;
     uint64_t BloomTimestampFrequency = 0;

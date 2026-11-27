@@ -1,5 +1,6 @@
 // CPU checks for exact target ECS/YAML dependencies and portable camera state.
 #include "Hazel/Scene/SceneCamera.h"
+#include "Hazel/Renderer/Cameras/CameraDefocus.h"
 #include "Hazel/Renderer/Scene/SceneRenderer.h"
 #include "Hazel/Project/RuntimeStorage.h"
 #include "Hazel/Core/FileSystem.h"
@@ -98,6 +99,73 @@ static void PhysicalCameraContracts()
     catch (const std::runtime_error&) { rejected = true; }
     Check(rejected && !camera.GetPhysicalCamera(), "Invalid optical focus mutated the camera");
     std::cout << "PASS: physical camera EV100, sensor crop, clipping, persistence, compatibility and Play copy\n";
+}
+static void CameraDefocusContracts()
+{
+    using namespace Hazel;
+    PhysicalCamera lens;
+    lens.LensProjection = true;
+    lens.FocalLengthMM = 85;
+    lens.SensorWidthMM = 36;
+    lens.SensorHeightMM = 24;
+    lens.Aperture = 2.f;
+    lens.FocusDistance = 4.f;
+    constexpr unsigned height = 2160;
+    for (const auto extent : {glm::uvec2(3840, height), glm::uvec2(1440, height)}) {
+        SceneCamera camera;
+        camera.SetViewportSize(extent.x, extent.y);
+        camera.SetPerspective(glm::radians(50.f), .01f, 1000);
+        const double physicalGateMM = std::min(24.0, 36.0 * height / extent.x);
+        for (bool physicalFraming : {false, true}) {
+            lens.LensProjection = physicalFraming;
+            camera.SetPhysicalCamera(lens);
+            const auto& projection = camera.GetProjection();
+            const auto defocus = CameraDefocus::FromPerspective(lens, projection, height);
+            const double gateMM = physicalFraming ? physicalGateMM : 170 * std::tan(glm::radians(25.0));
+            // The edge ray runs from the pupil rim to the conjugate image
+            // plane. Intersect it with the fixed sensor for each object.
+            const auto imagePlane = [](double distanceMM) { return 1 / (1. / 85 - 1 / distanceMM); };
+            const double sensorPlane = imagePlane(4000);
+            const double pupilRadius = 85. / 4;
+            for (double object : {.5, 1., 3.8, 4., 4.2, 10., 80., 900.}) {
+                const auto clip = glm::dmat4(projection) * glm::dvec4(0, 0, -object, 1);
+                const double depth = .5 * (clip.z / clip.w + 1);
+                const double radius = pupilRadius * (sensorPlane / imagePlane(object * 1000) - 1) * height / gateMM;
+                Check(std::abs(defocus.RadiusPixels(depth) - radius) < 5e-4,
+                      "Projected signed defocus differs from independent FP64 edge-ray intersection");
+                const float shaderRadius = (float(depth) - float(defocus.FocusWindowDepth)) *
+                    float(defocus.RadiusPixelsPerDepth);
+                Check(std::abs(shaderRadius - radius) < .03,
+                      "Projected signed defocus lost precision when packed for the shader");
+            }
+        }
+    }
+    auto authored = CreateRef<Scene>();
+    auto entity = authored->CreateEntity("Cinematic depth of field");
+    auto& camera = entity.AddComponent<CameraComponent>();
+    auto subject = authored->CreateEntity("Tracked focus subject");
+    subject.GetComponent<TransformComponent>().Translation = {7, 2, -14};
+    authored->Reparent(subject, entity);
+    camera.Camera.SetPhysicalCamera(lens);
+    camera.DepthOfField = {true, DepthOfFieldQuality::Cinematic, 7, .2f, .3f, subject.GetUUID()};
+    const auto text = SceneSerializer(authored).SerializeText();
+    auto loaded = CreateRef<Scene>();
+    SceneSerializer reader(loaded);
+    Check(reader.DeserializeText(text) && reader.CaptureAuthoredState() == SceneSerializer(authored).CaptureAuthoredState(),
+          "Depth of field settings did not round-trip");
+    auto invalid = YAML::Load(text);
+    invalid["Entities"][0]["CameraComponent"]["DepthOfField"]["ApertureBlades"] = 2;
+    Check(!reader.DeserializeText(YAML::Dump(invalid)) && reader.SerializeText() == text,
+          "Invalid blade count mutated the loaded camera");
+    SceneCameraView view;
+    view.DepthOfField = camera.DepthOfField;
+    Check(SceneRenderer::Collect(*authored, view).Camera.FocusSubjectDepth == 14.f,
+          "Tracked focus must use axial depth at the entity world pivot");
+    auto duplicate = authored->DuplicateEntity(entity);
+    const auto children = authored->GetChildren(duplicate.GetUUID());
+    Check(children.size() == 1 && duplicate.GetComponent<CameraComponent>().DepthOfField.TrackedSubject == children.front(),
+          "Camera subtree duplication lost its local focus reference");
+    std::cout << "PASS: signed perspective circle of confusion versus independent FP64 edge-ray intersection\n";
 }
 static void CameraExposureMigration()
 {
@@ -419,7 +487,7 @@ int main()
         StorageChecks();
         AssetCookingChecks();ImportCookingChecks();
         Hazel::Log::Init();
-        PhysicalCameraContracts();CameraExposureMigration();LocalLightContracts();AuthoredComparisonContracts();ImportPublicationChecks();
+        PhysicalCameraContracts();CameraDefocusContracts();CameraExposureMigration();LocalLightContracts();AuthoredComparisonContracts();ImportPublicationChecks();
         CPUFontFamilyDocument();
         Hazel::EditorDocumentChecks();
         Hazel::EditorStateChecks();
