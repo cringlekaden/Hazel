@@ -1,0 +1,3070 @@
+{
+  "config": "Debug",
+  "head": "0b0c2709d3fc83788326077112cde7c7e482ad88",
+  "cube": {
+    "metal": {
+      "center": {
+        "guarded": 97723,
+        "errors": 0,
+        "edgeHits": 300,
+        "cornerHits": 12,
+        "maxContourAngularErrorDegrees": 0.5696781159181477
+      },
+      "offset": {
+        "guarded": 97771,
+        "errors": 0,
+        "edgeHits": 208,
+        "cornerHits": 12,
+        "maxContourAngularErrorDegrees": 0.6392680488379625
+      }
+    },
+    "opengl": {
+      "center": {
+        "guarded": 97723,
+        "errors": 0,
+        "edgeHits": 300,
+        "cornerHits": 12,
+        "maxContourAngularErrorDegrees": 0.5696781159181477
+      },
+      "offset": {
+        "guarded": 97771,
+        "errors": 0,
+        "edgeHits": 208,
+        "cornerHits": 12,
+        "maxContourAngularErrorDegrees": 0.6392680488379625
+      }
+    }
+  },
+  "viewport": {
+    "metal": {
+      "poses": [
+        {
+          "pose": 0,
+          "receiver": 0,
+          "edgeDirections": 314,
+          "cornerDirections": 22,
+          "guarded": {
+            "box": [
+              9247,
+              0,
+              0
+            ],
+            "offset": [
+              9247,
+              0,
+              0
+            ],
+            "unprojected": [
+              9265,
+              0,
+              0
+            ],
+            "ssr": [
+              20,
+              0,
+              0
+            ]
+          },
+          "pixels": {
+            "ideal": 203,
+            "box": 186,
+            "offset": 173,
+            "unprojected": 150,
+            "screenVisible": 73,
+            "black": 0,
+            "ssr": 75,
+            "mixed": 186,
+            "mixed-offset": 181,
+            "mixed-unprojected": 156
+          },
+          "idealPixels": 203,
+          "mixedSourceOnlyPixels": {
+            "mixed": 27,
+            "mixed-offset": 4,
+            "mixed-unprojected": 58
+          },
+          "angularErrorP95Degrees": {
+            "box": 7.994467362913928,
+            "offset": 2.81637787897652,
+            "unprojected": 16.277027256854147,
+            "meshReflectionDirection": 0.3343850714005677
+          },
+          "gpuAgainstLookupContourPixels": {
+            "box": {
+              "p95": 1.0,
+              "maximum": 1.0
+            },
+            "offset": {
+              "p95": 1.0,
+              "maximum": 1.0
+            },
+            "unprojected": {
+              "p95": 1.0,
+              "maximum": 1.0
+            }
+          },
+          "againstIdealContourPixels": {
+            "box": {
+              "p95": 2.23606797749979,
+              "maximum": 2.23606797749979
+            },
+            "offset": {
+              "p95": 1.4142135623730951,
+              "maximum": 1.4142135623730951
+            },
+            "ssr": {
+              "p95": 7.211102550927978,
+              "maximum": 8.06225774829855
+            },
+            "mixed": {
+              "p95": 2.23606797749979,
+              "maximum": 2.23606797749979
+            },
+            "unprojected": {
+              "p95": 5.656854249492381,
+              "maximum": 5.830951894845301
+            },
+            "mixed-offset": {
+              "p95": 1.4142135623730951,
+              "maximum": 1.4142135623730951
+            },
+            "mixed-unprojected": {
+              "p95": 5.656854249492381,
+              "maximum": 5.830951894845301
+            }
+          },
+          "centroids": {
+            "ideal": [
+              177.59113300492612,
+              134.2512315270936
+            ],
+            "black": null,
+            "ssr": [
+              180.04,
+              131.42666666666668
+            ],
+            "mixed": [
+              178.90322580645162,
+              132.80645161290323
+            ],
+            "box": [
+              178.90322580645162,
+              132.80645161290323
+            ],
+            "unprojected": [
+              181.13333333333333,
+              130.68
+            ],
+            "offset": [
+              177.4335260115607,
+              133.45664739884393
+            ],
+            "mixed-offset": [
+              177.73480662983425,
+              133.45303867403314
+            ],
+            "mixed-unprojected": [
+              180.98717948717947,
+              130.69871794871796
+            ]
+          },
+          "screenHitErrorPixels": {
+            "samples": 20,
+            "p95": 1.1832740491637026
+          },
+          "visibleReferencePixels": 73,
+          "transitionPixels": 38,
+          "sourceContoursDisagreeWithinSupport": 0,
+          "taaAgainstAAOffContourPixels": {
+            "p95": 1.0,
+            "maximum": 1.0
+          }
+        },
+        {
+          "pose": 1,
+          "receiver": 0,
+          "edgeDirections": 316,
+          "cornerDirections": 24,
+          "guarded": {
+            "box": [
+              9302,
+              0,
+              0
+            ],
+            "offset": [
+              9299,
+              0,
+              0
+            ],
+            "unprojected": [
+              9323,
+              0,
+              0
+            ],
+            "ssr": [
+              21,
+              0,
+              0
+            ]
+          },
+          "pixels": {
+            "ideal": 204,
+            "box": 180,
+            "offset": 176,
+            "unprojected": 149,
+            "screenVisible": 78,
+            "black": 0,
+            "ssr": 71,
+            "mixed": 180,
+            "mixed-offset": 178,
+            "mixed-unprojected": 156
+          },
+          "idealPixels": 204,
+          "mixedSourceOnlyPixels": {
+            "mixed": 25,
+            "mixed-offset": 0,
+            "mixed-unprojected": 59
+          },
+          "angularErrorP95Degrees": {
+            "box": 8.209533630332233,
+            "offset": 2.860334538672606,
+            "unprojected": 16.54602240537234,
+            "meshReflectionDirection": 0.33828443189529994
+          },
+          "gpuAgainstLookupContourPixels": {
+            "box": {
+              "p95": 0.0,
+              "maximum": 1.0
+            },
+            "offset": {
+              "p95": 1.0,
+              "maximum": 1.0
+            },
+            "unprojected": {
+              "p95": 1.0,
+              "maximum": 1.0
+            }
+          },
+          "againstIdealContourPixels": {
+            "box": {
+              "p95": 2.8284271247461903,
+              "maximum": 2.8284271247461903
+            },
+            "offset": {
+              "p95": 1.4142135623730951,
+              "maximum": 1.4142135623730951
+            },
+            "ssr": {
+              "p95": 7.810249675906654,
+              "maximum": 8.06225774829855
+            },
+            "mixed": {
+              "p95": 2.8284271247461903,
+              "maximum": 2.8284271247461903
+            },
+            "unprojected": {
+              "p95": 5.830951894845301,
+              "maximum": 6.324555320336759
+            },
+            "mixed-offset": {
+              "p95": 1.4142135623730951,
+              "maximum": 1.4142135623730951
+            },
+            "mixed-unprojected": {
+              "p95": 5.830951894845301,
+              "maximum": 6.324555320336759
+            }
+          },
+          "centroids": {
+            "ideal": [
+              176.7107843137255,
+              134.38725490196077
+            ],
+            "black": null,
+            "ssr": [
+              179.43661971830986,
+              131.6338028169014
+            ],
+            "mixed": [
+              178.17777777777778,
+              132.94444444444446
+            ],
+            "box": [
+              178.17777777777778,
+              132.94444444444446
+            ],
+            "unprojected": [
+              180.36912751677852,
+              130.73154362416108
+            ],
+            "offset": [
+              176.9034090909091,
+              133.80113636363637
+            ],
+            "mixed-offset": [
+              176.97752808988764,
+              133.7808988764045
+            ],
+            "mixed-unprojected": [
+              180.28205128205127,
+              130.85897435897436
+            ]
+          },
+          "screenHitErrorPixels": {
+            "samples": 21,
+            "p95": 1.2188365139265507
+          },
+          "visibleReferencePixels": 78,
+          "transitionPixels": 35,
+          "sourceContoursDisagreeWithinSupport": 0,
+          "taaAgainstAAOffContourPixels": {
+            "p95": 1.0,
+            "maximum": 1.0
+          }
+        },
+        {
+          "pose": 2,
+          "receiver": 0,
+          "edgeDirections": 339,
+          "cornerDirections": 26,
+          "guarded": {
+            "box": [
+              9346,
+              0,
+              0
+            ],
+            "offset": [
+              9338,
+              0,
+              0
+            ],
+            "unprojected": [
+              9362,
+              0,
+              0
+            ],
+            "ssr": [
+              28,
+              0,
+              0
+            ]
+          },
+          "pixels": {
+            "ideal": 206,
+            "box": 183,
+            "offset": 176,
+            "unprojected": 151,
+            "screenVisible": 84,
+            "black": 0,
+            "ssr": 82,
+            "mixed": 183,
+            "mixed-offset": 178,
+            "mixed-unprojected": 161
+          },
+          "idealPixels": 206,
+          "mixedSourceOnlyPixels": {
+            "mixed": 27,
+            "mixed-offset": 0,
+            "mixed-unprojected": 62
+          },
+          "angularErrorP95Degrees": {
+            "box": 8.346389097784888,
+            "offset": 2.8795603954680438,
+            "unprojected": 16.81544898463431,
+            "meshReflectionDirection": 0.3413035397795525
+          },
+          "gpuAgainstLookupContourPixels": {
+            "box": {
+              "p95": 1.0,
+              "maximum": 1.0
+            },
+            "offset": {
+              "p95": 1.0,
+              "maximum": 1.0
+            },
+            "unprojected": {
+              "p95": 0.0,
+              "maximum": 1.0
+            }
+          },
+          "againstIdealContourPixels": {
+            "box": {
+              "p95": 2.8284271247461903,
+              "maximum": 2.8284271247461903
+            },
+            "offset": {
+              "p95": 1.4142135623730951,
+              "maximum": 1.4142135623730951
+            },
+            "ssr": {
+              "p95": 7.0710678118654755,
+              "maximum": 7.615773105863909
+            },
+            "mixed": {
+              "p95": 2.8284271247461903,
+              "maximum": 2.8284271247461903
+            },
+            "unprojected": {
+              "p95": 6.324555320336759,
+              "maximum": 6.4031242374328485
+            },
+            "mixed-offset": {
+              "p95": 1.4142135623730951,
+              "maximum": 1.4142135623730951
+            },
+            "mixed-unprojected": {
+              "p95": 6.324555320336759,
+              "maximum": 6.4031242374328485
+            }
+          },
+          "centroids": {
+            "ideal": [
+              175.92233009708738,
+              134.48058252427185
+            ],
+            "black": null,
+            "ssr": [
+              178.4878048780488,
+              132.23170731707316
+            ],
+            "mixed": [
+              177.38251366120218,
+              132.98907103825135
+            ],
+            "box": [
+              177.38251366120218,
+              132.98907103825135
+            ],
+            "unprojected": [
+              179.66225165562915,
+              130.76158940397352
+            ],
+            "offset": [
+              176.04545454545453,
+              133.80113636363637
+            ],
+            "mixed-offset": [
+              176.11797752808988,
+              133.81460674157304
+            ],
+            "mixed-unprojected": [
+              179.6086956521739,
+              131.0310559006211
+            ]
+          },
+          "screenHitErrorPixels": {
+            "samples": 28,
+            "p95": 1.145357990223755
+          },
+          "visibleReferencePixels": 84,
+          "transitionPixels": 37,
+          "sourceContoursDisagreeWithinSupport": 1,
+          "taaAgainstAAOffContourPixels": {
+            "p95": 1.0,
+            "maximum": 1.4142135623730951
+          }
+        },
+        {
+          "pose": 3,
+          "receiver": 0,
+          "edgeDirections": 325,
+          "cornerDirections": 28,
+          "guarded": {
+            "box": [
+              9373,
+              0,
+              0
+            ],
+            "offset": [
+              9368,
+              0,
+              0
+            ],
+            "unprojected": [
+              9389,
+              0,
+              0
+            ],
+            "ssr": [
+              29,
+              0,
+              0
+            ]
+          },
+          "pixels": {
+            "ideal": 202,
+            "box": 185,
+            "offset": 176,
+            "unprojected": 146,
+            "screenVisible": 86,
+            "black": 0,
+            "ssr": 87,
+            "mixed": 185,
+            "mixed-offset": 179,
+            "mixed-unprojected": 159
+          },
+          "idealPixels": 202,
+          "mixedSourceOnlyPixels": {
+            "mixed": 27,
+            "mixed-offset": 0,
+            "mixed-unprojected": 61
+          },
+          "angularErrorP95Degrees": {
+            "box": 8.474368524028453,
+            "offset": 2.929856914460021,
+            "unprojected": 17.123818198334785,
+            "meshReflectionDirection": 0.3329817302159668
+          },
+          "gpuAgainstLookupContourPixels": {
+            "box": {
+              "p95": 1.0,
+              "maximum": 1.0
+            },
+            "offset": {
+              "p95": 1.0,
+              "maximum": 1.0
+            },
+            "unprojected": {
+              "p95": 1.0,
+              "maximum": 1.0
+            }
+          },
+          "againstIdealContourPixels": {
+            "box": {
+              "p95": 2.23606797749979,
+              "maximum": 2.8284271247461903
+            },
+            "offset": {
+              "p95": 1.0,
+              "maximum": 1.4142135623730951
+            },
+            "ssr": {
+              "p95": 6.324555320336759,
+              "maximum": 6.708203932499369
+            },
+            "mixed": {
+              "p95": 2.23606797749979,
+              "maximum": 2.8284271247461903
+            },
+            "unprojected": {
+              "p95": 5.830951894845301,
+              "maximum": 6.4031242374328485
+            },
+            "mixed-offset": {
+              "p95": 1.0,
+              "maximum": 1.4142135623730951
+            },
+            "mixed-unprojected": {
+              "p95": 5.830951894845301,
+              "maximum": 6.4031242374328485
+            }
+          },
+          "centroids": {
+            "ideal": [
+              175.2029702970297,
+              134.490099009901
+            ],
+            "black": null,
+            "ssr": [
+              177.50574712643677,
+              132.20689655172413
+            ],
+            "mixed": [
+              176.67027027027027,
+              133.22702702702702
+            ],
+            "box": [
+              176.67027027027027,
+              133.22702702702702
+            ],
+            "unprojected": [
+              178.97260273972603,
+              130.82191780821918
+            ],
+            "offset": [
+              175.26136363636363,
+              133.91477272727272
+            ],
+            "mixed-offset": [
+              175.39106145251398,
+              133.96648044692736
+            ],
+            "mixed-unprojected": [
+              178.74213836477986,
+              131.0062893081761
+            ]
+          },
+          "screenHitErrorPixels": {
+            "samples": 29,
+            "p95": 1.274469453523082
+          },
+          "visibleReferencePixels": 86,
+          "transitionPixels": 43,
+          "sourceContoursDisagreeWithinSupport": 0,
+          "taaAgainstAAOffContourPixels": {
+            "p95": 1.0,
+            "maximum": 1.4142135623730951
+          }
+        },
+        {
+          "pose": 4,
+          "receiver": 0,
+          "edgeDirections": 319,
+          "cornerDirections": 23,
+          "guarded": {
+            "box": [
+              9378,
+              0,
+              0
+            ],
+            "offset": [
+              9378,
+              0,
+              0
+            ],
+            "unprojected": [
+              9401,
+              0,
+              0
+            ],
+            "ssr": [
+              28,
+              0,
+              0
+            ]
+          },
+          "pixels": {
+            "ideal": 200,
+            "box": 181,
+            "offset": 173,
+            "unprojected": 151,
+            "screenVisible": 91,
+            "black": 0,
+            "ssr": 90,
+            "mixed": 181,
+            "mixed-offset": 176,
+            "mixed-unprojected": 162
+          },
+          "idealPixels": 200,
+          "mixedSourceOnlyPixels": {
+            "mixed": 27,
+            "mixed-offset": 0,
+            "mixed-unprojected": 65
+          },
+          "angularErrorP95Degrees": {
+            "box": 8.646765537460738,
+            "offset": 3.0391836949429316,
+            "unprojected": 17.453226909060266,
+            "meshReflectionDirection": 0.35709072732050956
+          },
+          "gpuAgainstLookupContourPixels": {
+            "box": {
+              "p95": 0.0,
+              "maximum": 1.0
+            },
+            "offset": {
+              "p95": 1.0,
+              "maximum": 1.0
+            },
+            "unprojected": {
+              "p95": 1.0,
+              "maximum": 1.0
+            }
+          },
+          "againstIdealContourPixels": {
+            "box": {
+              "p95": 2.23606797749979,
+              "maximum": 2.8284271247461903
+            },
+            "offset": {
+              "p95": 1.0,
+              "maximum": 1.4142135623730951
+            },
+            "ssr": {
+              "p95": 6.4031242374328485,
+              "maximum": 6.4031242374328485
+            },
+            "mixed": {
+              "p95": 2.23606797749979,
+              "maximum": 2.8284271247461903
+            },
+            "unprojected": {
+              "p95": 5.830951894845301,
+              "maximum": 6.324555320336759
+            },
+            "mixed-offset": {
+              "p95": 1.0,
+              "maximum": 1.4142135623730951
+            },
+            "mixed-unprojected": {
+              "p95": 5.656854249492381,
+              "maximum": 5.830951894845301
+            }
+          },
+          "centroids": {
+            "ideal": [
+              174.45,
+              134.59
+            ],
+            "black": null,
+            "ssr": [
+              176.73333333333332,
+              132.54444444444445
+            ],
+            "mixed": [
+              175.96132596685084,
+              133.3038674033149
+            ],
+            "box": [
+              175.96132596685084,
+              133.3038674033149
+            ],
+            "unprojected": [
+              178.3112582781457,
+              131.05960264900662
+            ],
+            "offset": [
+              174.58959537572255,
+              134.09826589595374
+            ],
+            "mixed-offset": [
+              174.7159090909091,
+              134.14204545454547
+            ],
+            "mixed-unprojected": [
+              178.179012345679,
+              131.29012345679013
+            ]
+          },
+          "screenHitErrorPixels": {
+            "samples": 28,
+            "p95": 1.227539314333452
+          },
+          "visibleReferencePixels": 91,
+          "transitionPixels": 46,
+          "sourceContoursDisagreeWithinSupport": 0,
+          "taaAgainstAAOffContourPixels": {
+            "p95": 1.0,
+            "maximum": 1.0
+          }
+        },
+        {
+          "pose": 5,
+          "receiver": 0,
+          "edgeDirections": 329,
+          "cornerDirections": 17,
+          "guarded": {
+            "box": [
+              9369,
+              0,
+              0
+            ],
+            "offset": [
+              9367,
+              0,
+              0
+            ],
+            "unprojected": [
+              9385,
+              0,
+              0
+            ],
+            "ssr": [
+              30,
+              0,
+              0
+            ]
+          },
+          "pixels": {
+            "ideal": 199,
+            "box": 182,
+            "offset": 172,
+            "unprojected": 152,
+            "screenVisible": 95,
+            "black": 0,
+            "ssr": 88,
+            "mixed": 182,
+            "mixed-offset": 173,
+            "mixed-unprojected": 165
+          },
+          "idealPixels": 199,
+          "mixedSourceOnlyPixels": {
+            "mixed": 29,
+            "mixed-offset": 0,
+            "mixed-unprojected": 68
+          },
+          "angularErrorP95Degrees": {
+            "box": 8.792955142793007,
+            "offset": 3.090848567426821,
+            "unprojected": 17.682772279568624,
+            "meshReflectionDirection": 0.36834962549688577
+          },
+          "gpuAgainstLookupContourPixels": {
+            "box": {
+              "p95": 1.0,
+              "maximum": 1.0
+            },
+            "offset": {
+              "p95": 1.0,
+              "maximum": 1.0
+            },
+            "unprojected": {
+              "p95": 1.0,
+              "maximum": 1.0
+            }
+          },
+          "againstIdealContourPixels": {
+            "box": {
+              "p95": 2.23606797749979,
+              "maximum": 2.8284271247461903
+            },
+            "offset": {
+              "p95": 1.4142135623730951,
+              "maximum": 1.4142135623730951
+            },
+            "ssr": {
+              "p95": 5.830951894845301,
+              "maximum": 6.4031242374328485
+            },
+            "mixed": {
+              "p95": 2.23606797749979,
+              "maximum": 2.8284271247461903
+            },
+            "unprojected": {
+              "p95": 5.830951894845301,
+              "maximum": 6.324555320336759
+            },
+            "mixed-offset": {
+              "p95": 1.4142135623730951,
+              "maximum": 1.4142135623730951
+            },
+            "mixed-unprojected": {
+              "p95": 5.656854249492381,
+              "maximum": 5.830951894845301
+            }
+          },
+          "centroids": {
+            "ideal": [
+              173.57788944723617,
+              134.6532663316583
+            ],
+            "black": null,
+            "ssr": [
+              175.6931818181818,
+              132.39772727272728
+            ],
+            "mixed": [
+              175.17582417582418,
+              133.3846153846154
+            ],
+            "box": [
+              175.17582417582418,
+              133.3846153846154
+            ],
+            "unprojected": [
+              177.67105263157896,
+              131.1578947368421
+            ],
+            "offset": [
+              173.94767441860466,
+              134.1453488372093
+            ],
+            "mixed-offset": [
+              173.98843930635837,
+              134.17341040462426
+            ],
+            "mixed-unprojected": [
+              177.35757575757575,
+              131.29090909090908
+            ]
+          },
+          "screenHitErrorPixels": {
+            "samples": 30,
+            "p95": 1.0037984079907887
+          },
+          "visibleReferencePixels": 95,
+          "transitionPixels": 34,
+          "sourceContoursDisagreeWithinSupport": 1,
+          "taaAgainstAAOffContourPixels": {
+            "p95": 1.0,
+            "maximum": 1.0
+          }
+        },
+        {
+          "pose": 6,
+          "receiver": 0,
+          "edgeDirections": 317,
+          "cornerDirections": 25,
+          "guarded": {
+            "box": [
+              9346,
+              0,
+              0
+            ],
+            "offset": [
+              9346,
+              0,
+              0
+            ],
+            "unprojected": [
+              9359,
+              0,
+              0
+            ],
+            "ssr": [
+              34,
+              0,
+              0
+            ]
+          },
+          "pixels": {
+            "ideal": 197,
+            "box": 178,
+            "offset": 172,
+            "unprojected": 146,
+            "screenVisible": 96,
+            "black": 0,
+            "ssr": 97,
+            "mixed": 178,
+            "mixed-offset": 173,
+            "mixed-unprojected": 165
+          },
+          "idealPixels": 197,
+          "mixedSourceOnlyPixels": {
+            "mixed": 27,
+            "mixed-offset": 0,
+            "mixed-unprojected": 66
+          },
+          "angularErrorP95Degrees": {
+            "box": 8.852549535546363,
+            "offset": 3.194348839256729,
+            "unprojected": 17.97068675518266,
+            "meshReflectionDirection": 0.391551008711469
+          },
+          "gpuAgainstLookupContourPixels": {
+            "box": {
+              "p95": 0.0,
+              "maximum": 1.0
+            },
+            "offset": {
+              "p95": 1.0,
+              "maximum": 1.0
+            },
+            "unprojected": {
+              "p95": 0.0,
+              "maximum": 0.0
+            }
+          },
+          "againstIdealContourPixels": {
+            "box": {
+              "p95": 2.8284271247461903,
+              "maximum": 2.8284271247461903
+            },
+            "offset": {
+              "p95": 1.4142135623730951,
+              "maximum": 1.4142135623730951
+            },
+            "ssr": {
+              "p95": 5.830951894845301,
+              "maximum": 6.324555320336759
+            },
+            "mixed": {
+              "p95": 2.8284271247461903,
+              "maximum": 2.8284271247461903
+            },
+            "unprojected": {
+              "p95": 6.4031242374328485,
+              "maximum": 6.4031242374328485
+            },
+            "mixed-offset": {
+              "p95": 1.4142135623730951,
+              "maximum": 1.4142135623730951
+            },
+            "mixed-unprojected": {
+              "p95": 5.385164807134504,
+              "maximum": 6.324555320336759
+            }
+          },
+          "centroids": {
+            "ideal": [
+              172.85279187817258,
+              134.72081218274113
+            ],
+            "black": null,
+            "ssr": [
+              175.02061855670104,
+              132.95876288659792
+            ],
+            "mixed": [
+              174.48314606741573,
+              133.52247191011236
+            ],
+            "box": [
+              174.48314606741573,
+              133.52247191011236
+            ],
+            "unprojected": [
+              177.1027397260274,
+              131.3082191780822
+            ],
+            "offset": [
+              173.27325581395348,
+              134.3081395348837
+            ],
+            "mixed-offset": [
+              173.3121387283237,
+              134.34104046242774
+            ],
+            "mixed-unprojected": [
+              176.66060606060606,
+              131.5878787878788
+            ]
+          },
+          "screenHitErrorPixels": {
+            "samples": 34,
+            "p95": 1.2489347803906772
+          },
+          "visibleReferencePixels": 96,
+          "transitionPixels": 42,
+          "sourceContoursDisagreeWithinSupport": 0,
+          "taaAgainstAAOffContourPixels": {
+            "p95": 1.0,
+            "maximum": 1.4142135623730951
+          }
+        },
+        {
+          "pose": 7,
+          "receiver": 0,
+          "edgeDirections": 319,
+          "cornerDirections": 21,
+          "guarded": {
+            "box": [
+              9307,
+              0,
+              0
+            ],
+            "offset": [
+              9306,
+              0,
+              0
+            ],
+            "unprojected": [
+              9320,
+              0,
+              0
+            ],
+            "ssr": [
+              38,
+              0,
+              0
+            ]
+          },
+          "pixels": {
+            "ideal": 195,
+            "box": 179,
+            "offset": 167,
+            "unprojected": 149,
+            "screenVisible": 101,
+            "black": 0,
+            "ssr": 96,
+            "mixed": 179,
+            "mixed-offset": 167,
+            "mixed-unprojected": 170
+          },
+          "idealPixels": 195,
+          "mixedSourceOnlyPixels": {
+            "mixed": 30,
+            "mixed-offset": 0,
+            "mixed-unprojected": 69
+          },
+          "angularErrorP95Degrees": {
+            "box": 9.07432313629,
+            "offset": 3.2481348394045813,
+            "unprojected": 18.29355140119986,
+            "meshReflectionDirection": 0.4089931723845048
+          },
+          "gpuAgainstLookupContourPixels": {
+            "box": {
+              "p95": 1.0,
+              "maximum": 1.0
+            },
+            "offset": {
+              "p95": 1.0,
+              "maximum": 1.0
+            },
+            "unprojected": {
+              "p95": 1.0,
+              "maximum": 1.0
+            }
+          },
+          "againstIdealContourPixels": {
+            "box": {
+              "p95": 2.23606797749979,
+              "maximum": 2.8284271247461903
+            },
+            "offset": {
+              "p95": 1.4142135623730951,
+              "maximum": 1.4142135623730951
+            },
+            "ssr": {
+              "p95": 5.385164807134504,
+              "maximum": 5.830951894845301
+            },
+            "mixed": {
+              "p95": 2.23606797749979,
+              "maximum": 2.8284271247461903
+            },
+            "unprojected": {
+              "p95": 5.830951894845301,
+              "maximum": 6.4031242374328485
+            },
+            "mixed-offset": {
+              "p95": 1.4142135623730951,
+              "maximum": 1.4142135623730951
+            },
+            "mixed-unprojected": {
+              "p95": 5.0990195135927845,
+              "maximum": 5.656854249492381
+            }
+          },
+          "centroids": {
+            "ideal": [
+              172.23076923076923,
+              134.86666666666667
+            ],
+            "black": null,
+            "ssr": [
+              174.1875,
+              133.10416666666666
+            ],
+            "mixed": [
+              173.81564245810057,
+              133.54748603351956
+            ],
+            "box": [
+              173.81564245810057,
+              133.54748603351956
+            ],
+            "unprojected": [
+              176.38926174496643,
+              131.4228187919463
+            ],
+            "offset": [
+              172.5568862275449,
+              134.35928143712576
+            ],
+            "mixed-offset": [
+              172.5568862275449,
+              134.35928143712576
+            ],
+            "mixed-unprojected": [
+              175.93529411764706,
+              131.75882352941176
+            ]
+          },
+          "screenHitErrorPixels": {
+            "samples": 38,
+            "p95": 1.2296144233810682
+          },
+          "visibleReferencePixels": 101,
+          "transitionPixels": 36,
+          "sourceContoursDisagreeWithinSupport": 0,
+          "taaAgainstAAOffContourPixels": {
+            "p95": 1.4142135623730951,
+            "maximum": 1.4142135623730951
+          }
+        },
+        {
+          "pose": 8,
+          "receiver": 0,
+          "edgeDirections": 321,
+          "cornerDirections": 23,
+          "guarded": {
+            "box": [
+              9247,
+              0,
+              0
+            ],
+            "offset": [
+              9247,
+              0,
+              0
+            ],
+            "unprojected": [
+              9260,
+              0,
+              0
+            ],
+            "ssr": [
+              38,
+              0,
+              0
+            ]
+          },
+          "pixels": {
+            "ideal": 194,
+            "box": 175,
+            "offset": 168,
+            "unprojected": 145,
+            "screenVisible": 103,
+            "black": 0,
+            "ssr": 96,
+            "mixed": 175,
+            "mixed-offset": 168,
+            "mixed-unprojected": 169
+          },
+          "idealPixels": 194,
+          "mixedSourceOnlyPixels": {
+            "mixed": 30,
+            "mixed-offset": 1,
+            "mixed-unprojected": 71
+          },
+          "angularErrorP95Degrees": {
+            "box": 9.23620955593866,
+            "offset": 3.3821567952010616,
+            "unprojected": 18.51425306547025,
+            "meshReflectionDirection": 0.41758815337703803
+          },
+          "gpuAgainstLookupContourPixels": {
+            "box": {
+              "p95": 1.0,
+              "maximum": 1.0
+            },
+            "offset": {
+              "p95": 1.0,
+              "maximum": 1.0
+            },
+            "unprojected": {
+              "p95": 0.0,
+              "maximum": 1.0
+            }
+          },
+          "againstIdealContourPixels": {
+            "box": {
+              "p95": 2.8284271247461903,
+              "maximum": 2.8284271247461903
+            },
+            "offset": {
+              "p95": 1.4142135623730951,
+              "maximum": 1.4142135623730951
+            },
+            "ssr": {
+              "p95": 5.656854249492381,
+              "maximum": 5.830951894845301
+            },
+            "mixed": {
+              "p95": 2.8284271247461903,
+              "maximum": 2.8284271247461903
+            },
+            "unprojected": {
+              "p95": 6.0,
+              "maximum": 6.324555320336759
+            },
+            "mixed-offset": {
+              "p95": 1.4142135623730951,
+              "maximum": 1.4142135623730951
+            },
+            "mixed-unprojected": {
+              "p95": 5.656854249492381,
+              "maximum": 5.830951894845301
+            }
+          },
+          "centroids": {
+            "ideal": [
+              171.53608247422682,
+              134.98453608247422
+            ],
+            "black": null,
+            "ssr": [
+              173.59375,
+              133.375
+            ],
+            "mixed": [
+              173.1942857142857,
+              133.6342857142857
+            ],
+            "box": [
+              173.1942857142857,
+              133.6342857142857
+            ],
+            "unprojected": [
+              175.9241379310345,
+              131.58620689655172
+            ],
+            "offset": [
+              172,
+              134.5
+            ],
+            "mixed-offset": [
+              172,
+              134.5
+            ],
+            "mixed-unprojected": [
+              175.3846153846154,
+              131.9171597633136
+            ]
+          },
+          "screenHitErrorPixels": {
+            "samples": 38,
+            "p95": 0.808703209805708
+          },
+          "visibleReferencePixels": 103,
+          "transitionPixels": 34,
+          "sourceContoursDisagreeWithinSupport": 1,
+          "taaAgainstAAOffContourPixels": {
+            "p95": 1.0,
+            "maximum": 1.4142135623730951
+          }
+        }
+      ],
+      "centroidMotionPixels": {
+        "ideal": {
+          "maxStep": 0.8907952495432966,
+          "maxStepChange": 0.14707525850035627
+        },
+        "box": {
+          "maxStep": 0.7965152528279462,
+          "maxStepChange": 0.21040127339299505
+        },
+        "unprojected": {
+          "maxStep": 0.7659420834814185,
+          "maxStepChange": 0.25310098608889897
+        },
+        "offset": {
+          "maxStep": 0.857954545454561,
+          "maxStepChange": 0.4755524735507256
+        },
+        "ssr": {
+          "maxStep": 1.1214898093274237,
+          "maxStepChange": 0.7975181062170371
+        },
+        "mixed": {
+          "maxStep": 0.7965152528279462,
+          "maxStepChange": 0.21040127339299505
+        },
+        "mixed-offset": {
+          "maxStep": 0.8602112464162895,
+          "maxStepChange": 0.3114244112708736
+        },
+        "mixed-unprojected": {
+          "maxStep": 0.8669111352595852,
+          "maxStepChange": 0.43278742121301716
+        }
+      }
+    },
+    "opengl": {
+      "poses": [
+        {
+          "pose": 0,
+          "receiver": 0,
+          "edgeDirections": 314,
+          "cornerDirections": 22,
+          "guarded": {
+            "box": [
+              9247,
+              0,
+              0
+            ],
+            "offset": [
+              9247,
+              0,
+              0
+            ],
+            "unprojected": [
+              9265,
+              0,
+              0
+            ],
+            "ssr": [
+              20,
+              0,
+              0
+            ]
+          },
+          "pixels": {
+            "ideal": 203,
+            "box": 186,
+            "offset": 173,
+            "unprojected": 150,
+            "screenVisible": 73,
+            "black": 0,
+            "ssr": 75,
+            "mixed": 186,
+            "mixed-offset": 181,
+            "mixed-unprojected": 156
+          },
+          "idealPixels": 203,
+          "mixedSourceOnlyPixels": {
+            "mixed": 27,
+            "mixed-offset": 4,
+            "mixed-unprojected": 58
+          },
+          "angularErrorP95Degrees": {
+            "box": 7.994467362913928,
+            "offset": 2.8163783597399275,
+            "unprojected": 16.277027256854147,
+            "meshReflectionDirection": 0.3343850714005677
+          },
+          "gpuAgainstLookupContourPixels": {
+            "box": {
+              "p95": 1.0,
+              "maximum": 1.0
+            },
+            "offset": {
+              "p95": 1.0,
+              "maximum": 1.0
+            },
+            "unprojected": {
+              "p95": 1.0,
+              "maximum": 1.0
+            }
+          },
+          "againstIdealContourPixels": {
+            "box": {
+              "p95": 2.23606797749979,
+              "maximum": 2.23606797749979
+            },
+            "offset": {
+              "p95": 1.4142135623730951,
+              "maximum": 1.4142135623730951
+            },
+            "ssr": {
+              "p95": 7.211102550927978,
+              "maximum": 8.06225774829855
+            },
+            "mixed": {
+              "p95": 2.23606797749979,
+              "maximum": 2.23606797749979
+            },
+            "unprojected": {
+              "p95": 5.656854249492381,
+              "maximum": 5.830951894845301
+            },
+            "mixed-offset": {
+              "p95": 1.4142135623730951,
+              "maximum": 1.4142135623730951
+            },
+            "mixed-unprojected": {
+              "p95": 5.656854249492381,
+              "maximum": 5.830951894845301
+            }
+          },
+          "centroids": {
+            "ideal": [
+              177.59113300492612,
+              134.2512315270936
+            ],
+            "black": null,
+            "ssr": [
+              180.04,
+              131.42666666666668
+            ],
+            "mixed": [
+              178.90322580645162,
+              132.80645161290323
+            ],
+            "box": [
+              178.90322580645162,
+              132.80645161290323
+            ],
+            "unprojected": [
+              181.13333333333333,
+              130.68
+            ],
+            "offset": [
+              177.4335260115607,
+              133.45664739884393
+            ],
+            "mixed-offset": [
+              177.73480662983425,
+              133.45303867403314
+            ],
+            "mixed-unprojected": [
+              180.98717948717947,
+              130.69871794871796
+            ]
+          },
+          "screenHitErrorPixels": {
+            "samples": 20,
+            "p95": 1.1832657545761027
+          },
+          "visibleReferencePixels": 73,
+          "transitionPixels": 38,
+          "sourceContoursDisagreeWithinSupport": 0
+        },
+        {
+          "pose": 1,
+          "receiver": 0,
+          "edgeDirections": 316,
+          "cornerDirections": 24,
+          "guarded": {
+            "box": [
+              9302,
+              0,
+              0
+            ],
+            "offset": [
+              9299,
+              0,
+              0
+            ],
+            "unprojected": [
+              9323,
+              0,
+              0
+            ],
+            "ssr": [
+              21,
+              0,
+              0
+            ]
+          },
+          "pixels": {
+            "ideal": 204,
+            "box": 180,
+            "offset": 176,
+            "unprojected": 149,
+            "screenVisible": 78,
+            "black": 0,
+            "ssr": 71,
+            "mixed": 180,
+            "mixed-offset": 178,
+            "mixed-unprojected": 156
+          },
+          "idealPixels": 204,
+          "mixedSourceOnlyPixels": {
+            "mixed": 25,
+            "mixed-offset": 0,
+            "mixed-unprojected": 59
+          },
+          "angularErrorP95Degrees": {
+            "box": 8.209533630332233,
+            "offset": 2.860334538672606,
+            "unprojected": 16.54602240537234,
+            "meshReflectionDirection": 0.33828443189529994
+          },
+          "gpuAgainstLookupContourPixels": {
+            "box": {
+              "p95": 0.0,
+              "maximum": 1.0
+            },
+            "offset": {
+              "p95": 1.0,
+              "maximum": 1.0
+            },
+            "unprojected": {
+              "p95": 1.0,
+              "maximum": 1.0
+            }
+          },
+          "againstIdealContourPixels": {
+            "box": {
+              "p95": 2.8284271247461903,
+              "maximum": 2.8284271247461903
+            },
+            "offset": {
+              "p95": 1.4142135623730951,
+              "maximum": 1.4142135623730951
+            },
+            "ssr": {
+              "p95": 7.810249675906654,
+              "maximum": 8.06225774829855
+            },
+            "mixed": {
+              "p95": 2.8284271247461903,
+              "maximum": 2.8284271247461903
+            },
+            "unprojected": {
+              "p95": 5.830951894845301,
+              "maximum": 6.324555320336759
+            },
+            "mixed-offset": {
+              "p95": 1.4142135623730951,
+              "maximum": 1.4142135623730951
+            },
+            "mixed-unprojected": {
+              "p95": 5.830951894845301,
+              "maximum": 6.324555320336759
+            }
+          },
+          "centroids": {
+            "ideal": [
+              176.7107843137255,
+              134.38725490196077
+            ],
+            "black": null,
+            "ssr": [
+              179.43661971830986,
+              131.6338028169014
+            ],
+            "mixed": [
+              178.17777777777778,
+              132.94444444444446
+            ],
+            "box": [
+              178.17777777777778,
+              132.94444444444446
+            ],
+            "unprojected": [
+              180.36912751677852,
+              130.73154362416108
+            ],
+            "offset": [
+              176.9034090909091,
+              133.80113636363637
+            ],
+            "mixed-offset": [
+              176.97752808988764,
+              133.7808988764045
+            ],
+            "mixed-unprojected": [
+              180.28205128205127,
+              130.85897435897436
+            ]
+          },
+          "screenHitErrorPixels": {
+            "samples": 21,
+            "p95": 1.2188300218011467
+          },
+          "visibleReferencePixels": 78,
+          "transitionPixels": 35,
+          "sourceContoursDisagreeWithinSupport": 0
+        },
+        {
+          "pose": 2,
+          "receiver": 0,
+          "edgeDirections": 339,
+          "cornerDirections": 26,
+          "guarded": {
+            "box": [
+              9346,
+              0,
+              0
+            ],
+            "offset": [
+              9338,
+              0,
+              0
+            ],
+            "unprojected": [
+              9362,
+              0,
+              0
+            ],
+            "ssr": [
+              28,
+              0,
+              0
+            ]
+          },
+          "pixels": {
+            "ideal": 206,
+            "box": 183,
+            "offset": 176,
+            "unprojected": 151,
+            "screenVisible": 84,
+            "black": 0,
+            "ssr": 82,
+            "mixed": 183,
+            "mixed-offset": 178,
+            "mixed-unprojected": 161
+          },
+          "idealPixels": 206,
+          "mixedSourceOnlyPixels": {
+            "mixed": 27,
+            "mixed-offset": 0,
+            "mixed-unprojected": 62
+          },
+          "angularErrorP95Degrees": {
+            "box": 8.346389097784888,
+            "offset": 2.8795603954680438,
+            "unprojected": 16.81544970048718,
+            "meshReflectionDirection": 0.3413035397795525
+          },
+          "gpuAgainstLookupContourPixels": {
+            "box": {
+              "p95": 1.0,
+              "maximum": 1.0
+            },
+            "offset": {
+              "p95": 1.0,
+              "maximum": 1.0
+            },
+            "unprojected": {
+              "p95": 0.0,
+              "maximum": 1.0
+            }
+          },
+          "againstIdealContourPixels": {
+            "box": {
+              "p95": 2.8284271247461903,
+              "maximum": 2.8284271247461903
+            },
+            "offset": {
+              "p95": 1.4142135623730951,
+              "maximum": 1.4142135623730951
+            },
+            "ssr": {
+              "p95": 7.0710678118654755,
+              "maximum": 7.615773105863909
+            },
+            "mixed": {
+              "p95": 2.8284271247461903,
+              "maximum": 2.8284271247461903
+            },
+            "unprojected": {
+              "p95": 6.324555320336759,
+              "maximum": 6.4031242374328485
+            },
+            "mixed-offset": {
+              "p95": 1.4142135623730951,
+              "maximum": 1.4142135623730951
+            },
+            "mixed-unprojected": {
+              "p95": 6.324555320336759,
+              "maximum": 6.4031242374328485
+            }
+          },
+          "centroids": {
+            "ideal": [
+              175.92233009708738,
+              134.48058252427185
+            ],
+            "black": null,
+            "ssr": [
+              178.4878048780488,
+              132.23170731707316
+            ],
+            "mixed": [
+              177.38251366120218,
+              132.98907103825135
+            ],
+            "box": [
+              177.38251366120218,
+              132.98907103825135
+            ],
+            "unprojected": [
+              179.66225165562915,
+              130.76158940397352
+            ],
+            "offset": [
+              176.04545454545453,
+              133.80113636363637
+            ],
+            "mixed-offset": [
+              176.11797752808988,
+              133.81460674157304
+            ],
+            "mixed-unprojected": [
+              179.6086956521739,
+              131.0310559006211
+            ]
+          },
+          "screenHitErrorPixels": {
+            "samples": 28,
+            "p95": 1.1453351634523272
+          },
+          "visibleReferencePixels": 84,
+          "transitionPixels": 37,
+          "sourceContoursDisagreeWithinSupport": 1
+        },
+        {
+          "pose": 3,
+          "receiver": 0,
+          "edgeDirections": 325,
+          "cornerDirections": 28,
+          "guarded": {
+            "box": [
+              9373,
+              0,
+              0
+            ],
+            "offset": [
+              9368,
+              0,
+              0
+            ],
+            "unprojected": [
+              9389,
+              0,
+              0
+            ],
+            "ssr": [
+              29,
+              0,
+              0
+            ]
+          },
+          "pixels": {
+            "ideal": 202,
+            "box": 185,
+            "offset": 176,
+            "unprojected": 146,
+            "screenVisible": 86,
+            "black": 0,
+            "ssr": 87,
+            "mixed": 185,
+            "mixed-offset": 179,
+            "mixed-unprojected": 159
+          },
+          "idealPixels": 202,
+          "mixedSourceOnlyPixels": {
+            "mixed": 27,
+            "mixed-offset": 0,
+            "mixed-unprojected": 61
+          },
+          "angularErrorP95Degrees": {
+            "box": 8.474368524028453,
+            "offset": 2.929856914460021,
+            "unprojected": 17.123818198334785,
+            "meshReflectionDirection": 0.3329817302159668
+          },
+          "gpuAgainstLookupContourPixels": {
+            "box": {
+              "p95": 1.0,
+              "maximum": 1.0
+            },
+            "offset": {
+              "p95": 1.0,
+              "maximum": 1.0
+            },
+            "unprojected": {
+              "p95": 1.0,
+              "maximum": 1.0
+            }
+          },
+          "againstIdealContourPixels": {
+            "box": {
+              "p95": 2.23606797749979,
+              "maximum": 2.8284271247461903
+            },
+            "offset": {
+              "p95": 1.0,
+              "maximum": 1.4142135623730951
+            },
+            "ssr": {
+              "p95": 6.324555320336759,
+              "maximum": 6.708203932499369
+            },
+            "mixed": {
+              "p95": 2.23606797749979,
+              "maximum": 2.8284271247461903
+            },
+            "unprojected": {
+              "p95": 5.830951894845301,
+              "maximum": 6.4031242374328485
+            },
+            "mixed-offset": {
+              "p95": 1.0,
+              "maximum": 1.4142135623730951
+            },
+            "mixed-unprojected": {
+              "p95": 5.830951894845301,
+              "maximum": 6.4031242374328485
+            }
+          },
+          "centroids": {
+            "ideal": [
+              175.2029702970297,
+              134.490099009901
+            ],
+            "black": null,
+            "ssr": [
+              177.50574712643677,
+              132.20689655172413
+            ],
+            "mixed": [
+              176.67027027027027,
+              133.22702702702702
+            ],
+            "box": [
+              176.67027027027027,
+              133.22702702702702
+            ],
+            "unprojected": [
+              178.97260273972603,
+              130.82191780821918
+            ],
+            "offset": [
+              175.26136363636363,
+              133.91477272727272
+            ],
+            "mixed-offset": [
+              175.39106145251398,
+              133.96648044692736
+            ],
+            "mixed-unprojected": [
+              178.74213836477986,
+              131.0062893081761
+            ]
+          },
+          "screenHitErrorPixels": {
+            "samples": 29,
+            "p95": 1.2744611475476542
+          },
+          "visibleReferencePixels": 86,
+          "transitionPixels": 43,
+          "sourceContoursDisagreeWithinSupport": 0
+        },
+        {
+          "pose": 4,
+          "receiver": 0,
+          "edgeDirections": 319,
+          "cornerDirections": 23,
+          "guarded": {
+            "box": [
+              9378,
+              0,
+              0
+            ],
+            "offset": [
+              9378,
+              0,
+              0
+            ],
+            "unprojected": [
+              9401,
+              0,
+              0
+            ],
+            "ssr": [
+              28,
+              0,
+              0
+            ]
+          },
+          "pixels": {
+            "ideal": 200,
+            "box": 181,
+            "offset": 173,
+            "unprojected": 151,
+            "screenVisible": 91,
+            "black": 0,
+            "ssr": 90,
+            "mixed": 181,
+            "mixed-offset": 176,
+            "mixed-unprojected": 162
+          },
+          "idealPixels": 200,
+          "mixedSourceOnlyPixels": {
+            "mixed": 27,
+            "mixed-offset": 0,
+            "mixed-unprojected": 65
+          },
+          "angularErrorP95Degrees": {
+            "box": 8.646765537460738,
+            "offset": 3.03918305879295,
+            "unprojected": 17.453226909060266,
+            "meshReflectionDirection": 0.35709072732050956
+          },
+          "gpuAgainstLookupContourPixels": {
+            "box": {
+              "p95": 0.0,
+              "maximum": 1.0
+            },
+            "offset": {
+              "p95": 1.0,
+              "maximum": 1.0
+            },
+            "unprojected": {
+              "p95": 1.0,
+              "maximum": 1.0
+            }
+          },
+          "againstIdealContourPixels": {
+            "box": {
+              "p95": 2.23606797749979,
+              "maximum": 2.8284271247461903
+            },
+            "offset": {
+              "p95": 1.0,
+              "maximum": 1.4142135623730951
+            },
+            "ssr": {
+              "p95": 6.4031242374328485,
+              "maximum": 6.4031242374328485
+            },
+            "mixed": {
+              "p95": 2.23606797749979,
+              "maximum": 2.8284271247461903
+            },
+            "unprojected": {
+              "p95": 5.830951894845301,
+              "maximum": 6.324555320336759
+            },
+            "mixed-offset": {
+              "p95": 1.0,
+              "maximum": 1.4142135623730951
+            },
+            "mixed-unprojected": {
+              "p95": 5.656854249492381,
+              "maximum": 5.830951894845301
+            }
+          },
+          "centroids": {
+            "ideal": [
+              174.45,
+              134.59
+            ],
+            "black": null,
+            "ssr": [
+              176.73333333333332,
+              132.54444444444445
+            ],
+            "mixed": [
+              175.96132596685084,
+              133.3038674033149
+            ],
+            "box": [
+              175.96132596685084,
+              133.3038674033149
+            ],
+            "unprojected": [
+              178.3112582781457,
+              131.05960264900662
+            ],
+            "offset": [
+              174.58959537572255,
+              134.09826589595374
+            ],
+            "mixed-offset": [
+              174.7159090909091,
+              134.14204545454547
+            ],
+            "mixed-unprojected": [
+              178.179012345679,
+              131.29012345679013
+            ]
+          },
+          "screenHitErrorPixels": {
+            "samples": 28,
+            "p95": 1.2275319615756668
+          },
+          "visibleReferencePixels": 91,
+          "transitionPixels": 46,
+          "sourceContoursDisagreeWithinSupport": 0
+        },
+        {
+          "pose": 5,
+          "receiver": 0,
+          "edgeDirections": 329,
+          "cornerDirections": 17,
+          "guarded": {
+            "box": [
+              9369,
+              0,
+              0
+            ],
+            "offset": [
+              9367,
+              0,
+              0
+            ],
+            "unprojected": [
+              9385,
+              0,
+              0
+            ],
+            "ssr": [
+              30,
+              0,
+              0
+            ]
+          },
+          "pixels": {
+            "ideal": 199,
+            "box": 182,
+            "offset": 172,
+            "unprojected": 152,
+            "screenVisible": 95,
+            "black": 0,
+            "ssr": 88,
+            "mixed": 182,
+            "mixed-offset": 173,
+            "mixed-unprojected": 165
+          },
+          "idealPixels": 199,
+          "mixedSourceOnlyPixels": {
+            "mixed": 29,
+            "mixed-offset": 0,
+            "mixed-unprojected": 68
+          },
+          "angularErrorP95Degrees": {
+            "box": 8.792955142793007,
+            "offset": 3.090848567426821,
+            "unprojected": 17.682772279568624,
+            "meshReflectionDirection": 0.36834962549688577
+          },
+          "gpuAgainstLookupContourPixels": {
+            "box": {
+              "p95": 1.0,
+              "maximum": 1.0
+            },
+            "offset": {
+              "p95": 1.0,
+              "maximum": 1.0
+            },
+            "unprojected": {
+              "p95": 1.0,
+              "maximum": 1.0
+            }
+          },
+          "againstIdealContourPixels": {
+            "box": {
+              "p95": 2.23606797749979,
+              "maximum": 2.8284271247461903
+            },
+            "offset": {
+              "p95": 1.4142135623730951,
+              "maximum": 1.4142135623730951
+            },
+            "ssr": {
+              "p95": 5.830951894845301,
+              "maximum": 6.4031242374328485
+            },
+            "mixed": {
+              "p95": 2.23606797749979,
+              "maximum": 2.8284271247461903
+            },
+            "unprojected": {
+              "p95": 5.830951894845301,
+              "maximum": 6.324555320336759
+            },
+            "mixed-offset": {
+              "p95": 1.4142135623730951,
+              "maximum": 1.4142135623730951
+            },
+            "mixed-unprojected": {
+              "p95": 5.656854249492381,
+              "maximum": 5.830951894845301
+            }
+          },
+          "centroids": {
+            "ideal": [
+              173.57788944723617,
+              134.6532663316583
+            ],
+            "black": null,
+            "ssr": [
+              175.6931818181818,
+              132.39772727272728
+            ],
+            "mixed": [
+              175.17582417582418,
+              133.3846153846154
+            ],
+            "box": [
+              175.17582417582418,
+              133.3846153846154
+            ],
+            "unprojected": [
+              177.67105263157896,
+              131.1578947368421
+            ],
+            "offset": [
+              173.94767441860466,
+              134.1453488372093
+            ],
+            "mixed-offset": [
+              173.98843930635837,
+              134.17341040462426
+            ],
+            "mixed-unprojected": [
+              177.35757575757575,
+              131.29090909090908
+            ]
+          },
+          "screenHitErrorPixels": {
+            "samples": 30,
+            "p95": 1.0037661110765026
+          },
+          "visibleReferencePixels": 95,
+          "transitionPixels": 34,
+          "sourceContoursDisagreeWithinSupport": 1
+        },
+        {
+          "pose": 6,
+          "receiver": 0,
+          "edgeDirections": 317,
+          "cornerDirections": 25,
+          "guarded": {
+            "box": [
+              9346,
+              0,
+              0
+            ],
+            "offset": [
+              9346,
+              0,
+              0
+            ],
+            "unprojected": [
+              9359,
+              0,
+              0
+            ],
+            "ssr": [
+              34,
+              0,
+              0
+            ]
+          },
+          "pixels": {
+            "ideal": 197,
+            "box": 178,
+            "offset": 172,
+            "unprojected": 146,
+            "screenVisible": 96,
+            "black": 0,
+            "ssr": 97,
+            "mixed": 178,
+            "mixed-offset": 173,
+            "mixed-unprojected": 165
+          },
+          "idealPixels": 197,
+          "mixedSourceOnlyPixels": {
+            "mixed": 27,
+            "mixed-offset": 0,
+            "mixed-unprojected": 66
+          },
+          "angularErrorP95Degrees": {
+            "box": 8.852549535546363,
+            "offset": 3.194348839256729,
+            "unprojected": 17.97068675518266,
+            "meshReflectionDirection": 0.391551008711469
+          },
+          "gpuAgainstLookupContourPixels": {
+            "box": {
+              "p95": 0.0,
+              "maximum": 1.0
+            },
+            "offset": {
+              "p95": 1.0,
+              "maximum": 1.0
+            },
+            "unprojected": {
+              "p95": 0.0,
+              "maximum": 0.0
+            }
+          },
+          "againstIdealContourPixels": {
+            "box": {
+              "p95": 2.8284271247461903,
+              "maximum": 2.8284271247461903
+            },
+            "offset": {
+              "p95": 1.4142135623730951,
+              "maximum": 1.4142135623730951
+            },
+            "ssr": {
+              "p95": 5.830951894845301,
+              "maximum": 6.324555320336759
+            },
+            "mixed": {
+              "p95": 2.8284271247461903,
+              "maximum": 2.8284271247461903
+            },
+            "unprojected": {
+              "p95": 6.4031242374328485,
+              "maximum": 6.4031242374328485
+            },
+            "mixed-offset": {
+              "p95": 1.4142135623730951,
+              "maximum": 1.4142135623730951
+            },
+            "mixed-unprojected": {
+              "p95": 5.385164807134504,
+              "maximum": 6.324555320336759
+            }
+          },
+          "centroids": {
+            "ideal": [
+              172.85279187817258,
+              134.72081218274113
+            ],
+            "black": null,
+            "ssr": [
+              175.02061855670104,
+              132.95876288659792
+            ],
+            "mixed": [
+              174.48314606741573,
+              133.52247191011236
+            ],
+            "box": [
+              174.48314606741573,
+              133.52247191011236
+            ],
+            "unprojected": [
+              177.1027397260274,
+              131.3082191780822
+            ],
+            "offset": [
+              173.27325581395348,
+              134.3081395348837
+            ],
+            "mixed-offset": [
+              173.3121387283237,
+              134.34104046242774
+            ],
+            "mixed-unprojected": [
+              176.66060606060606,
+              131.5878787878788
+            ]
+          },
+          "screenHitErrorPixels": {
+            "samples": 34,
+            "p95": 1.248942538804863
+          },
+          "visibleReferencePixels": 96,
+          "transitionPixels": 42,
+          "sourceContoursDisagreeWithinSupport": 0
+        },
+        {
+          "pose": 7,
+          "receiver": 0,
+          "edgeDirections": 319,
+          "cornerDirections": 21,
+          "guarded": {
+            "box": [
+              9307,
+              0,
+              0
+            ],
+            "offset": [
+              9306,
+              0,
+              0
+            ],
+            "unprojected": [
+              9320,
+              0,
+              0
+            ],
+            "ssr": [
+              38,
+              0,
+              0
+            ]
+          },
+          "pixels": {
+            "ideal": 195,
+            "box": 179,
+            "offset": 167,
+            "unprojected": 149,
+            "screenVisible": 101,
+            "black": 0,
+            "ssr": 96,
+            "mixed": 179,
+            "mixed-offset": 167,
+            "mixed-unprojected": 170
+          },
+          "idealPixels": 195,
+          "mixedSourceOnlyPixels": {
+            "mixed": 30,
+            "mixed-offset": 0,
+            "mixed-unprojected": 69
+          },
+          "angularErrorP95Degrees": {
+            "box": 9.07432313629,
+            "offset": 3.2481348394045813,
+            "unprojected": 18.29355140119986,
+            "meshReflectionDirection": 0.4089931723845048
+          },
+          "gpuAgainstLookupContourPixels": {
+            "box": {
+              "p95": 1.0,
+              "maximum": 1.0
+            },
+            "offset": {
+              "p95": 1.0,
+              "maximum": 1.0
+            },
+            "unprojected": {
+              "p95": 1.0,
+              "maximum": 1.0
+            }
+          },
+          "againstIdealContourPixels": {
+            "box": {
+              "p95": 2.23606797749979,
+              "maximum": 2.8284271247461903
+            },
+            "offset": {
+              "p95": 1.4142135623730951,
+              "maximum": 1.4142135623730951
+            },
+            "ssr": {
+              "p95": 5.385164807134504,
+              "maximum": 5.830951894845301
+            },
+            "mixed": {
+              "p95": 2.23606797749979,
+              "maximum": 2.8284271247461903
+            },
+            "unprojected": {
+              "p95": 5.830951894845301,
+              "maximum": 6.4031242374328485
+            },
+            "mixed-offset": {
+              "p95": 1.4142135623730951,
+              "maximum": 1.4142135623730951
+            },
+            "mixed-unprojected": {
+              "p95": 5.0990195135927845,
+              "maximum": 5.656854249492381
+            }
+          },
+          "centroids": {
+            "ideal": [
+              172.23076923076923,
+              134.86666666666667
+            ],
+            "black": null,
+            "ssr": [
+              174.1875,
+              133.10416666666666
+            ],
+            "mixed": [
+              173.81564245810057,
+              133.54748603351956
+            ],
+            "box": [
+              173.81564245810057,
+              133.54748603351956
+            ],
+            "unprojected": [
+              176.38926174496643,
+              131.4228187919463
+            ],
+            "offset": [
+              172.5568862275449,
+              134.35928143712576
+            ],
+            "mixed-offset": [
+              172.5568862275449,
+              134.35928143712576
+            ],
+            "mixed-unprojected": [
+              175.93529411764706,
+              131.75882352941176
+            ]
+          },
+          "screenHitErrorPixels": {
+            "samples": 38,
+            "p95": 1.2295992718629558
+          },
+          "visibleReferencePixels": 101,
+          "transitionPixels": 36,
+          "sourceContoursDisagreeWithinSupport": 0
+        },
+        {
+          "pose": 8,
+          "receiver": 0,
+          "edgeDirections": 321,
+          "cornerDirections": 23,
+          "guarded": {
+            "box": [
+              9247,
+              0,
+              0
+            ],
+            "offset": [
+              9247,
+              0,
+              0
+            ],
+            "unprojected": [
+              9260,
+              0,
+              0
+            ],
+            "ssr": [
+              38,
+              0,
+              0
+            ]
+          },
+          "pixels": {
+            "ideal": 194,
+            "box": 175,
+            "offset": 168,
+            "unprojected": 145,
+            "screenVisible": 103,
+            "black": 0,
+            "ssr": 96,
+            "mixed": 175,
+            "mixed-offset": 168,
+            "mixed-unprojected": 169
+          },
+          "idealPixels": 194,
+          "mixedSourceOnlyPixels": {
+            "mixed": 30,
+            "mixed-offset": 1,
+            "mixed-unprojected": 71
+          },
+          "angularErrorP95Degrees": {
+            "box": 9.23620955593866,
+            "offset": 3.3821567952010616,
+            "unprojected": 18.51425306547025,
+            "meshReflectionDirection": 0.41758815337703803
+          },
+          "gpuAgainstLookupContourPixels": {
+            "box": {
+              "p95": 1.0,
+              "maximum": 1.0
+            },
+            "offset": {
+              "p95": 1.0,
+              "maximum": 1.0
+            },
+            "unprojected": {
+              "p95": 0.0,
+              "maximum": 1.0
+            }
+          },
+          "againstIdealContourPixels": {
+            "box": {
+              "p95": 2.8284271247461903,
+              "maximum": 2.8284271247461903
+            },
+            "offset": {
+              "p95": 1.4142135623730951,
+              "maximum": 1.4142135623730951
+            },
+            "ssr": {
+              "p95": 5.656854249492381,
+              "maximum": 5.830951894845301
+            },
+            "mixed": {
+              "p95": 2.8284271247461903,
+              "maximum": 2.8284271247461903
+            },
+            "unprojected": {
+              "p95": 6.0,
+              "maximum": 6.324555320336759
+            },
+            "mixed-offset": {
+              "p95": 1.4142135623730951,
+              "maximum": 1.4142135623730951
+            },
+            "mixed-unprojected": {
+              "p95": 5.656854249492381,
+              "maximum": 5.830951894845301
+            }
+          },
+          "centroids": {
+            "ideal": [
+              171.53608247422682,
+              134.98453608247422
+            ],
+            "black": null,
+            "ssr": [
+              173.59375,
+              133.375
+            ],
+            "mixed": [
+              173.1942857142857,
+              133.6342857142857
+            ],
+            "box": [
+              173.1942857142857,
+              133.6342857142857
+            ],
+            "unprojected": [
+              175.9241379310345,
+              131.58620689655172
+            ],
+            "offset": [
+              172,
+              134.5
+            ],
+            "mixed-offset": [
+              172,
+              134.5
+            ],
+            "mixed-unprojected": [
+              175.3846153846154,
+              131.9171597633136
+            ]
+          },
+          "screenHitErrorPixels": {
+            "samples": 38,
+            "p95": 0.808703209805708
+          },
+          "visibleReferencePixels": 103,
+          "transitionPixels": 34,
+          "sourceContoursDisagreeWithinSupport": 1
+        }
+      ],
+      "centroidMotionPixels": {
+        "ideal": {
+          "maxStep": 0.8907952495432966,
+          "maxStepChange": 0.14707525850035627
+        },
+        "box": {
+          "maxStep": 0.7965152528279462,
+          "maxStepChange": 0.21040127339299505
+        },
+        "unprojected": {
+          "maxStep": 0.7659420834814185,
+          "maxStepChange": 0.25310098608889897
+        },
+        "offset": {
+          "maxStep": 0.857954545454561,
+          "maxStepChange": 0.4755524735507256
+        },
+        "ssr": {
+          "maxStep": 1.1214898093274237,
+          "maxStepChange": 0.7975181062170371
+        },
+        "mixed": {
+          "maxStep": 0.7965152528279462,
+          "maxStepChange": 0.21040127339299505
+        },
+        "mixed-offset": {
+          "maxStep": 0.8602112464162895,
+          "maxStepChange": 0.3114244112708736
+        },
+        "mixed-unprojected": {
+          "maxStep": 0.8669111352595852,
+          "maxStepChange": 0.43278742121301716
+        }
+      }
+    }
+  },
+  "parity": [
+    {
+      "pose": 0,
+      "mode": "black",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 0,
+      "mode": "ssr",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 0,
+      "mode": "mixed",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 0,
+      "mode": "box",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 0,
+      "mode": "unprojected",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 0,
+      "mode": "offset",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 0,
+      "mode": "mixed-offset",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 0,
+      "mode": "mixed-unprojected",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 1,
+      "mode": "black",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 1,
+      "mode": "ssr",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 1,
+      "mode": "mixed",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 1,
+      "mode": "box",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 1,
+      "mode": "unprojected",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 1,
+      "mode": "offset",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 1,
+      "mode": "mixed-offset",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 1,
+      "mode": "mixed-unprojected",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 2,
+      "mode": "black",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 2,
+      "mode": "ssr",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 2,
+      "mode": "mixed",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 2,
+      "mode": "box",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 2,
+      "mode": "unprojected",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 2,
+      "mode": "offset",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 2,
+      "mode": "mixed-offset",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 2,
+      "mode": "mixed-unprojected",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 3,
+      "mode": "black",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 3,
+      "mode": "ssr",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 3,
+      "mode": "mixed",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 3,
+      "mode": "box",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 3,
+      "mode": "unprojected",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 3,
+      "mode": "offset",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 3,
+      "mode": "mixed-offset",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 3,
+      "mode": "mixed-unprojected",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 4,
+      "mode": "black",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 4,
+      "mode": "ssr",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 4,
+      "mode": "mixed",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 4,
+      "mode": "box",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 4,
+      "mode": "unprojected",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 4,
+      "mode": "offset",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 4,
+      "mode": "mixed-offset",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 4,
+      "mode": "mixed-unprojected",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 5,
+      "mode": "black",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 5,
+      "mode": "ssr",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 5,
+      "mode": "mixed",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 5,
+      "mode": "box",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 5,
+      "mode": "unprojected",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 5,
+      "mode": "offset",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 5,
+      "mode": "mixed-offset",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 5,
+      "mode": "mixed-unprojected",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 6,
+      "mode": "black",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 6,
+      "mode": "ssr",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 6,
+      "mode": "mixed",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 6,
+      "mode": "box",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 6,
+      "mode": "unprojected",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 6,
+      "mode": "offset",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 6,
+      "mode": "mixed-offset",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 6,
+      "mode": "mixed-unprojected",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 7,
+      "mode": "black",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 7,
+      "mode": "ssr",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 7,
+      "mode": "mixed",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 7,
+      "mode": "box",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 7,
+      "mode": "unprojected",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 7,
+      "mode": "offset",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 7,
+      "mode": "mixed-offset",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 7,
+      "mode": "mixed-unprojected",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 8,
+      "mode": "black",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 8,
+      "mode": "ssr",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 8,
+      "mode": "mixed",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 8,
+      "mode": "box",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 8,
+      "mode": "unprojected",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 8,
+      "mode": "offset",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 8,
+      "mode": "mixed-offset",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    },
+    {
+      "pose": 8,
+      "mode": "mixed-unprojected",
+      "rgbP99": 5.960464477539063e-08,
+      "idDifferences": 0
+    }
+  ]
+}

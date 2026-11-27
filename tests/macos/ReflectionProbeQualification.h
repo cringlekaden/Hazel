@@ -2,6 +2,7 @@
 
 #include "Renderer3DParity.h"
 #include "ScreenReflectionQualification.h"
+#include "ReflectionSphereQualification.h"
 #include "Hazel/Core/FileDocument.h"
 #include "Hazel/Renderer/Scene/ReflectionProbeCapture.h"
 #include <thread>
@@ -112,6 +113,14 @@ inline void ReflectionProbeQualification(const std::filesystem::path &output,
     std::filesystem::create_directories(output);
     const auto project = Project::LoadCandidate(FileSystem::GetEnvironmentPath("HAZEL_RENDERING_REFERENCE_PROJECT"));
     auto assets = CreateRef<ProjectAssets>(project->GetAssetRoot());
+    if (const auto workspace=FileSystem::GetEnvironmentPath("HAZEL_REFLECTION_WORKSPACE"); !workspace.empty()) {
+        ReflectionSphereStudy::RunWorkspace(output,assets,workspace,capture);
+        return;
+    }
+    if (const auto spheres=FileSystem::GetEnvironmentPath("HAZEL_REFLECTION_SPHERES"); !spheres.empty()) {
+        ReflectionSphereStudy::Run(output,assets,capture,spheres=="capture");
+        return;
+    }
     if (!FileSystem::GetEnvironmentPath("HAZEL_SSR_GALLERY").empty()) {
         ScreenReflectionQualification(output,project,assets,capture);
         return;

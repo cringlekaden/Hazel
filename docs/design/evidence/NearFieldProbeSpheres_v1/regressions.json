@@ -1,0 +1,76 @@
+{
+  "Release": {
+    "ssr": {
+      "status": "PASS focused native SSR gallery",
+      "checks": {
+        "metal": [
+          "SSR_ORACLE ortho=0 expected=1946 found=1946 missedWall=11794 falseHit=0",
+          "SSR_DISOCCLUSION compared=2350 maxStaleRed=0",
+          "SSR_ORACLE ortho=1 expected=3816 found=3816 missedWall=12060 falseHit=0",
+          "SSR_EDGE rows=59 maxEdgeRatio=0.0787324",
+          "SSR_COMPOSITE changed=39639 preserved=127922 probeSensitive=23575",
+          "SSR_LIFETIME queue=3 reset=pass resize=pass",
+          "SSR_GALLERY poses=17 ID/depth=pass deterministic=pass resize=pass AO/TAA=pass"
+        ],
+        "opengl": [
+          "SSR_ORACLE ortho=0 expected=1946 found=1927 missedWall=11794 falseHit=0",
+          "SSR_ORACLE ortho=1 expected=3816 found=3816 missedWall=12060 falseHit=0",
+          "SSR_EDGE rows=59 maxEdgeRatio=0.0787325",
+          "SSR_COMPOSITE changed=39315 preserved=128274 probeSensitive=23498",
+          "SSR_GALLERY poses=17 ID/depth=pass deterministic=pass resize=pass"
+        ]
+      }
+    },
+    "probe": {
+      "status": "PASS focused native reflection probes",
+      "checks": {
+        "metal": [
+          "REFLECTION_REFERENCE samples=175560 overlap=41160 residual=130192 faces=63 radiance=0.000101215 energy=4.91462e-05 diffuse=0",
+          "REFLECTION_CAPTURED_TEMPORAL AO/TAA=pass invalidation=pass",
+          "REFLECTION_GALLERY poses=1 matchedAuthoring=pass coverage=pass exposure=0.1"
+        ],
+        "opengl": [
+          "REFLECTION_REFERENCE samples=175560 overlap=41160 residual=130192 faces=63 radiance=0.000101185 energy=4.91313e-05 diffuse=0",
+          "REFLECTION_GALLERY poses=1 matchedAuthoring=pass coverage=pass exposure=0.1"
+        ]
+      }
+    }
+  },
+  "Debug": {
+    "ssr": {
+      "status": "PASS focused native SSR gallery",
+      "checks": {
+        "metal": [
+          "SSR_ORACLE ortho=0 expected=1946 found=1946 missedWall=11794 falseHit=0",
+          "SSR_DISOCCLUSION compared=2350 maxStaleRed=0",
+          "SSR_ORACLE ortho=1 expected=3816 found=3816 missedWall=12060 falseHit=0",
+          "SSR_EDGE rows=59 maxEdgeRatio=0.0787324",
+          "SSR_COMPOSITE changed=39639 preserved=127922 probeSensitive=23575",
+          "SSR_LIFETIME queue=3 reset=pass resize=pass",
+          "SSR_GALLERY poses=17 ID/depth=pass deterministic=pass resize=pass AO/TAA=pass"
+        ],
+        "opengl": [
+          "SSR_ORACLE ortho=0 expected=1946 found=1927 missedWall=11794 falseHit=0",
+          "SSR_ORACLE ortho=1 expected=3816 found=3816 missedWall=12060 falseHit=0",
+          "SSR_EDGE rows=59 maxEdgeRatio=0.0787325",
+          "SSR_COMPOSITE changed=39315 preserved=128274 probeSensitive=23498",
+          "SSR_GALLERY poses=17 ID/depth=pass deterministic=pass resize=pass"
+        ]
+      }
+    },
+    "probe": {
+      "status": "PASS focused native reflection probes",
+      "checks": {
+        "metal": [
+          "REFLECTION_REFERENCE samples=175560 overlap=41160 residual=130192 faces=63 radiance=0.000101215 energy=4.91462e-05 diffuse=0",
+          "REFLECTION_CAPTURED_TEMPORAL AO/TAA=pass invalidation=pass",
+          "REFLECTION_GALLERY poses=1 matchedAuthoring=pass coverage=pass exposure=0.1"
+        ],
+        "opengl": [
+          "REFLECTION_REFERENCE samples=175560 overlap=41160 residual=130192 faces=63 radiance=0.000101185 energy=4.91313e-05 diffuse=0",
+          "REFLECTION_GALLERY poses=1 matchedAuthoring=pass coverage=pass exposure=0.1"
+        ]
+      }
+    }
+  }
+}
