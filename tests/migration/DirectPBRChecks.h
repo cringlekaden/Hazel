@@ -146,13 +146,13 @@ static void DirectPBRChecks()
     material->BaseColor = {.18f, .4f, .7f, 1};
     for (float ev : {-2.f, 0.f, 2.f})
     {
-        frame.Presentation.Exposure = ev;
+        frame.Presentation.Exposure.CompensationStops = ev;
         render();
         NearRGB(display->ReadColorPixel(0, 64, 64),
                 OracleNeutral(glm::dvec3(material->BaseColor) * double(std::exp2(ev))), .001,
                 "Unlit world exposure/tone");
     }
-    frame.Presentation.Exposure = 0;
+    frame.Presentation.Exposure.CompensationStops = 0;
     render();
     auto covered = display->ReadColorPixel(0, 64, 64);
     material->Alpha = MaterialAlpha::Mask;
@@ -186,7 +186,7 @@ static void DirectPBRChecks()
     FileSystem::WriteNewFile(fixture.Directory / "Normal.tga", tga);
     material->Model = MaterialModel::MetallicRoughness;
     material->Textures[2].Image = "Normal.tga";
-    frame.Presentation.Exposure = 0;
+    frame.Presentation.Exposure.CompensationStops = 0;
     frame.Light = SubmittedDirectional{glm::normalize(glm::vec3(.2f, -.4f, 1)), glm::vec3(2)};
     for (float mirror : {1.f, -1.f})
     {
@@ -360,7 +360,7 @@ static void DirectPBRChecks()
     material->BaseColor = glm::vec4(1);
     material->Textures[0].Image = "Asymmetric.tga";
     material->Textures[0].Min = material->Textures[0].Mag = TextureFilter::Nearest;
-    frame.Presentation.Exposure = 0;
+    frame.Presentation.Exposure.CompensationStops = 0;
     render();
     auto topLeft = view.Radiance->ReadColorPixel(0, 48, 80),
          bottomLeft = view.Radiance->ReadColorPixel(0, 48, 48),
@@ -383,7 +383,7 @@ static void DirectPBRChecks()
     };
     for (float ev : {-8.f, 8.f})
     {
-        frame.Presentation.Exposure = ev;
+        frame.Presentation.Exposure.CompensationStops = ev;
         render(ui);
         NearRGB(display->ReadColorPixel(0, 64, 64), {.25, .5, .75}, .001,
                 "UI brightness coupled to world exposure");
@@ -485,7 +485,7 @@ static void DirectPBRChecks()
     // Scene-owned presentation still applies when a UI-only runtime has no world camera.
     auto uiOnly = CreateRef<Scene>();
     uiOnly->Presentation().SceneReferred = true;
-    uiOnly->Presentation().Exposure = 2;
+    uiOnly->Presentation().Exposure.CompensationStops = 2;
     uiOnly->Presentation().Background = {.1f, .2f, .3f, 1};
     RuntimeSession uiSession;
     uiSession.Resize(128, 128);

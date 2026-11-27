@@ -149,7 +149,7 @@ inline void ReflectionProbeQualification(const std::filesystem::path &output,
         // The second capture changes presentation and removes all usable probe
         // inputs. HDR source pixels must be independent of those view settings.
         auto snapshot = Scene::CopyForAuthoring(scene);
-        snapshot->Presentation().Exposure = -8;
+        snapshot->Presentation().Exposure.CompensationStops = -8;
         snapshot->Presentation().AmbientOcclusion.Enabled = true;
         snapshot->Presentation().TemporalAA = true;
         for (auto handle : snapshot->GetAllEntitiesWith<ReflectionProbeComponent>())
@@ -575,7 +575,7 @@ inline void ReflectionProbeQualification(const std::filesystem::path &output,
             }
         }
         std::cout << "REFLECTION_GALLERY poses=" << poses
-                  << " matchedAuthoring=pass coverage=pass exposure=" << roundTrip->Presentation().Exposure << '\n';
+                  << " matchedAuthoring=pass coverage=pass exposure=" << roundTrip->Presentation().Exposure.CompensationStops << '\n';
         return;
     }
 

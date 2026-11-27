@@ -1,4 +1,5 @@
 #pragma once
+#include "Hazel/Renderer/Cameras/CameraExposure.h"
 #include "Hazel/Renderer/Scene/Lighting.h"
 #include "Hazel/Renderer/Scene/ReflectionProbe.h"
 #include "Hazel/UI/Dropdown.h"
@@ -127,6 +128,7 @@ namespace Hazel {
 	struct CameraComponent
 	{
 		SceneCamera Camera;
+		std::optional<CameraExposure> ExposureOverride;
 		bool Primary = true; // TODO: think about moving to Scene
 		bool FixedAspectRatio = false;
 

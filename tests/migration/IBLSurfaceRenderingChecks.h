@@ -27,7 +27,7 @@ static void IBLSurfaceRenderingChecks(SceneSubmission frame, SubmittedMesh draw,
     frame.Presentation.Environment.Background = false;
     frame.Presentation.Environment.Yaw = 0;
     frame.Presentation.Environment.Gain = 1;
-    frame.Presentation.Exposure = 0;
+    frame.Presentation.Exposure.CompensationStops = 0;
     frame.Debug = SurfaceView::SpecularIBL;
     frame.LinearLightingInspection = true;
     auto spec = display->GetSpecification();

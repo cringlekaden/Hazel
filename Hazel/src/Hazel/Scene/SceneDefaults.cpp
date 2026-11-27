@@ -5,6 +5,7 @@
 #include "Hazel/Project/ScriptSource.h"
 #include "Hazel/Assets/AssetData.h"
 #include <cmath>
+#include <type_traits>
 namespace Hazel {
 void SceneEnvironment::Validate() const {
     AssetPath(Asset,".henv",true);
@@ -55,10 +56,9 @@ void ScenePresentation::Validate() const {
     if(TemporalAA && !SceneReferred)throw std::runtime_error("TAA requires scene-referred HDR presentation");
     if(!Environment.Asset.empty() && !SceneReferred)
         throw std::runtime_error("Prepared image environments require scene-referred presentation; unlit 2D remains independent");
-    if (!std::isfinite(Exposure) || Exposure < -16 || Exposure > 16 ||
-        (!SceneReferred && Exposure != 0))
-        throw std::runtime_error(
-            "Exposure requires scene-referred presentation and [-16,16] stops");
+    Exposure.Validate();
+    if (!SceneReferred && !(Exposure == CameraExposure{}))
+        throw std::runtime_error("Camera exposure requires scene-referred presentation");
     if(Background.a!=1)throw std::runtime_error("Scene background must be opaque; transparent scene output is unsupported");
     for(int i=0;i<4;++i) if(!std::isfinite(Background[i]) || Background[i]<0 || Background[i]>1)
         throw std::runtime_error("Scene background requires linear RGB/alpha in [0,1]");
@@ -71,15 +71,81 @@ NewSceneDefaults DirectDefaults()
     d.Perspective = true;
     d.Navigation = EditorNavigation::Orbit;
     d.Presentation.SceneReferred = true;
+    d.Presentation.Exposure.Mode = ExposureMode::Automatic;
     d.Presentation.Environment.Asset="Native/Environment_v1/Neutral.henv";
     return d;
+}
+YAML::Node EncodeExposure(const CameraExposure& value)
+{
+    value.Validate();
+    const char* metering[] = {"Average", "CenterWeighted", "Spot"};
+    YAML::Node n;
+    n["Version"] = 1;
+    n["Mode"] = value.Mode == ExposureMode::Automatic ? "Automatic" : "ManualPhysical";
+    n["CompensationStops"] = value.CompensationStops;
+    // Retain explicitly tuned metering settings through a manual shot.
+    if (value.Mode == ExposureMode::Automatic ||
+        !(value == CameraExposure{ExposureMode::ManualPhysical, value.CompensationStops})) {
+        n["Metering"] = metering[unsigned(value.Metering)];
+        n["LowPercentile"] = value.LowPercentile;
+        n["HighPercentile"] = value.HighPercentile;
+        n["SpotCenter"] = std::vector<float>{value.SpotCenter.x, value.SpotCenter.y};
+        n["SpotCenter"].SetStyle(YAML::EmitterStyle::Flow);
+        n["SpotRadius"] = value.SpotRadius;
+        n["IncludeSky"] = value.IncludeSky;
+        n["MinGainStops"] = value.MinGainStops;
+        n["MaxGainStops"] = value.MaxGainStops;
+        n["BrighteningRate"] = value.BrighteningRate;
+        n["DarkeningRate"] = value.DarkeningRate;
+        n["Locked"] = value.Locked;
+    }
+    return n;
+}
+CameraExposure ReadExposure(const YAML::Node& n)
+{
+    DocumentSchema::Keys(n, {"Version", "Mode", "CompensationStops", "Metering", "LowPercentile",
+        "HighPercentile", "SpotCenter", "SpotRadius", "IncludeSky", "MinGainStops", "MaxGainStops",
+        "BrighteningRate", "DarkeningRate", "Locked"}, "CameraExposure");
+    if (n["Version"].as<unsigned>() != 1)
+        throw std::runtime_error("Unsupported camera exposure version");
+    CameraExposure value;
+    const auto mode = n["Mode"].as<std::string>();
+    if (mode == "Automatic") value.Mode = ExposureMode::Automatic;
+    else if (mode != "ManualPhysical") throw std::runtime_error("Unknown camera exposure mode");
+    value.CompensationStops = n["CompensationStops"].as<float>();
+    if (const auto metering = n["Metering"]) {
+        const auto name = metering.as<std::string>();
+        if (name == "Average") value.Metering = ExposureMetering::Average;
+        else if (name == "Spot") value.Metering = ExposureMetering::Spot;
+        else if (name != "CenterWeighted") throw std::runtime_error("Unknown camera exposure metering");
+    }
+    if (const auto center = n["SpotCenter"]) {
+        if (!center.IsSequence() || center.size() != 2)
+            throw std::runtime_error("Camera exposure SpotCenter requires two normalized coordinates");
+        value.SpotCenter = {center[0].as<float>(), center[1].as<float>()};
+    }
+    const auto readOptional = [&](const char* key, auto& field) {
+        if (const auto property = n[key])
+            field = property.as<std::decay_t<decltype(field)>>();
+    };
+    readOptional("LowPercentile", value.LowPercentile);
+    readOptional("HighPercentile", value.HighPercentile);
+    readOptional("SpotRadius", value.SpotRadius);
+    readOptional("IncludeSky", value.IncludeSky);
+    readOptional("MinGainStops", value.MinGainStops);
+    readOptional("MaxGainStops", value.MaxGainStops);
+    readOptional("BrighteningRate", value.BrighteningRate);
+    readOptional("DarkeningRate", value.DarkeningRate);
+    readOptional("Locked", value.Locked);
+    value.Validate();
+    return value;
 }
 YAML::Node Encode(const ScenePresentation& value) {
     value.Validate();
     YAML::Node n;
     n["Mode"] = value.SceneReferred ? "SceneReferred" : "DisplayReferred";
     if (value.SceneReferred)
-        n["Exposure"] = value.Exposure;
+        n["CameraExposure"] = EncodeExposure(value.Exposure);
     if(value.TemporalAA)n["TemporalAA"]=true;
     n["Background"]=std::vector<float>{value.Background.r,value.Background.g,value.Background.b,value.Background.a};
     n["Background"].SetStyle(YAML::EmitterStyle::Flow);
@@ -113,18 +179,24 @@ YAML::Node Encode(const ScenePresentation& value) {
     return n;
 }
 ScenePresentation ReadPresentation(const YAML::Node& n) {
-    DocumentSchema::Keys(n, {"Mode", "Background", "Exposure", "Environment", "AmbientOcclusion", "TemporalAA", "Shadows", "ScreenReflections", "Bloom"}, "Presentation");
+    DocumentSchema::Keys(n, {"Mode", "Background", "Exposure", "CameraExposure", "Environment", "AmbientOcclusion", "TemporalAA", "Shadows", "ScreenReflections", "Bloom"}, "Presentation");
     const auto mode = n["Mode"].as<std::string>();
     if (mode != "DisplayReferred" && mode != "SceneReferred")
         throw std::runtime_error("Unknown world presentation");
-    if (mode == "DisplayReferred" && n["Exposure"])
-        throw std::runtime_error("Display-referred presentation has no exposure field");
+    const auto camera = n["CameraExposure"];
+    const auto legacy = n["Exposure"];
+    if (mode == "DisplayReferred" && (camera || legacy))
+        throw std::runtime_error("Display-referred presentation has no camera exposure");
+    if (camera && legacy)
+        throw std::runtime_error("Presentation cannot contain both CameraExposure and the legacy Exposure field");
     auto c=n["Background"]; if(!c.IsSequence() || c.size()!=4)throw std::runtime_error("Background requires four linear RGBA values");
     ScenePresentation result;
     result.SceneReferred = mode == "SceneReferred";
     if(n["TemporalAA"])result.TemporalAA=n["TemporalAA"].as<bool>();
-    if (result.SceneReferred)
-        result.Exposure = n["Exposure"].as<float>();
+    if (camera)
+        result.Exposure = ReadExposure(camera);
+    else if (result.SceneReferred)
+        result.Exposure.CompensationStops = legacy.as<float>();
     for (int i = 0; i < 4; ++i)
         result.Background[i] = c[i].as<float>();
     if(auto e=n["Environment"]) {

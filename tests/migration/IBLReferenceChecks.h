@@ -31,7 +31,7 @@ static void IBLReferenceChecks()
         auto state = SceneSerializer(authored).CaptureAuthoredState();
         auto &env = authored->Presentation().Environment;
         Check(env.Yaw == entry["Yaw"].as<float>() && env.Gain == entry["Gain"].as<float>() &&
-                  authored->Presentation().Exposure == 0,
+                  authored->Presentation().Exposure.CompensationStops == 0,
               "Frozen environment instance/exposure changed");
         for (unsigned scale : {1u, 2u})
         {

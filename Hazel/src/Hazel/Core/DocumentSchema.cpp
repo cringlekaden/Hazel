@@ -150,7 +150,8 @@ bool Scene(const YAML::Node& root, bool prefabDocument)
         else legacy = true; // documented identity transform
         if (auto n = entity["CameraComponent"])
         {
-            Keys(n, {"Camera", "Primary", "FixedAspectRatio"}, "CameraComponent");
+            Keys(n, {"Camera", "Primary", "FixedAspectRatio", "CameraExposure"}, "CameraComponent");
+            if (const auto exposure = n["CameraExposure"]) SceneDefaults::ReadExposure(exposure);
             auto camera = n["Camera"];
             Keys(camera, {"ProjectionType", "PerspectiveFOV", "PerspectiveNear", "PerspectiveFar",
                           "OrthographicSize", "OrthographicNear", "OrthographicFar", "PhysicalLens"}, "Camera");

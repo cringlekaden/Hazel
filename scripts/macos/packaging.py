@@ -60,7 +60,7 @@ def package(app, project, destination, archive_name=None):
     from macos.metal_shaders import produce
     shaders = hz.ROOT/'build/metal-shaders/Release'
     produced = produce('Release', shaders)
-    artifacts = [shaders/(name+('.metallib' if name in ('ImGui','XeGTAO','TemporalAA','LocalLightCull') else '.hzmetal')) for name in produced]
+    artifacts = [shaders/(name+('.metallib' if name in ('ImGui','XeGTAO','TemporalAA','LocalLightCull','ExposureMeter') else '.hzmetal')) for name in produced]
     for name in (('Hazelnut','Nutella') if app=='all' else (app,)):
         tag=f'{archive_name or name}-macos-arm64-Release'
         with tempfile.TemporaryDirectory(prefix='.package-',dir=destination) as temporary:
@@ -76,6 +76,7 @@ def package(app, project, destination, archive_name=None):
                 hz.copy_changed(shader,resources/'shaders/metal'/shader.name)
             (resources/'shaders/ImGui.metal').unlink()
             (resources/'shaders/TemporalAA.metal').unlink()
+            (resources/'shaders/ExposureMeter.metal').unlink()
             (resources/'shaders/LocalLightCull.metal').unlink()
             (resources/'shaders/XeGTAO/XeGTAO.metal').unlink()
 

@@ -42,6 +42,11 @@ static void EditorHistoryChecks()
         lens.Aperture = 5.6f;
         lens.LensProjection = true;
         proposed.Camera->Physical = lens;
+        CameraExposure exposure;
+        exposure.Mode = ExposureMode::Automatic;
+        exposure.Metering = ExposureMetering::Spot;
+        exposure.SpotCenter = {.3f, .7f};
+        proposed.Camera->ExposureOverride = exposure;
         std::string error;
         Check(history.Begin(*fixture.World, CreateScope<UIEditCommand>(
             *fixture.World, entity.GetUUID(), "Physical camera", before)), "Camera history begin failed");
@@ -49,7 +54,8 @@ static void EditorHistoryChecks()
             history.Commit(*fixture.World), error.c_str());
         const auto changed = fixture.State();
         Check(camera.GetPhysicalCamera() && *camera.GetPhysicalCamera() == lens &&
-            changed != original, "Inspector did not apply the physical camera");
+            entity.GetComponent<CameraComponent>().ExposureOverride == std::optional<CameraExposure>(exposure) &&
+            changed != original, "Inspector did not apply the physical camera and exposure override");
         Check(history.Undo(*fixture.World) && fixture.State() == original &&
             history.Redo(*fixture.World) && fixture.State() == changed, "Physical camera Undo/Redo lost authored values");
         std::cout << "PASS physical camera Inspector history and exact Undo/Redo\n";

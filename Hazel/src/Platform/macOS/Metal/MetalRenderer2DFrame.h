@@ -18,6 +18,7 @@ namespace Hazel {
 class MetalShader;
 class MetalComputePipeline;
 struct MetalAOPass;
+struct MetalExposureMeter;
 struct MetalTemporalPass;
 struct MetalFramebufferAttachments;
 struct LocalLightingMetrics;
@@ -76,6 +77,7 @@ struct MetalRenderer2DFrame
     std::shared_ptr<MetalShader> PresentationShader;
     NS::SharedPtr<MTL4::ArgumentTable> PresentationArguments;
     float Exposure = 0, BloomIntensity = 0;
+    std::shared_ptr<MetalExposureMeter> ExposureMeter;
     std::shared_ptr<MetalShader> BloomShader;
     std::vector<MetalBloomPass> BloomPasses;
     NS::SharedPtr<MTL::SamplerState> BloomSampler;

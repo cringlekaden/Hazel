@@ -60,7 +60,7 @@ inline void Create(const std::filesystem::path &referenceDescriptor,
     std::vector<UUID> remove;
     for(auto h:scene->GetAllEntitiesWith<IDComponent>()){Entity e(h,scene.get());auto id=uint64_t(e.GetUUID());if(id!=1&&id!=70&&id!=71&&id!=72)remove.push_back(e.GetUUID());}
     for(auto id:remove)if(auto entity=scene->GetEntityByUUID(id))scene->DestroyEntity(entity);
-    scene->SetName("Rendering Showcase / Studio materials");scene->Presentation().Environment={environment,.35f,1,true,true};scene->Presentation().Exposure=0;
+    scene->SetName("Rendering Showcase / Studio materials");scene->Presentation().Environment={environment,.35f,1,true,true};scene->Presentation().Exposure.CompensationStops=0;
     scene->GetEntityByUUID(71).GetComponent<TextComponent>().TextString="STUDIO / copper: sharp .05  .2  .45  .75  1 / wood + leather / direct shadows and local reflections deferred";
     auto add=[&](uint64_t id,const std::string &name,const std::filesystem::path &mesh,const std::filesystem::path &material,glm::vec3 position,glm::vec3 scale){
         auto e=scene->CreateEntityWithUUID(id,name);auto &t=e.GetComponent<TransformComponent>();t.Translation=position;t.Scale=scale;

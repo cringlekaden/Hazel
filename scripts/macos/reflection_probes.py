@@ -238,7 +238,7 @@ def qualify_archive(archive, out, report, offscreen_only, diagnostic=False, ssr_
             if hashlib.sha256(reflection.read_bytes()).hexdigest() != meta["metal_shaders"][reflection.name]:
                 raise RuntimeError("Packaged SSR artifact differs from its manifest")
         if hdr_bloom:
-            for name in ("BloomFilter.hzmetal", "WorldPresentation.hzmetal"):
+            for name in ("BloomFilter.hzmetal", "WorldPresentation.hzmetal", "ExposureMeter.metallib"):
                 shader = resources / "shaders/metal" / name
                 if hashlib.sha256(shader.read_bytes()).hexdigest() != meta["metal_shaders"][name]:
                     raise RuntimeError(f"Packaged {name} differs from its manifest")
@@ -285,7 +285,7 @@ def qualify_archive(archive, out, report, offscreen_only, diagnostic=False, ssr_
                 result = subprocess.run(isolation_command(command, sdk, metal=backend == "metal"), cwd=working,
                                         env=variables, stdout=stream, stderr=subprocess.STDOUT, timeout=120)
             report["relocation"][backend + "SourceFree"] = {"exitCode": result.returncode,
-                "results": [line for line in log.read_text().splitlines() if line.startswith(("REFLECTION_", "SSR_", "BLOOM_"))]}
+                "results": [line for line in log.read_text().splitlines() if line.startswith(("REFLECTION_", "SSR_", "BLOOM_", "CAMERA_"))]}
             if result.returncode:
                 raise RuntimeError(f"Source-free {backend} reflection failed. See {log}")
         if offscreen_only:

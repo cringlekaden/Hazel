@@ -85,7 +85,8 @@ def main():
         for path in (hz.ROOT / 'Hazel/Resources/shaders').glob('*.glsl'):
             shutil.copyfile(path, sources / path.name)
         shutil.copytree(hz.ROOT/'Hazel/Resources/shaders/XeGTAO',sources/'XeGTAO')
-        shutil.copyfile(hz.ROOT/'Hazel/Resources/shaders/TemporalAA.metal',sources/'TemporalAA.metal')
+        for name in ('TemporalAA.metal', 'LocalLightCull.metal', 'ExposureMeter.metal'):
+            shutil.copyfile(hz.ROOT/'Hazel/Resources/shaders'/name, sources/name)
         source = sources / 'Renderer2D_Line.glsl'
         source.write_text(source.read_text() + '\n// Identity invalidation fixture\n')
         changed = production(first, sources)

@@ -260,6 +260,8 @@ namespace Hazel {
 			}
 			out << YAML::EndMap; // Camera
 
+			if (cameraComponent.ExposureOverride)
+				out << YAML::Key << "CameraExposure" << YAML::Value << SceneDefaults::EncodeExposure(*cameraComponent.ExposureOverride);
 			out << YAML::Key << "Primary" << YAML::Value << cameraComponent.Primary;
 			out << YAML::Key << "FixedAspectRatio" << YAML::Value << cameraComponent.FixedAspectRatio;
 
@@ -613,6 +615,8 @@ namespace Hazel {
 					if (const auto node = cameraProps["PhysicalLens"])
 						cc.Camera.SetPhysicalCamera(DocumentSchema::ReadPhysicalLens(node));
 
+					if (const auto exposure = cameraComponent["CameraExposure"])
+						cc.ExposureOverride = SceneDefaults::ReadExposure(exposure);
 					cc.Primary = cameraComponent["Primary"].as<bool>();
 					cc.FixedAspectRatio = cameraComponent["FixedAspectRatio"].as<bool>();
 				}

@@ -188,13 +188,13 @@ inline void Renderer3DParity(const std::filesystem::path& output,
         spec.Attachments.Attachments[0].TextureFormat=metal?FramebufferTextureFormat::RGBA32F:FramebufferTextureFormat::RGBA16F;
         display=Framebuffer::Create(spec);
         for(float ev:{-2.f,0.f,2.f}) {
-            frame.Presentation.Exposure=ev;auto result=render();
+            frame.Presentation.Exposure.CompensationStops=ev;auto result=render();
             const auto expected=OracleNeutral(glm::dvec3(material->BaseColor)*double(std::exp2(ev)));
             for(unsigned c=0;c<3;++c)if(std::abs(result->Color[pixel][c]-expected[c])>.001)
                 throw std::runtime_error("Mesh exposure/Neutral independent oracle failed");
             if(result->Entity[pixel]!=draw.Picking)throw std::runtime_error("Mesh presentation changed signed IDs");
         }
-        frame.Meshes.clear();frame.Environment=environment;frame.Presentation.Exposure=0;frame.Presentation.Environment.Gain=1;
+        frame.Meshes.clear();frame.Environment=environment;frame.Presentation.Exposure.CompensationStops=0;frame.Presentation.Environment.Gain=1;
         for(const auto yawFace : {glm::vec2(0,5),glm::vec2(glm::half_pi<float>(),0)}) {
             frame.Presentation.Environment.Yaw=yawFace.x;auto sky=render();
             glm::dvec3 radiance;

@@ -655,19 +655,21 @@ namespace Hazel {
             cameraView.View=glm::inverse(world);cameraView.Projection=camera.GetProjection();
             cameraView.Identity = entity.GetUUID();
             cameraView.Physical = camera.GetPhysicalCamera();
+            cameraView.ExposureOverride = entity.GetComponent<CameraComponent>().ExposureOverride;
             if (inspection)
             {
                 auto inspected = *inspection;
                 inspected.Physical = cameraView.Physical;
+                inspected.ExposureOverride = cameraView.ExposureOverride;
                 if (inspected.Physical && inspected.Physical->LensProjection && !cameraView.Orthographic)
                 {
                     inspected.Projection = cameraView.Projection;
                     inspected.ViewProjection = inspected.Projection * inspected.View;
                 }
-                DrawView(inspected, renderView, display);
+                DrawView(inspected, renderView, display, ts);
             }
             else
-                DrawView(cameraView, renderView, display);
+                DrawView(cameraView, renderView, display, ts);
         }
         else if(m_Presentation.SceneReferred)
         {
@@ -675,6 +677,8 @@ namespace Hazel {
             SceneRenderView local;
             SceneSubmission frame;
             frame.Presentation = m_Presentation;
+            frame.FrameSeconds = ts.GetSeconds();
+            frame.SceneIdentity = GetIdentity();
             frame.Presentation.Validate();
             SceneRenderer::Render(
                 frame, renderView ? *renderView : local, display, [] {}, [this] { RenderUI(); });
@@ -715,14 +719,14 @@ namespace Hazel {
 		}
 
 		// Render
-        RenderScene(camera, view, display);
+        RenderScene(camera, view, display, ts);
     }
 
     void Scene::OnUpdateEditor(Timestep ts, NavigationCamera &camera, SceneRenderView *view,
                                const Ref<Framebuffer> &display)
     {
 		// Render
-        RenderScene(camera, view, display);
+        RenderScene(camera, view, display, ts);
     }
 
 	void Scene::OnViewportResize(uint32_t width, uint32_t height)
@@ -903,14 +907,14 @@ namespace Hazel {
 	}
 
     void Scene::RenderScene(NavigationCamera &camera, SceneRenderView *view,
-                            const Ref<Framebuffer> &display)
+                            const Ref<Framebuffer> &display, Timestep ts)
     {
         m_RenderError.clear();
         try
         {
             SceneCameraView cameraView{camera.GetViewProjection(),camera.GetPosition(),-camera.GetForwardDirection(),camera.Navigation()==EditorNavigation::Planar};
             cameraView.View=camera.GetViewMatrix();cameraView.Projection=camera.GetProjection();
-            DrawView(cameraView,view,display);
+            DrawView(cameraView,view,display, ts);
         }
         catch (const std::exception &e)
         {
@@ -926,11 +930,12 @@ namespace Hazel {
         }
     }
     void Scene::DrawView(const SceneCameraView &camera, SceneRenderView *view,
-                         const Ref<Framebuffer> &display)
+                         const Ref<Framebuffer> &display, Timestep ts)
     {
         PrepareSprites();
         SceneRenderView local;
         auto frame = SceneRenderer::Collect(*this, camera,display?glm::uvec2(display->GetSpecification().Width,display->GetSpecification().Height):glm::uvec2(0));
+        frame.FrameSeconds = ts.GetSeconds();
         if (view) {
             frame.Debug = view->Debug;
             frame.LocalLightingView = view->LocalLightingView;

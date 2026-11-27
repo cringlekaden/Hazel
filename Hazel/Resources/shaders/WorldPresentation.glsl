@@ -11,6 +11,7 @@ layout(location=1) out int o_Entity;
 layout(binding=0) uniform sampler2D u_World;
 layout(binding=1) uniform isampler2D u_Picking;
 layout(binding=2) uniform sampler2D u_Bloom;
+layout(binding=3) uniform sampler2D u_AdaptedGain;
 layout(std140,binding=5) uniform Presentation {vec4 u_Presentation;};
 vec3 neutral(vec3 radiance){
     float minimum=min(radiance.x,min(radiance.y,radiance.z));
@@ -25,6 +26,9 @@ vec3 neutral(vec3 radiance){
 void main() {
     vec4 world=texture(u_World,v_UV);
     if (u_Presentation.y>0.0) world.rgb+=u_Presentation.y*texture(u_Bloom,v_UV).rgb;
-    o_Color=vec4(neutral(world.rgb*exp2(u_Presentation.x)),world.a);
+    float gain = u_Presentation.x;
+    if (u_Presentation.z > .5)
+        gain = clamp(gain + texelFetch(u_AdaptedGain, ivec2(0), 0).r, -16., 16.);
+    o_Color=vec4(neutral(world.rgb*exp2(gain)),world.a);
     o_Entity=texelFetch(u_Picking,ivec2(gl_FragCoord.xy),0).r;
 }

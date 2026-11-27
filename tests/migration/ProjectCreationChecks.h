@@ -110,15 +110,15 @@ namespace Hazel {
                                            ResourceLoading::MetadataOnly) &&
                   directCodec.CaptureAuthoredState() == directState,
               "Future light data published partially");
-        directScene->Presentation().Exposure = 1;
+        directScene->Presentation().Exposure.CompensationStops = 1;
         auto exposure = directCodec.SerializeText();
         auto restored = CreateRef<Scene>();
         Check(SceneSerializer(restored, directProject->GetAssetRoot(), false, directAssets)
                       .DeserializeText(exposure, false, ResourceLoading::MetadataOnly) &&
-                  restored->Presentation().Exposure == 1,
+                  restored->Presentation().Exposure.CompensationStops == 1,
               "Scene-referred exposure round trip");
         directScene->Presentation().SceneReferred = false;
-        directScene->Presentation().Exposure = 0;
+        directScene->Presentation().Exposure.CompensationStops = 0;
         bool unsupportedDirect = false;
         try
         {

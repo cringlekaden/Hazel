@@ -30,6 +30,8 @@ def produce(configuration, destination, sources=None, force=False):
     (destination / 'producer.txt').write_text(producer)
     results = {}
     for source in sorted(sources.glob('*.glsl')):
+        if source.stem in ('ExposureHistogram', 'ExposureAdapt'):
+            continue  # OpenGL 4.1 raster implementation of the native compute meter.
         for slots in ([16, 32] if source.stem == 'Renderer2D_Quad' else [32]):
             name = source.stem
             variant = name + (f'-{slots}' if name == 'Renderer2D_Quad' else '')
@@ -81,7 +83,7 @@ def produce(configuration, destination, sources=None, force=False):
         stamp.write_text(json.dumps({'sourceProducer': identity,
                                     'library': hashlib.sha256(library.read_bytes()).hexdigest()}) + '\n')
         results['ImGui'] = 'REBUILT'
-    for name, relative in (('XeGTAO','XeGTAO/XeGTAO.metal'),('TemporalAA','TemporalAA.metal'),('LocalLightCull','LocalLightCull.metal')):
+    for name, relative in (('XeGTAO','XeGTAO/XeGTAO.metal'),('TemporalAA','TemporalAA.metal'),('LocalLightCull','LocalLightCull.metal'),('ExposureMeter','ExposureMeter.metal')):
         # Narrow native compute libraries have no runtime compiler dependency.
         source = sources / relative
         identity = hashlib.sha256(source.read_bytes() + producer.encode()).hexdigest()

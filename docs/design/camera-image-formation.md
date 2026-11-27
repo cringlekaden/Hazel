@@ -140,15 +140,16 @@ quantization error within its range.
    stop target error against qualified FP64 distributions and ≤0.02 stop
    frame-rate drift at matched times (30/60/120 Hz fixed step). Study
    interior/exterior, night, transient highlights, multi-view/resize and cuts.
+   [Phase 2 implementation and native evidence](camera-exposure-admission.md#production-phase-2)
 3. **Defocus.** Use scene-linear color with axial depth and separate near and
    far gather, foreground coverage and bilateral reconstruction. Start with
    half-resolution, a conservative tile radius and bounded ring/polygon
    sampling. Start with fixed focus and qualify regional/subject autofocus as
    a separate mode with hysteresis and a bounded rate. Require measured CoC
    within max(1 pixel, 5%) for isolated supported discs and compare thin
-  foreground coverage and leakage to a sampled thin-lens reference. An
-  authored FOV can define a virtual gate from the actual projection and
-  focal length so perspective defocus agrees with the image framing. Follow
+   foreground coverage and leakage to a sampled thin-lens reference. An
+   authored FOV can define a virtual gate from the actual projection and
+   focal length so perspective defocus agrees with the image framing. Follow
    [AMD's production DOF technique](https://gpuopen.com/manuals/fidelityfx_sdk/techniques/depth-of-field/)
    for separable responsibilities and occlusion examples.
 4. **Motion blur.** Reuse or decouple the opaque motion producer from TAA so

@@ -229,7 +229,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
         historyValid=state.Submitted && state.Submitted->load() && state.Width==extent.Width && state.Height==extent.Height &&
             state.Previous.SceneIdentity==frame.SceneIdentity && state.Previous.Assets==frame.Assets &&
             state.Previous.Presentation.SameTemporalInputs(frame.Presentation) &&
-            state.Previous.ReflectionProbes==frame.ReflectionProbes && !CameraCut(frame,state.Previous.Camera);
+            state.Previous.ReflectionProbes==frame.ReflectionProbes && !frame.CameraDiscontinuity && !CameraCut(frame,state.Previous.Camera);
         if (historyValid) {
             // A different admission or map resolution is an abrupt lighting edit.
             for (unsigned slot = 0; slot < MaxSpotShadows; ++slot) {
@@ -288,17 +288,56 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
         if (view.BloomMetrics)
             *view.BloomMetrics = {};
     }
+    const auto& exposure = frame.Camera.ExposureOverride ? *frame.Camera.ExposureOverride : frame.Presentation.Exposure;
+    const bool automatic = exposure.Mode == ExposureMode::Automatic && frame.Presentation.SceneReferred &&
+        !frame.CaptureRadiance && frame.Debug == SurfaceView::Shaded && frame.AmbientOcclusionView == 0 &&
+        frame.LocalLightingView == 0 && frame.ShadowView == 0 && view.TemporalDebug == 0;
+    if (!automatic) view.Exposure = {};
     auto presentWorld = [&] {
         const auto lens = frame.Camera.Physical.value_or(PhysicalCamera{});
         lens.Validate();
-        const float gain = lens.Log2ExposureGain(frame.Presentation.Exposure);
+        exposure.Validate();
+        const float gain = automatic ? exposure.CompensationStops : lens.Log2ExposureGain(exposure.CompensationStops);
         if (useBloom) {
             bloom.Validate();
             const auto& size = view.Radiance->GetSpecification();
             view.Bloom.Timing = view.BloomMetrics;
             view.Bloom.Prepare(size.Width, size.Height, bloom.Intensity, bloom.Radius);
         }
-        view.Radiance->CompositeWorldTo(display, gain, useBloom ? &view.Bloom : nullptr);
+        if (!automatic) {
+            view.Radiance->CompositeWorldTo(display, gain, useBloom ? &view.Bloom : nullptr);
+            return;
+        }
+
+        auto& state = view.Exposure;
+        const auto& spec = view.Radiance->GetSpecification();
+        const glm::uvec2 extent(spec.Width, spec.Height);
+        const bool valid = state.Submitted && state.Submitted->load() && state.Extent == extent &&
+            state.Scene == frame.SceneIdentity && !frame.CameraDiscontinuity && !CameraCut(frame, state.Camera);
+        if (!state.Histogram) {
+            FramebufferSpecification scratch;
+            scratch.Width = 128;
+            scratch.Height = RendererAPI::GetAPI() == RendererAPI::API::Metal ? 72 : 16;
+            scratch.Attachments = {FramebufferTextureFormat::RGBA32F};
+            auto histogram = Framebuffer::Create(scratch);
+            scratch.Width = scratch.Height = 1;
+            std::array<Ref<Framebuffer>, 2> luminance{Framebuffer::Create(scratch), Framebuffer::Create(scratch)};
+            state.Histogram = std::move(histogram);
+            state.Gain = std::move(luminance);
+        }
+        const float seconds = std::isfinite(frame.FrameSeconds) ? std::max(frame.FrameSeconds, 0.f) : 0.f;
+        const auto step = [&](float rate) { return exposure.Locked ? 0.f : -std::expm1(-rate * seconds); };
+        ExposureMeterPass meter{state.Histogram, state.Gain[state.Latest], state.Gain[1 - state.Latest],
+            {{exposure.LowPercentile, exposure.HighPercentile, exposure.MinGainStops, exposure.MaxGainStops},
+             {exposure.SpotCenter, exposure.SpotRadius, float(exposure.Metering)},
+             {step(exposure.BrighteningRate), step(exposure.DarkeningRate), valid ? 1.f : 0.f, exposure.IncludeSky ? 1.f : 0.f}},
+            std::make_shared<std::atomic<bool>>(false), view.ExposureTiming};
+        view.Radiance->CompositeWorldTo(display, gain, useBloom ? &view.Bloom : nullptr, &meter);
+        state.Latest = 1 - state.Latest;
+        state.Submitted = std::move(meter.Submitted);
+        state.Camera = frame.Camera;
+        state.Extent = extent;
+        state.Scene = frame.SceneIdentity;
     };
     const bool reflections = frame.Presentation.ScreenReflections.Enabled && frame.Presentation.SceneReferred &&
         !frame.CaptureRadiance && frame.Debug==SurfaceView::Shaded && frame.AmbientOcclusionView==0 &&

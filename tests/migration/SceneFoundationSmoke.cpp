@@ -99,6 +99,62 @@ static void PhysicalCameraContracts()
     Check(rejected && !camera.GetPhysicalCamera(), "Invalid optical focus mutated the camera");
     std::cout << "PASS: physical camera EV100, sensor crop, clipping, persistence, compatibility and Play copy\n";
 }
+static void CameraExposureMigration()
+{
+    using namespace Hazel;
+    const auto legacy = YAML::Load("Mode: SceneReferred\nBackground: [0,0,0,1]\nExposure: -1.25\n");
+    const auto migrated = SceneDefaults::ReadPresentation(legacy);
+    Check(migrated.Exposure.CompensationStops == -1.25f, "Legacy compensation was reinterpreted");
+    const auto encoded = SceneDefaults::Encode(migrated);
+    Check(!encoded["Exposure"] && encoded["CameraExposure"]["Version"].as<unsigned>() == 1 &&
+          encoded["CameraExposure"]["Mode"].as<std::string>() == "ManualPhysical" &&
+          SceneDefaults::ReadPresentation(encoded) == migrated, "Canonical exposure round-trip failed");
+
+    auto rejects = [](YAML::Node node) {
+        try { SceneDefaults::ReadPresentation(node); }
+        catch (const std::exception&) { return true; }
+        return false;
+    };
+    auto ambiguous = YAML::Clone(encoded);
+    ambiguous["Exposure"] = -1.25f;
+    Check(rejects(ambiguous), "Conflicting exposure representations accepted");
+    auto unknown = YAML::Clone(encoded);
+    unknown["CameraExposure"]["Version"] = 2;
+    Check(rejects(unknown), "Future exposure schema accepted");
+    auto malformed = YAML::Clone(encoded);
+    malformed["CameraExposure"]["BrighteningRate"] = "fast";
+    Check(rejects(malformed), "Malformed adaptation rate silently used a default");
+    auto display = YAML::Clone(encoded);
+    display["Mode"] = "DisplayReferred";
+    Check(rejects(display), "Display-referred exposure accepted");
+    Check(SceneDefaults::DirectDefaults().Presentation.Exposure.Mode == ExposureMode::Automatic,
+          "New HDR project defaults are not automatic");
+    auto scene = CreateRef<Scene>();
+    scene->Presentation() = migrated;
+    auto camera = scene->CreateEntity("Camera metering override");
+    CameraExposure meter;
+    meter.Mode = ExposureMode::Automatic;
+    meter.Metering = ExposureMetering::Spot;
+    meter.LowPercentile = .21f;
+    meter.HighPercentile = .82f;
+    meter.SpotCenter = {.23f, .63f};
+    meter.SpotRadius = .08f;
+    meter.IncludeSky = false;
+    meter.Locked = true;
+    meter.MinGainStops = -3.f;
+    meter.MaxGainStops = 6.f;
+    meter.BrighteningRate = .25f;
+    meter.DarkeningRate = 6.f;
+    camera.AddComponent<CameraComponent>().ExposureOverride = meter;
+    auto saved = SceneSerializer(scene).SerializeText();
+    auto loaded = CreateRef<Scene>();
+    Check(SceneSerializer(loaded).DeserializeText(saved), "Camera override did not reopen");
+    auto found = loaded->GetEntityByUUID(camera.GetUUID());
+    Check(found && found.GetComponent<CameraComponent>().ExposureOverride == std::optional<CameraExposure>(meter) &&
+          SceneSerializer(scene).CaptureAuthoredState() == SceneSerializer(loaded).CaptureAuthoredState(),
+          "Camera override authored values changed across round trip");
+    std::cout << "PASS: legacy exposure compensation migration and single canonical camera schema\n";
+}
 static void LocalLightContracts() {
     using namespace Hazel;
     auto scene=CreateRef<Scene>();auto e=scene->CreateEntityWithUUID(4242,"Point and spot");
@@ -363,7 +419,7 @@ int main()
         StorageChecks();
         AssetCookingChecks();ImportCookingChecks();
         Hazel::Log::Init();
-        PhysicalCameraContracts();LocalLightContracts();AuthoredComparisonContracts();ImportPublicationChecks();
+        PhysicalCameraContracts();CameraExposureMigration();LocalLightContracts();AuthoredComparisonContracts();ImportPublicationChecks();
         CPUFontFamilyDocument();
         Hazel::EditorDocumentChecks();
         Hazel::EditorStateChecks();

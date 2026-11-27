@@ -33,6 +33,15 @@ struct State
         for (int i = 0; i < L; i++)
             Value(v[i]);
     }
+    void Value(const CameraExposure& exposure)
+    {
+        Value(int(exposure.Mode)); Value(exposure.CompensationStops); Value(int(exposure.Metering));
+        Value(exposure.LowPercentile); Value(exposure.HighPercentile);
+        Value(exposure.SpotCenter); Value(exposure.SpotRadius);
+        Value(exposure.IncludeSky); Value(exposure.Locked);
+        Value(exposure.MinGainStops); Value(exposure.MaxGainStops);
+        Value(exposure.BrighteningRate); Value(exposure.DarkeningRate);
+    }
     void Source(const SpriteSource &source)
     {
         Value(uint32_t(source.index()));
@@ -151,6 +160,8 @@ std::string SceneSerializer::CaptureAuthoredState(Entity only, const std::type_i
                 state.Value(lens->ISO);
                 state.Value(lens->FocusDistance);
             }
+            state.Value(c.ExposureOverride.has_value());
+            if (c.ExposureOverride) state.Value(*c.ExposureOverride);
             state.Value(c.Primary);
             state.Value(c.FixedAspectRatio);
         });

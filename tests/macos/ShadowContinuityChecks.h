@@ -64,7 +64,7 @@ inline void ShadowContinuityChecks(const std::filesystem::path& output,
     }
     std::cout<<"CSM continuity diagnostic captures="<<number<<" (metrics evaluated independently by runner)\n";
     auto study=project->LoadScene("Scenes/DirectionalShadows_v1.hazel");study->OnViewportResize(1280,720);
-    study->Presentation().Exposure=0;study->Presentation().Shadows.Resolution=2048;
+    study->Presentation().Exposure.CompensationStops=0;study->Presentation().Shadows.Resolution=2048;
     auto cameraEntity=study->GetPrimaryCameraEntity();
     if(!cameraEntity)throw std::runtime_error("CSM continuity study camera missing");
     const auto cameraWorld=study->GetWorldTransform(cameraEntity);

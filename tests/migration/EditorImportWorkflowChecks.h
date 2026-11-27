@@ -212,7 +212,7 @@ void ImportWorkflowUpdate()
     if (m_ImportPhase == 130)
     {
         owner.m_ScenePresentationDraft.SceneReferred = true;
-        owner.m_ScenePresentationDraft.Exposure = 0;
+        owner.m_ScenePresentationDraft.Exposure.CompensationStops = 0;
         m_ImportPhase = 131;
         return;
     }

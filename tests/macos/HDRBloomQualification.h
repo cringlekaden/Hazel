@@ -278,6 +278,62 @@ inline void HDRBloomQualification(const std::filesystem::path& output,
         return;
     }
 
+    if (!FileSystem::GetEnvironmentPath("HAZEL_CAMERA_EXPOSURE_BENCHMARK").empty()) {
+        struct FrameQuery {
+            GLuint ID = 0;
+            ~FrameQuery() { if (ID) glDeleteQueries(1, &ID); }
+        } frameQuery;
+        if (!metal)
+            glGenQueries(1, &frameQuery.ID);
+        // Measure only the incremental meter; use full-resolution HDR input
+        // with representative scene color and a single camera pass.
+        for (const auto extent : {glm::uvec2(1280, 720), glm::uvec2(1920, 1080), glm::uvec2(3840, 2160)}) {
+            target->Resize(extent.x, extent.y);
+            auto frame = study(0, extent);
+            frame.Presentation.TemporalAA = false;
+            frame.Presentation.AmbientOcclusion.Enabled = false;
+            frame.Presentation.ScreenReflections.Enabled = false;
+            frame.Presentation.Bloom.Enabled = false;
+            frame.Presentation.Shadows.Enabled = false;
+            frame.LocalLights.clear();
+            frame.Presentation.Exposure.Mode = ExposureMode::Automatic;
+            frame.FrameSeconds = 1.f / 60;
+            SceneRenderView camera;
+            camera.ExposureTiming = std::make_shared<ExposureMeterTiming>();
+            for (unsigned i = 0; i < 19; ++i) {
+                *camera.ExposureTiming = {};
+                render(frame, camera);
+                if (i >= 4) {
+                    const auto& timing = *camera.ExposureTiming;
+                    if (timing.Milliseconds <= 0 || timing.WorkingBytes >= 1024 * 1024)
+                        throw std::runtime_error("Invalid exposure benchmark measurement");
+                    std::cout << "CAMERA_METER_TIMING " << extent.x << ' ' << extent.y << ' '
+                              << i - 4 << ' ' << timing.Milliseconds << ' ' << timing.WorkingBytes << '\n';
+                }
+            }
+        }
+        // Time the complete scene separately. Apple GL cannot nest elapsed
+        // queries, and the production path must run without diagnostics.
+        for (const auto extent : {glm::uvec2(1280, 720), glm::uvec2(1920, 1080), glm::uvec2(3840, 2160)}) {
+            target->Resize(extent.x, extent.y);
+            auto frame = study(0, extent);
+            frame.FrameSeconds = 1.f / 60;
+            for (bool automatic : {false, true}) {
+                SceneRenderView camera;
+                frame.Presentation.Exposure.Mode = automatic ? ExposureMode::Automatic : ExposureMode::ManualPhysical;
+                for (int sample = -4; sample < 15; ++sample) {
+                    const auto result = render(frame, camera, frameQuery.ID);
+                    GLuint64 ns = 0;
+                    if (frameQuery.ID) glGetQueryObjectui64v(frameQuery.ID, GL_QUERY_RESULT, &ns);
+                    if (sample >= 0)
+                        std::cout << "CAMERA_FRAME_TIMING " << extent.x << ' ' << extent.y << ' '
+                                  << automatic << ' ' << sample << ' ' << result->Serial << ' ' << ns << '\n';
+                }
+            }
+        }
+        return;
+    }
+
     // A uniform grayscale emitter isolates extraction, unit-DC filtering and
     // exposure arithmetic from scene lighting, geometry edges and tone shoulder.
     SceneRenderView reference;
@@ -309,8 +365,8 @@ inline void HDRBloomQualification(const std::filesystem::path& output,
         const double knee = std::clamp(shoulder - .5, 0., 1.);
         const double glow = std::max(shoulder - 1., .5 * knee * knee);
         for (const int ev : {-1, 0, 1}) {
-            uniform.Presentation.Exposure = ev - std::ceil(std::log2(luminance)) - 3;
-            const double exposed = (luminance + .2 * glow) * std::exp2(uniform.Presentation.Exposure);
+            uniform.Presentation.Exposure.CompensationStops = ev - std::ceil(std::log2(luminance)) - 3;
+            const double exposed = (luminance + .2 * glow) * std::exp2(uniform.Presentation.Exposure.CompensationStops);
             const double expected = exposed < .08 ? 6.25 * exposed * exposed : exposed - .04;
             const auto result = render(uniform, reference);
             for (const auto& p : result->Color)
@@ -322,7 +378,7 @@ inline void HDRBloomQualification(const std::filesystem::path& output,
     std::cout << "BLOOM_ORACLE uniformCases=27 maxLinearError=" << maxError << '\n';
 
     uniform.Presentation.Bloom.Enabled = false;
-    uniform.Presentation.Exposure = -1;
+    uniform.Presentation.Exposure.CompensationStops = -1;
     material->EmissiveStrength = .25f;
     double physicalError = 0;
     for (const float iso : {64.f, 100.f, 200.f, 400.f, 800.f}) {
@@ -342,11 +398,149 @@ inline void HDRBloomQualification(const std::filesystem::path& output,
     uniform.Camera.Physical.reset();
     std::cout << "CAMERA_ORACLE physicalCases=5 maxLinearError=" << physicalError << '\n';
 
+    // Independent stop-domain oracle through the production world compositor.
+    // Choose patch luminances off bin boundaries to avoid backend rounding ties.
+    {
+        auto metered = uniform;
+        auto& settings = metered.Presentation.Exposure;
+        settings.Mode = ExposureMode::Automatic;
+        settings.Metering = ExposureMetering::Average;
+        settings.CompensationStops = 0;
+        constexpr float dim = .071f, bright = .29f;
+        const auto expectedTarget = [](double y) {
+            double stop = std::log(y) / std::log(2.);
+            double midpoint = -24. + (std::floor((stop + 24.) / .375) + .5) * .375;
+            return std::log(.18) / std::log(2.) - midpoint;
+        };
+        const auto measuredGain = [&](SceneRenderView& camera, float luminance) {
+            material->EmissiveStrength = luminance;
+            const auto result = render(metered, camera);
+            const auto color = double(result->Color[(result->Height / 2) * result->Width + result->Width / 2].r);
+            const auto exposed = color < .04 ? std::sqrt(color / 6.25) : color + .04;
+            return std::log2(exposed / luminance);
+        };
+        std::ofstream trace(output / "camera-adaptation.csv");
+        trace.precision(12);
+        trace << "transition,hz,seconds,measuredStops,referenceStops\n";
+        double maxTargetError = 0, maxAdaptationError = 0, worstFrameRateDrift = 0;
+        for (const auto pair : {std::array{dim, bright}, std::array{bright, dim}}) {
+            const auto origin = expectedTarget(pair[0]), destination = expectedTarget(pair[1]);
+            const auto rate = destination > origin ? settings.BrighteningRate : settings.DarkeningRate;
+            double prior = 0;
+            for (const int hz : {30, 60, 120}) {
+                SceneRenderView camera;
+                metered.FrameSeconds = 1.f / hz;
+                maxTargetError = std::max(maxTargetError, std::abs(measuredGain(camera, pair[0]) - origin));
+                double gain = 0;
+                for (int i = 1; i <= hz; ++i) {
+                    gain = measuredGain(camera, pair[1]);
+                    const double expected = destination + (origin - destination) * std::exp(-rate * (double(i) / hz));
+                    maxAdaptationError = std::max(maxAdaptationError, std::abs(gain - expected));
+                    trace << (destination > origin ? "dark" : "bright") << ',' << hz << ','
+                          << double(i) / hz << ',' << gain << ',' << expected << '\n';
+                }
+                if (hz != 30) worstFrameRateDrift = std::max(worstFrameRateDrift, std::abs(gain - prior));
+                prior = gain;
+            }
+        }
+        if (!trace) throw std::runtime_error("Could not save adaptation trace");
+        SceneRenderView camera;
+        metered.FrameSeconds = 1.f / 60;
+        const auto unlocked = measuredGain(camera, bright);
+        settings.Locked = true;
+        const auto locked = measuredGain(camera, dim);
+        ++metered.Camera.Identity;
+        const auto cut = measuredGain(camera, dim);
+        target->Resize(69, 43);
+        const auto resize = measuredGain(camera, bright);
+        if (maxTargetError > .25 || maxAdaptationError > .02 || worstFrameRateDrift > .02 ||
+            std::abs(locked - unlocked) > .001 || std::abs(cut - expectedTarget(dim)) > .001 ||
+            std::abs(resize - expectedTarget(bright)) > .001)
+            throw std::runtime_error("Camera exposure oracle mismatch: target " + std::to_string(maxTargetError) +
+                " adaptation " + std::to_string(maxAdaptationError) + " drift " + std::to_string(worstFrameRateDrift) +
+                " lock " + std::to_string(locked - unlocked) + " cut " + std::to_string(cut));
+        {
+            auto spot = metered;
+            spot.Presentation.Background = {dim, dim, dim, 1};
+            spot.Presentation.Exposure.Locked = false;
+            spot.Presentation.Exposure.Metering = ExposureMetering::Spot;
+            spot.Presentation.Exposure.SpotRadius = .12f;
+            spot.CameraDiscontinuity = true;
+            spot.Meshes[0].SetWorld(glm::translate(glm::mat4(1), glm::vec3(0, .5f, 0)) *
+                glm::scale(glm::mat4(1), glm::vec3(3, 1, .1f)));
+            material->EmissiveStrength = bright;
+            const auto sample = [&](float vertical) {
+                spot.Presentation.Exposure.SpotCenter = {.5f, vertical};
+                auto result = render(spot, camera);
+                const auto picked = std::find(result->Entity.begin(), result->Entity.end(), mesh.Picking);
+                if (picked == result->Entity.end()) throw std::runtime_error("Missing spot-meter test patch");
+                const auto color = result->Color[size_t(picked - result->Entity.begin())].r;
+                return std::log2((double(color) + .04) / bright);
+            };
+            if (std::abs(sample(.2f) - expectedTarget(bright)) > .001 ||
+                std::abs(sample(.8f) - expectedTarget(dim)) > .001)
+                throw std::runtime_error("Top-left spot metering orientation or weights differ");
+        }
+        {
+            auto reject = metered;
+            reject.CameraDiscontinuity = true;
+            auto& trim = reject.Presentation.Exposure;
+            trim.Locked = false;
+            trim.LowPercentile = .15f;
+            trim.HighPercentile = .85f;
+            auto hot = CreateRef<MaterialDefinition>(*material);
+            auto cold = CreateRef<MaterialDefinition>(*material);
+            hot->EmissiveStrength = 256;
+            cold->EmissiveStrength = .001f;
+            auto addPatch = [&](const auto& patch, float x, int identity) {
+                auto drawPatch = mesh;
+                drawPatch.Materials = {patch};
+                drawPatch.Identity = drawPatch.Picking = identity;
+                drawPatch.SetWorld(glm::translate(glm::mat4(1), glm::vec3(x, .45f, -.3f)) *
+                    glm::scale(glm::mat4(1), glm::vec3(.5f, .4f, .1f)));
+                reject.Meshes.push_back(std::move(drawPatch));
+            };
+            addPatch(hot, -.6f, 2);
+            addPatch(cold, .6f, 3);
+            material->EmissiveStrength = bright;
+            auto result = render(reject, camera);
+            for (int id : {2, 3})
+                if (std::find(result->Entity.begin(), result->Entity.end(), id) == result->Entity.end())
+                    throw std::runtime_error("Percentile test lost a bright or dark patch");
+            const auto center = result->Color[(result->Height / 2) * result->Width + result->Width / 2].r;
+            if (std::abs(std::log2((double(center) + .04) / bright) - expectedTarget(bright)) > .001)
+                throw std::runtime_error("Trimmed HDR highlights or shadows biased exposure");
+        }
+        // Empty geometry with an HDR background must produce a valid sky-only
+        // estimate when included. An empty exclusion mask keeps neutral startup.
+        metered.Meshes.clear();
+        metered.Presentation.Background = {.25f, .25f, .25f, 1};
+        settings.Locked = false;
+        settings.IncludeSky = false;
+        SceneRenderView sky;
+        const auto noSky = render(metered, sky);
+        const auto centerColor = [](const auto& result) {
+            return result->Color[(result->Height / 2) * result->Width + result->Width / 2].r;
+        };
+        settings.IncludeSky = true;
+        const auto withSky = render(metered, sky);
+        if (std::abs(centerColor(noSky) - .21f) > .001 ||
+            std::abs(centerColor(withSky) - float(.25 * std::exp2(expectedTarget(.25)) - .04)) > .001)
+            throw std::runtime_error("Empty or sky-only camera metering differs");
+        metered.Presentation.Background = {0,0,0,1};
+        metered.CameraDiscontinuity = true;
+        if (centerColor(render(metered, sky)) != 0)
+            throw std::runtime_error("Black scene gained nonzero radiance");
+        std::cout << "CAMERA_EXPOSURE startupError=" << maxTargetError
+                  << " adaptationError=" << maxAdaptationError << " frameRateDrift=" << worstFrameRateDrift
+                  << " lock=pass cut=pass resize=pass\n";
+    }
+
     // Move an HDR pixel through all four half-resolution lattice phases.
     // The background is in the linear segment of Neutral, so the sum of the
     // presentation differences measures the reconstructed bloom energy.
     target->Resize(128, 64);
-    uniform.Presentation.Exposure = -3;
+    uniform.Presentation.Exposure.CompensationStops = -3;
     uniform.Presentation.Background = {.75f, .75f, .75f, 1};
     material->EmissiveStrength = 4;
     double minEnergy = 1e9, maxEnergy = 0;
@@ -408,10 +602,20 @@ inline void HDRBloomQualification(const std::filesystem::path& output,
         save("on-" + std::to_string(pose), b);
     }
 
+    SceneRenderView automaticView;
+    for (unsigned pose = 0; pose < 17; ++pose) {
+        auto metered = study(float(pose) / 8 - 1, {640, 360});
+        metered.Presentation.Exposure.Mode = ExposureMode::Automatic;
+        metered.FrameSeconds = 1.f / 60;
+        save("auto-" + std::to_string(pose), render(metered, automaticView));
+        if (metal && automaticView.Temporal.Phase != pose + 1)
+            throw std::runtime_error("Automatic exposure changed the scene-linear temporal sequence");
+    }
+
     auto frame = study(1, {640, 360});
     if (metal) {
         const auto priorPhase = views[1].Temporal.Phase;
-        frame.Presentation.Exposure += 2;
+        frame.Presentation.Exposure.CompensationStops += 2;
         frame.Presentation.Bloom.Enabled = false;
         render(frame, views[1]);
         frame.Presentation.Bloom = {true, .12f, .81f};
@@ -420,6 +624,7 @@ inline void HDRBloomQualification(const std::filesystem::path& output,
             throw std::runtime_error("Post-history exposure/bloom edits restarted TAA");
     }
     frame.Presentation.Exposure = scene->Presentation().Exposure;
+    frame.Presentation.Exposure.Mode = ExposureMode::ManualPhysical;
     frame.Presentation.Bloom = scene->Presentation().Bloom;
     frame.Presentation.TemporalAA = false;
     frame.Presentation.AmbientOcclusion.Enabled = false;
@@ -435,7 +640,7 @@ inline void HDRBloomQualification(const std::filesystem::path& output,
     physicalFrame.Camera.Physical = physical;
     physicalFrame.Camera.Identity = 42;
     auto compensatedFrame = frame;
-    compensatedFrame.Presentation.Exposure -= 1;
+    compensatedFrame.Presentation.Exposure.CompensationStops -= 1;
     SceneRenderView cameraView;
     const auto photographic = render(physicalFrame, cameraView);
     const auto compensated = render(compensatedFrame, reference);
@@ -485,15 +690,20 @@ inline void HDRBloomQualification(const std::filesystem::path& output,
         target->Resize(257, 149);
         std::array<Ref<const FramebufferReadback>, 3> queued, serial;
         for (unsigned i = 0; i < serial.size(); ++i) {
-            frame = study(float(i) - 1, {257, 149});
+            frame = study(.03f * float(i), {257, 149});
             frame.Presentation.TemporalAA = false;
+            frame.Presentation.Exposure.Mode = ExposureMode::Automatic;
+            frame.FrameSeconds = 1.f / 60;
             serial[i] = render(frame, reference);
         }
+        reference.Reset();
         auto unblock = backend.GateQueueForTesting();
         try {
             for (unsigned i = 0; i < queued.size(); ++i) {
-                frame = study(float(i) - 1, {257, 149});
+                frame = study(.03f * float(i), {257, 149});
                 frame.Presentation.TemporalAA = false;
+                frame.Presentation.Exposure.Mode = ExposureMode::Automatic;
+                frame.FrameSeconds = 1.f / 60;
                 draw(frame, reference);
                 target->Unbind();
                 queued[i] = target->Submit();
@@ -518,10 +728,10 @@ inline void HDRBloomQualification(const std::filesystem::path& output,
                 throw std::runtime_error("Queued bloom did not complete");
             coverage(queued[i], serial[i]);
             if (queued[i]->Color != serial[i]->Color)
-                throw std::runtime_error("Queued bloom sampled a different scratch generation");
+                throw std::runtime_error("Queued bloom or exposure sampled a different scratch generation");
         }
         render(uniform, reference);
-        std::cout << "BLOOM_LIFETIME queue=3 reset=pass oddResize=pass onePixel=pass\n";
+        std::cout << "BLOOM_LIFETIME queue=3 reset=pass oddResize=pass onePixel=pass exposureHistory=exact\n";
     }
 #endif
     std::cout << "BLOOM_STUDY poses=17 ID/depth=pass disabled=pass UI=pass"

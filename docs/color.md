@@ -58,8 +58,17 @@ duration and ISO. These set EV100. The reference camera is f/4, 1/64 s and
 ISO 100 (EV100 10). At that reference, zero compensation gives unity gain and
 each positive compensation stop doubles it. This mapping uses Hazel's relative
 scene-light units. The perspective camera can also use focal length and sensor
-dimensions to frame the shot. The editor navigation camera uses the reference
-exposure. See [camera and image formation](design/camera-image-formation.md).
+dimensions to frame the shot.
+
+New native HDR projects use automatic exposure. Scene Settings supplies the
+editor navigation policy and the default for runtime cameras. To use a different
+policy in Play or Nutella, select **Override scene exposure** on the camera.
+Automatic exposure meters the HDR world before bloom. **Lock adaptation**
+holds the current gain until a cut or view reset, and compensation remains
+editable. **Manual physical** uses EV100 from the active camera. A camera
+without authored lens settings uses the reference combination above. Existing
+scene files with the earlier signed exposure field retain their manual gain.
+[Camera and image formation](design/camera-image-formation.md)
 
 A final pass applies the piecewise sRGB transfer into RGBA8, or into Nutella's
 window with `GL_FRAMEBUFFER_SRGB` disabled. Alpha is copied. The editor's output

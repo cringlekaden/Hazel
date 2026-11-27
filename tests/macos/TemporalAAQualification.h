@@ -122,7 +122,7 @@ inline void TemporalAAQualification(const std::filesystem::path& output,
         // FP32 HDR is not limited by the compressed clipping coordinates.
         frame.Camera.Orthographic=false;frame.Camera.Position={0,0,4};
         frame.Camera.ViewProjection=glm::perspective(glm::radians(45.f),320.f/180.f,.1f,20.f)*glm::lookAt(frame.Camera.Position,glm::vec3(0),glm::vec3(0,1,0));
-        frame.Presentation.Exposure=-16;boxMaterial->BaseColor={1000000,200000,30000,1};
+        frame.Presentation.Exposure.CompensationStops=-16;boxMaterial->BaseColor={1000000,200000,30000,1};
         frame.Meshes[1].SetWorld(glm::scale(glm::mat4(1),glm::vec3(1)));
         view.Reset();referenceView.Reset();
         auto off=render(referenceView,false);
@@ -136,7 +136,7 @@ inline void TemporalAAQualification(const std::filesystem::path& output,
         auto changedOff=render(referenceView,false),changedOn=render(view,true);
         if(glm::length(changedOn->Color[90*320+160]-changedOff->Color[90*320+160])>1e-3f)
             throw std::runtime_error("TAA clipping epsilon retained an obsolete high-HDR highlight");
-        boxMaterial->BaseColor={3,.1f,.01f,1};frame.Presentation.Exposure=0;
+        boxMaterial->BaseColor={3,.1f,.01f,1};frame.Presentation.Exposure.CompensationStops=0;
     }
     {
         auto demo=Project::LoadCandidate(projectRoot/"RenderingReference-XeGTAO.hproj");

@@ -7,6 +7,7 @@
 #include "MetalTemporalAA.h"
 #include "Hazel/Renderer/Scene/SceneSubmission.h"
 #include "Hazel/Renderer/Scene/Bloom.h"
+#include "MetalExposureMeter.h"
 #include "Hazel/Renderer/Drawing/Renderer2DQuad.h"
 #include <algorithm>
 #include <chrono>
@@ -52,6 +53,9 @@ void MetalRenderer2DFrame::CollectAllocations(std::set<const MTL::Allocation*>& 
     if (ComputeSource) ComputeSource->CollectAllocations(allocations);
     for (const auto& pass : BloomPasses)
         allocations.insert(pass.Output->Targets[0].get());
+    if (ExposureMeter)
+        for (const auto& target : {ExposureMeter->Histogram, ExposureMeter->Previous, ExposureMeter->Current})
+            allocations.insert(target->Targets[0].get());
     if (World) World->CollectAllocations(allocations);
     if (DisplaySource) DisplaySource->CollectAllocations(allocations);
 }
@@ -62,6 +66,7 @@ void MetalRenderer2DFrame::MarkMipmapsSubmitted() const
     if (SpotShadowSource) SpotShadowSource->MarkMipmapsSubmitted();
     if (PointShadowSource) PointShadowSource->MarkMipmapsSubmitted();
     if(Temporal)Temporal->Current->Submitted->store(true);
+    if (ExposureMeter) ExposureMeter->Submitted->store(true);
     if(TemporalSource)TemporalSource->MarkMipmapsSubmitted();
     if(MotionSource)MotionSource->MarkMipmapsSubmitted();
     if (ComputeSource) ComputeSource->MarkMipmapsSubmitted();
@@ -95,6 +100,7 @@ void MetalRenderer2DFrame::ResolveAmbientOcclusionTimings()
         }
         BloomCounters.reset();
     }
+    if (ExposureMeter) ExposureMeter->ResolveTiming();
     if(AO)AO->ResolveTimings();
     if(ShadowSource)ShadowSource->ResolveAmbientOcclusionTimings();
     if(SpotShadowSource)SpotShadowSource->ResolveAmbientOcclusionTimings();
@@ -482,13 +488,13 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
     }
     if (quad->World) {
         auto table = NS::TransferPtr(MTL4::ArgumentTableDescriptor::alloc()->init());
-        table->setInitializeBindings(true); table->setMaxBufferBindCount(6); table->setMaxTextureBindCount(quad->Reflections ? 6 : 3); table->setMaxSamplerStateBindCount(quad->Reflections ? 1 : 3);
+        table->setInitializeBindings(true); table->setMaxBufferBindCount(6); table->setMaxTextureBindCount(quad->Reflections ? 6 : 4); table->setMaxSamplerStateBindCount(quad->Reflections ? 1 : 3);
         quad->PresentationArguments = NS::TransferPtr(m_Device->newArgumentTable(table.get(), &error));
         auto sampler = NS::TransferPtr(MTL::SamplerDescriptor::alloc()->init());
         sampler->setMinFilter(MTL::SamplerMinMagFilterNearest); sampler->setMagFilter(MTL::SamplerMinMagFilterNearest);
         sampler->setSAddressMode(MTL::SamplerAddressModeClampToEdge); sampler->setTAddressMode(MTL::SamplerAddressModeClampToEdge);
         if (!quad->OutputSampler) quad->OutputSampler = NS::TransferPtr(m_Device->newSamplerState(sampler.get()));
-        glm::vec4 presentation(quad->Exposure, quad->BloomIntensity, 0, 0);
+        glm::vec4 presentation(quad->Exposure, quad->BloomIntensity, quad->ExposureMeter ? 1.f : 0.f, 0);
         auto uniform = quad->Reflections ? AcquireRenderer2DBuffer(sizeof(*quad->Reflections), &*quad->Reflections) :
             AcquireRenderer2DBuffer(sizeof(presentation), &presentation);
         Check(bool(quad->PresentationArguments) && bool(quad->OutputSampler) && bool(uniform), "Cannot allocate world presentation bindings");
@@ -501,6 +507,8 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
             auto sampler = quad->BloomSampler ? quad->BloomSampler : quad->OutputSampler;
             quad->PresentationArguments->setTexture(glow->Targets[0]->gpuResourceID(), 2);
             quad->PresentationArguments->setSamplerState(sampler->gpuResourceID(), 2);
+            const auto gain = quad->ExposureMeter ? quad->ExposureMeter->Current : quad->World->Attachments;
+            quad->PresentationArguments->setTexture(gain->Targets[0]->gpuResourceID(), 3);
         }
         quad->Residency->addAllocation(uniform.get()); quad->Buffers.push_back(std::move(uniform));
     }
@@ -527,6 +535,7 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
         quad->ComputeArguments->setTexture(quad->Attachments->Targets[0]->gpuResourceID(), 1);
         quad->Residency->addAllocation(buffer.get()); quad->Buffers.push_back(std::move(buffer));
     }
+    if (quad->ExposureMeter) PrepareExposure(quad);
     if(quad->AO) PrepareAmbientOcclusion(quad);
     if(quad->Temporal)PrepareTemporal(quad);
     quad->Residency->commit();
@@ -601,6 +610,7 @@ void MetalDevice::EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFra
     if (quad->World) {
         m_Commands->useResidencySet(quad->World->Residency.get());
         EncodeRenderer2DFrame(quad->World);
+        if (quad->ExposureMeter) EncodeExposure(quad);
         auto* counters = quad->BloomCounters.get();
         size_t timestamp = 0;
         for (const auto& bloom : quad->BloomPasses) {

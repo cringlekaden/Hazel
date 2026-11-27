@@ -1325,7 +1325,7 @@ private:
         e.m_SceneFile={};e.m_SceneLoad={};e.m_EditorScenePath=m_Directory/"native-scene-settings.hazel";
         const auto before=scene->Presentation();a.m_ShowSceneSettings=true;a.m_PresentationScene=scene->GetIdentity();a.m_ScenePresentationDraft.Background={.21404114f,.03310477f,.07323896f,1};
         a.m_ScenePresentationDraft.SceneReferred=true;a.m_ScenePresentationDraft.TemporalAA=true;
-        a.m_ScenePresentationDraft.Exposure = -1.25f;
+        a.m_ScenePresentationDraft.Exposure.CompensationStops = -1.25f;
         a.m_ScenePresentationDraft.Bloom = {true, .12f, .72f};
         ImGui::SetNextWindowPos({20,40},ImGuiCond_Always);ImGui::SetNextWindowSize({650,460},ImGuiCond_Always);ImGui::SetNextWindowCollapsed(false,ImGuiCond_Always);
         ImGui::Begin("Scene Settings");const auto button=ImGui::GetID("Apply scene settings");ImGui::End();

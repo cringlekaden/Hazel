@@ -1,3 +1,4 @@
+#include "UI/CameraExposureUI.h"
 #include "AuthoringPanel.h"
 #include "AuthoringReadiness.h"
 #include "EditorLayer.h"
@@ -1103,6 +1104,8 @@ void AuthoringPanel::ProjectSettings()
         {
             m_SceneDefaultsDraft.DirectStarter = content == 1;
             if (content == 1) {
+                if (!m_SceneDefaultsDraft.Presentation.SceneReferred)
+                    m_SceneDefaultsDraft.Presentation.Exposure.Mode = ExposureMode::Automatic;
                 m_SceneDefaultsDraft.Presentation.SceneReferred = true;
                 if(m_SceneDefaultsDraft.Presentation.Environment.Asset.empty())m_SceneDefaultsDraft.Presentation.Environment.Asset="Native/Environment_v1/Neutral.henv";
             }
@@ -1112,16 +1115,15 @@ void AuthoringPanel::ProjectSettings()
                               "Display-referred\0Scene-referred (Neutral)\0"))
         {
             m_SceneDefaultsDraft.Presentation.SceneReferred = mode == 1;
-            m_SceneDefaultsDraft.Presentation.Exposure = 0;
+            m_SceneDefaultsDraft.Presentation.Exposure = {};
+            if (mode) m_SceneDefaultsDraft.Presentation.Exposure.Mode = ExposureMode::Automatic;
             if (!mode) {
                 m_SceneDefaultsDraft.Presentation.TemporalAA=false;
                 m_SceneDefaultsDraft.Presentation.ScreenReflections.Enabled=false;
                 m_SceneDefaultsDraft.Presentation.Bloom.Enabled = false;
             }
         }
-        if (mode)
-            PropertyUI::SliderFloat("initial-exposure", "Exposure compensation (EV)",
-                                    m_SceneDefaultsDraft.Presentation.Exposure, -16, 16);
+        if (mode) DrawCameraExposure(m_SceneDefaultsDraft.Presentation.Exposure);
         if(mode)PropertyUI::Checkbox("initial-taa","HDR TAA (Metal 4)",m_SceneDefaultsDraft.Presentation.TemporalAA);
         if (mode) PropertyUI::Checkbox("initial-bloom", "HDR bloom", m_SceneDefaultsDraft.Presentation.Bloom.Enabled);
         if (mode) PropertyUI::Checkbox("initial-ssr","Screen-space reflections",m_SceneDefaultsDraft.Presentation.ScreenReflections.Enabled);

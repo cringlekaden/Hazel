@@ -2,6 +2,7 @@
 // Adapted upstream framebuffer: binding-based 4.1 allocation, clearing and MSAA resolve.
 #include "Platform/OpenGL/OpenGLFramebuffer.h"
 #include "Hazel/Renderer/Scene/Bloom.h"
+#include "Hazel/Renderer/Scene/ExposureMeter.h"
 #include "Hazel/Core/Resources.h"
 #include "Hazel/Renderer/RenderCommand.h"
 #include "Hazel/Renderer/Resources/Shader.h"
@@ -435,8 +436,76 @@ uint32_t OpenGLFramebuffer::FilterBloom(const BloomPyramid& bloom, bool timePass
     }
     return source->m_ColorAttachments[0];
 }
+uint32_t OpenGLFramebuffer::MeterExposure(const ExposureMeterPass& meter)
+{
+    const auto& histogram = static_cast<const OpenGLFramebuffer&>(*meter.Histogram);
+    const auto& current = static_cast<const OpenGLFramebuffer&>(*meter.Current);
+    const auto& previous = static_cast<const OpenGLFramebuffer&>(*meter.Previous);
+    if (!m_ExposureHistogramShader) {
+        const auto shaders = Resources::Get().Root / "shaders";
+        auto histogramShader = Shader::Create((shaders / "ExposureHistogram.glsl").generic_u8string());
+        auto adaptShader = Shader::Create((shaders / "ExposureAdapt.glsl").generic_u8string());
+        auto parameters = UniformBuffer::Create(sizeof(meter.Parameters), 5);
+        m_ExposureHistogramShader = std::move(histogramShader);
+        m_ExposureAdaptShader = std::move(adaptShader);
+        m_ExposureParameters = std::move(parameters);
+    }
+
+    const auto bindTexture = [](unsigned unit, GLuint texture) {
+        glActiveTexture(GL_TEXTURE0 + unit);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glBindSampler(unit, 0);
+    };
+    GLuint query = 0;
+    if (meter.Timing) {
+        // Isolated trace mode. Apple GL requires completing each phase before
+        // ending its elapsed query. The production path never waits here.
+        glGenQueries(1, &query);
+        glBeginQuery(GL_TIME_ELAPSED, query);
+    }
+    m_ExposureParameters->Bind();
+    m_ExposureParameters->SetData(&meter.Parameters, sizeof(meter.Parameters));
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, histogram.m_RendererID);
+    glViewport(0, 0, 128, 16);
+    const GLfloat zero[4]{};
+    glClearBufferfv(GL_COLOR, 0, zero);
+    glEnablei(GL_BLEND, 0);
+    glBlendEquationSeparatei(0, GL_FUNC_ADD, GL_FUNC_ADD);
+    glBlendFuncSeparatei(0, GL_ONE, GL_ONE, GL_ONE, GL_ONE);
+    const auto pointSize = glIsEnabled(GL_PROGRAM_POINT_SIZE);
+    glEnable(GL_PROGRAM_POINT_SIZE);
+    m_ExposureHistogramShader->Bind();
+    m_ExposureHistogramShader->SetInt("u_World", 0);
+    m_ExposureHistogramShader->SetInt("u_Depth", 1);
+    bindTexture(0, m_ColorAttachments[0]);
+    bindTexture(1, m_DepthAttachment);
+    glDrawArrays(GL_POINTS, 0, GLsizei(std::min(128u, m_Specification.Width) *
+                                      std::min(72u, m_Specification.Height)));
+    if (!pointSize) glDisable(GL_PROGRAM_POINT_SIZE);
+    glDisablei(GL_BLEND, 0);
+
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, current.m_RendererID);
+    glViewport(0, 0, 1, 1);
+    m_ExposureAdaptShader->Bind();
+    m_ExposureAdaptShader->SetInt("u_Histogram", 0);
+    m_ExposureAdaptShader->SetInt("u_Previous", 1);
+    bindTexture(0, histogram.m_ColorAttachments[0]);
+    bindTexture(1, previous.m_ColorAttachments[0]);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glViewport(0, 0, m_Specification.Width, m_Specification.Height);
+    if (query) {
+        glFinish();
+        glEndQuery(GL_TIME_ELAPSED);
+        GLuint64 ns = 0;
+        glGetQueryObjectui64v(query, GL_QUERY_RESULT, &ns);
+        glDeleteQueries(1, &query);
+        *meter.Timing = {double(ns) / 1e6, (128u * 16 + 2) * 16u};
+    }
+    meter.Submitted->store(true);
+    return current.m_ColorAttachments[0];
+}
 void OpenGLFramebuffer::CompositeWorldTo(const Ref<Framebuffer> &destination, float exposure,
-                                         const BloomPyramid* bloom)
+                                         const BloomPyramid* bloom, const ExposureMeterPass* meter)
 {
     auto target = std::dynamic_pointer_cast<OpenGLFramebuffer>(destination);
     if (!std::isfinite(exposure) || exposure < -16 || exposure > 16 || !target ||
@@ -467,6 +536,10 @@ void OpenGLFramebuffer::CompositeWorldTo(const Ref<Framebuffer> &destination, fl
     raster.PickingMask = glm::bvec4(true);
     raster.Viewport = {0, 0, m_Specification.Width, m_Specification.Height};
     RenderCommand::SetRasterState(raster);
+    if (!m_OutputVAO)
+        glGenVertexArrays(1, &m_OutputVAO);
+    glBindVertexArray(m_OutputVAO);
+    const auto adaptedGain = meter ? MeterExposure(*meter) : m_ColorAttachments[0];
     bool timePasses = false;
     if (bloom && bloom->Timing) {
         GLint active = 0;
@@ -508,13 +581,17 @@ void OpenGLFramebuffer::CompositeWorldTo(const Ref<Framebuffer> &destination, fl
             (Resources::Get().Root / "shaders/WorldPresentation.glsl").generic_u8string());
     if (!m_ToneParameters)
         m_ToneParameters = UniformBuffer::Create(16, 5);
-    glm::vec4 parameters(exposure, bloom ? bloom->Intensity : 0.f, 0, 0);
+    glm::vec4 parameters(exposure, bloom ? bloom->Intensity : 0.f, meter ? 1.f : 0.f, 0);
     m_ToneParameters->Bind();
     m_ToneParameters->SetData(&parameters, 16);
     m_ToneShader->Bind();
     m_ToneShader->SetInt("u_World", 0);
     m_ToneShader->SetInt("u_Picking", 1);
     m_ToneShader->SetInt("u_Bloom", 2);
+    m_ToneShader->SetInt("u_AdaptedGain", 3);
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, adaptedGain);
+    glBindSampler(3, 0);
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, glow);
     glBindSampler(2, 0);
@@ -524,8 +601,6 @@ void OpenGLFramebuffer::CompositeWorldTo(const Ref<Framebuffer> &destination, fl
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, m_ColorAttachments[1]);
     glBindSampler(1, 0);
-    if (!m_OutputVAO)
-        glGenVertexArrays(1, &m_OutputVAO);
     glBindVertexArray(m_OutputVAO);
     if (timePasses) glBeginQuery(GL_TIME_ELAPSED, m_BloomQueries[3]);
     glDrawArrays(GL_TRIANGLES, 0, 3);

@@ -1,3 +1,4 @@
+#include "UI/CameraExposureUI.h"
 #include "AuthoringPanel.h"
 #include "EditorLayer.h"
 #include "Hazel/Project/ProjectSerializer.h"
@@ -78,16 +79,15 @@ namespace Hazel {
                               "Display-referred\0Scene-referred (Neutral)\0"))
         {
             m_ScenePresentationDraft.SceneReferred = mode == 1;
-            m_ScenePresentationDraft.Exposure = 0;
+            m_ScenePresentationDraft.Exposure = {};
+            if (mode) m_ScenePresentationDraft.Exposure.Mode = ExposureMode::Automatic;
             if(!mode) {
                 m_ScenePresentationDraft.TemporalAA=false;
                 m_ScenePresentationDraft.ScreenReflections.Enabled=false;
                 m_ScenePresentationDraft.Bloom.Enabled = false;
             }
         }
-        if (mode)
-            PropertyUI::SliderFloat("scene-exposure", "Exposure compensation (EV)",
-                                    m_ScenePresentationDraft.Exposure, -16, 16);
+        if (mode) DrawCameraExposure(m_ScenePresentationDraft.Exposure);
         ImGui::SeparatorText("Temporal antialiasing");
         ImGui::BeginDisabled(!mode);
         auto& bloom = m_ScenePresentationDraft.Bloom;

@@ -1,3 +1,4 @@
+#include "UI/CameraExposureUI.h"
 #include "UI/TextEmphasisUI.h"
 #include "Authoring/StructuralCommand.h"
 #include "SceneHierarchyPanel.h"
@@ -992,7 +993,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
     }
     DrawUIComponent<CameraComponent>(
         "Camera", entity, m_Sections,m_RestoreSections,
-        [](auto &component)
+        [this](auto &component)
         {
             auto &camera = component.Camera;
 
@@ -1057,6 +1058,13 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
                 PropertyUI::Checkbox("Fixed Aspect Ratio", "Fixed Aspect Ratio",
                                      component.FixedAspectRatio);
             }
+
+            bool overrideExposure = component.ExposureOverride.has_value();
+            if (PropertyUI::Checkbox("camera-exposure-override", "Override scene exposure", overrideExposure)) {
+                if (overrideExposure) component.ExposureOverride = m_Context->Presentation().Exposure;
+                else component.ExposureOverride.reset();
+            }
+            if (component.ExposureOverride) DrawCameraExposure(*component.ExposureOverride);
 
             bool usePhysical = camera.GetPhysicalCamera().has_value();
             if (PropertyUI::Checkbox("physical-camera", "Physical camera", usePhysical))

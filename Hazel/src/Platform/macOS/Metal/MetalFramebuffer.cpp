@@ -6,6 +6,7 @@
 #include "MetalComputePipeline.h"
 #include "MetalAmbientOcclusion.h"
 #include "Hazel/Renderer/Scene/Bloom.h"
+#include "MetalExposureMeter.h"
 #include "Hazel/Renderer/RenderCommand.h"
 #include <cmath>
 #include <algorithm>
@@ -26,7 +27,7 @@ void MetalFramebuffer::Validate(const FramebufferSpecification& specification)
         attachments[4].TextureFormat==FramebufferTextureFormat::RGBA16F &&
         attachments[5].TextureFormat==FramebufferTextureFormat::RGBA32F;
     Check(specification.Width && specification.Height && specification.Width <= 4096 && specification.Height <= 4096 && uint64_t(specification.Width) * specification.Height <= (depthOnly?16777216u:8388608u) &&
-        specification.Samples == 1 && !specification.SwapChainTarget && ((attachments.size() == 1 && (attachments[0].TextureFormat == FramebufferTextureFormat::RGBA8 || attachments[0].TextureFormat == FramebufferTextureFormat::RGBA16F || attachments[0].TextureFormat == FramebufferTextureFormat::DEPTH32F)) || ((attachments.size() == 3 || reflectionSurface) &&
+        specification.Samples == 1 && !specification.SwapChainTarget && ((attachments.size() == 1 && (attachments[0].TextureFormat == FramebufferTextureFormat::RGBA8 || attachments[0].TextureFormat == FramebufferTextureFormat::RGBA32F || attachments[0].TextureFormat == FramebufferTextureFormat::RGBA16F || attachments[0].TextureFormat == FramebufferTextureFormat::DEPTH32F)) || ((attachments.size() == 3 || reflectionSurface) &&
         attachments[0].TextureFormat == FramebufferTextureFormat::RGBA32F &&
         attachments[1].TextureFormat == FramebufferTextureFormat::RED_INTEGER &&
         attachments[2].TextureFormat == FramebufferTextureFormat::DEPTH32F)),
@@ -52,16 +53,19 @@ std::shared_ptr<const MetalFramebufferAttachments> MetalFramebuffer::Allocate(ui
     const MTL::PixelFormat formats[] = {MTL::PixelFormatRGBA32Float, MTL::PixelFormatR32Sint, MTL::PixelFormatDepth32Float,
         MTL::PixelFormatRGBA16Float, MTL::PixelFormatRGBA16Float, MTL::PixelFormatRGBA32Float};
     const bool depthOnly=m_Specification.Attachments.Attachments.size()==1 && m_Specification.Attachments.Attachments[0].TextureFormat==FramebufferTextureFormat::DEPTH32F;
-    if (temporalHistory) generation->Role = "taa_history";
+    const bool meter = m_Specification.Attachments.Attachments.size() == 1 &&
+        m_Specification.Attachments.Attachments[0].TextureFormat == FramebufferTextureFormat::RGBA32F;
+    if (meter) generation->Role = "exposure_meter";
+    else if (temporalHistory) generation->Role = "taa_history";
     else if (depthOnly) generation->Role = "depth_prepass";
     else if (m_Specification.Attachments.Attachments.size() == 6) generation->Role = "ssr_surface";
     else if (m_Specification.Attachments.Attachments.size() == 1)
         generation->Role = m_Specification.Attachments.Attachments[0].TextureFormat == FramebufferTextureFormat::RGBA16F ? "bloom" : "encoded_output";
     for (size_t i = depthOnly?2u:0u; i < (depthOnly?3u:temporalHistory?2u:m_Specification.Attachments.Attachments.size()); ++i)
     {
-        descriptor->setUsage(MTL::TextureUsageRenderTarget | MTL::TextureUsageShaderRead | ((i == 0 && m_Specification.Attachments.Attachments.size() == 3) || temporalHistory ? MTL::TextureUsageShaderWrite : 0));
+        descriptor->setUsage(MTL::TextureUsageRenderTarget | MTL::TextureUsageShaderRead | ((i == 0 && m_Specification.Attachments.Attachments.size() == 3) || temporalHistory || meter ? MTL::TextureUsageShaderWrite : 0));
         auto format = formats[i];
-        if (!depthOnly && m_Specification.Attachments.Attachments.size() == 1)
+        if (!depthOnly && !meter && m_Specification.Attachments.Attachments.size() == 1)
             format = m_Specification.Attachments.Attachments[0].TextureFormat == FramebufferTextureFormat::RGBA16F
                 ? MTL::PixelFormatRGBA16Float : MTL::PixelFormatBGRA8Unorm;
         descriptor->setPixelFormat(format);
@@ -361,7 +365,7 @@ void MetalFramebuffer::ResolveReflectionsTo(const Ref<Framebuffer>& destination,
     m_SubmittedGeneration=true;
 }
 void MetalFramebuffer::CompositeWorldTo(const Ref<Framebuffer>& destination, float exposure,
-                                        const BloomPyramid* bloom)
+                                        const BloomPyramid* bloom, const ExposureMeterPass* meter)
 {
     auto target = std::dynamic_pointer_cast<MetalFramebuffer>(destination);
     Check(target && target.get() != this && target->m_Device == m_Device && std::isfinite(exposure) && exposure >= -16 && exposure <= 16, "Invalid Metal world destination/exposure");
@@ -370,6 +374,16 @@ void MetalFramebuffer::CompositeWorldTo(const Ref<Framebuffer>& destination, flo
         m_Frame->Width == target->m_Frame->Width && m_Frame->Height == target->m_Frame->Height,
         "World conversion requires an unbound world and a bound empty destination of equal extent");
     target->m_Frame->PresentationShader = std::static_pointer_cast<MetalShader>(Backend().LoadShader("WorldPresentation"));
+    if (meter) {
+        auto pass = std::make_shared<MetalExposureMeter>();
+        pass->Histogram = static_cast<const MetalFramebuffer&>(*meter->Histogram).m_Attachments;
+        pass->Previous = static_cast<const MetalFramebuffer&>(*meter->Previous).m_Attachments;
+        pass->Current = static_cast<const MetalFramebuffer&>(*meter->Current).m_Attachments;
+        pass->Parameters = meter->Parameters;
+        pass->Submitted = meter->Submitted;
+        pass->Timing = meter->Timing;
+        target->m_Frame->ExposureMeter = std::move(pass);
+    }
     if (bloom) {
         auto& packet = *target->m_Frame;
         packet.BloomShader = std::static_pointer_cast<MetalShader>(Backend().LoadShader("BloomFilter"));

@@ -1,4 +1,5 @@
 #pragma once
+#include "Hazel/Renderer/Cameras/CameraExposure.h"
 #include <glm/glm.hpp>
 #include "Hazel/Renderer/Scene/DirectionalShadows.h"
 #include <string>
@@ -50,7 +51,7 @@ namespace Hazel {
     struct ScenePresentation {
         bool SceneReferred = false;
         bool TemporalAA = false; // Metal 4, scene-referred rigid meshes.
-        float Exposure = 0; // stops; fixed Khronos PBR Neutral presentation
+        CameraExposure Exposure;
         glm::vec4 Background{0.010022826f, 0.010022826f, 0.010022826f, 1};
         SceneEnvironment Environment;
         AmbientOcclusionSettings AmbientOcclusion;
@@ -60,7 +61,7 @@ namespace Hazel {
         bool SameTemporalInputs(const ScenePresentation& b) const;
         bool operator==(const ScenePresentation &b) const
         {
-            return SameTemporalInputs(b) && std::memcmp(&Exposure, &b.Exposure, sizeof(float)) == 0 &&
+            return SameTemporalInputs(b) && Exposure == b.Exposure &&
                 Bloom == b.Bloom;
         }
         bool operator!=(const ScenePresentation& b) const { return !(*this==b); }
@@ -74,6 +75,8 @@ namespace Hazel {
     };
     namespace SceneDefaults {
     NewSceneDefaults DirectDefaults();
+    YAML::Node EncodeExposure(const CameraExposure& value);
+    CameraExposure ReadExposure(const YAML::Node& node);
     YAML::Node Encode(const ScenePresentation &value);
     ScenePresentation ReadPresentation(const YAML::Node &node);
     YAML::Node Encode(const NewSceneDefaults &value);

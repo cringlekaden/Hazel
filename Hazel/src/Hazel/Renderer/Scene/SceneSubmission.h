@@ -44,6 +44,7 @@ struct SceneCameraView
     glm::mat4 View{1}, Projection{1}; // Unjittered source matrices; VP is authoritative for direct submissions.
     uint64_t Identity = 0; // Navigation and direct submissions default to a view-local camera.
     std::optional<PhysicalCamera> Physical{};
+    std::optional<CameraExposure> ExposureOverride{};
 };
 struct SubmittedMesh
 {
@@ -102,6 +103,8 @@ struct SceneSubmission
 {
     SceneCameraView Camera;
     uint64_t SceneIdentity = 0;
+    float FrameSeconds = 0;
+    bool CameraDiscontinuity = false;
     glm::mat4 PreviousViewProjection{1};
     unsigned TemporalPhase = 0; // Zero preserves fixed AO noise; 1..64 temporal sequence.
     ScenePresentation Presentation;

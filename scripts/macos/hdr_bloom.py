@@ -24,7 +24,7 @@ SIZE = (640, 360)
 POSES = 17
 
 
-def authored_study(source, root, runtime_only=False, physical_camera=False):
+def authored_study(source, root, runtime_only=False, physical_camera=False, automatic_camera=False):
     def producer_inputs(directory, names):
         return [name for name in names if name.endswith(".hdr") or
                 (Path(directory).name == "CapturedReflections" and name.endswith(".hlight"))]
@@ -49,7 +49,10 @@ def authored_study(source, root, runtime_only=False, physical_camera=False):
           FocusDistance: 8""", scene, count=1)
         if count != 1:
             raise RuntimeError("The study camera is missing")
-    scene = re.sub(r"(?m)^  Exposure: .*$", """  Exposure: -0.75
+    scene, count = re.subn(r"(?m)^  (?:Exposure: .*$|CameraExposure:(?:\n    [^\n]+)*)", """  CameraExposure:
+    Version: 1
+    Mode: ManualPhysical
+    CompensationStops: -0.75
   TemporalAA: true
   Bloom:
     Enabled: true
@@ -69,6 +72,10 @@ def authored_study(source, root, runtime_only=False, physical_camera=False):
     NormalBias: 0.2
     DepthBias: 0.05
     Blend: 0.1""", scene, count=1)
+    if count != 1:
+        raise RuntimeError("The SSR gallery has no authored exposure")
+    if automatic_camera:
+        scene = scene.replace("    Mode: ManualPhysical\n", "    Mode: Automatic\n", 1)
     scene = scene.replace("      Tag: Thin warm upright\n", "      Tag: Moving HDR tube\n", 1)
     scene = scene.replace("      Translation: [-3.1, 0.8, 3.1]", "      Translation: [-3.1, 1.18, 1.8]")
     scene = scene.replace("      Scale: [0.08, 1.6, 0.12]", "      Scale: [0.12, 1.9, 0.12]")
@@ -212,6 +219,46 @@ def compare(output):
     return {"bloomIncrementRGBp99": error, "idDifferences": id_differences, "compared": len(values)}
 
 
+def exposure_timings(log, folder, backend):
+    feedback = {int(serial): (float(end) - float(start)) * 1000 for serial, start, end in re.findall(
+        r"OFFSCREEN_FEEDBACK frame=(\d+) gpu_start=([\d.]+) gpu_end=([\d.]+)", log)}
+    meters, frames = {}, {}
+    for line in log.splitlines():
+        fields = line.split()
+        if line.startswith("CAMERA_METER_TIMING "):
+            w, h, sample = map(int, fields[1:4])
+            meters.setdefault((w, h), {})[sample] = (float(fields[4]), int(fields[5]))
+        elif line.startswith("CAMERA_FRAME_TIMING "):
+            w, h, automatic, sample, serial, ns = map(int, fields[1:])
+            frames.setdefault((w, h), [{}, {}])[automatic][sample] = (
+                feedback[serial] if backend == "metal" else ns / 1e6)
+    def metric(values):
+        return {"median": statistics.median(values), "p95": max(values)}
+    result = {}
+    ceilings = (0.25, 0.30, 0.45) if backend == "metal" else (0.45, 0.60, 0.90)
+    with (folder / "exposure-timings.csv").open("w", newline="") as stream:
+        writer = csv.writer(stream, lineterminator="\n")
+        writer.writerow(("extent", "sample", "meterMS", "scratchBytes", "manualFrameMS", "autoFrameMS"))
+        for (w, h), ceiling in zip(((1280, 720), (1920, 1080), (3840, 2160)), ceilings):
+            extent = f"{w}x{h}"
+            meter = meters[(w, h)]
+            manual, auto = frames[(w, h)]
+            if any(set(samples) != set(range(15)) for samples in (meter, manual, auto)):
+                raise RuntimeError(f"Incomplete {backend} exposure timing samples at {extent}")
+            if min(*manual.values(), *auto.values(), *(row[0] for row in meter.values())) <= 0:
+                raise RuntimeError(f"Invalid {backend} exposure timestamps at {extent}")
+            meter_ms = metric([row[0] for row in meter.values()])
+            scratch = max(row[1] for row in meter.values())
+            if meter_ms["median"] > ceiling or meter_ms["p95"] > 2 * ceiling or scratch > 1024 * 1024:
+                raise RuntimeError(f"{backend} exposure pass exceeded its budget at {extent}")
+            result[extent] = {"meterMS": meter_ms, "scratchBytes": scratch,
+                              "manualFrameMS": metric(manual.values()), "autoFrameMS": metric(auto.values()),
+                              "pairedFrameDeltaMS": metric([auto[i] - manual[i] for i in range(15)])}
+            for i in range(15):
+                writer.writerow((extent, i, *meter[i], manual[i], auto[i]))
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     source = parser.add_mutually_exclusive_group(required=True)
@@ -224,11 +271,14 @@ def main():
     parser.add_argument("--backend", choices=("both", "metal", "opengl"), default="both")
     parser.add_argument("--resources", type=Path, default=RESOURCES)
     parser.add_argument("--prepare-only", action="store_true")
+    parser.add_argument("--automatic-camera", action="store_true", help="Use the production automatic policy in the authored study")
     parser.add_argument("--physical-camera", action="store_true",
                         help="Author the study's runtime camera with a physical lens")
     parser.add_argument("--runtime-only", action="store_true",
                         help="Omit producer inputs from the generated study for archive qualification")
-    parser.add_argument("--benchmark", action="store_true")
+    benchmark = parser.add_mutually_exclusive_group()
+    benchmark.add_argument("--benchmark", action="store_true")
+    benchmark.add_argument("--exposure-benchmark", action="store_true", help="Time the production exposure meter in isolation")
     parser.add_argument("--motion", action="store_true")
     args = parser.parse_args()
     output = args.output.resolve()
@@ -245,19 +295,23 @@ def main():
         parser.error("--offscreen-only requires --archive")
     if args.runtime_only and not args.from_gallery:
         parser.error("--runtime-only requires --from-gallery")
+    if args.automatic_camera and not args.from_gallery:
+        parser.error("--automatic-camera requires --from-gallery")
     if args.physical_camera and not args.from_gallery:
         parser.error("--physical-camera requires --from-gallery")
     project = args.project.resolve() if args.project else authored_study(
-        args.from_gallery.resolve(), output / "HDR Bloom Study", args.runtime_only, args.physical_camera)
+        args.from_gallery.resolve(), output / "HDR Bloom Study", args.runtime_only, args.physical_camera, args.automatic_camera)
     print(project, flush=True)
     if args.prepare_only:
         return
     env = {k: v for k, v in os.environ.items() if not k.startswith(("HAZEL_", "MTL_", "DYLD_"))}
     env.update(HAZEL_HDR_BLOOM="1", HAZEL_REFLECTION_DIAGNOSTIC="1", HAZEL_RENDERING_REFERENCE_PROJECT=str(project),
                HAZEL_RESOURCES=str(args.resources.resolve()), DYLD_LIBRARY_PATH=str(hz.mono_prefix() / "lib"))
+    if args.exposure_benchmark:
+        env.update(HAZEL_CAMERA_EXPOSURE_BENCHMARK="1", HAZEL_METAL_TRACE="1")
     if args.benchmark:
         env.update(HAZEL_BLOOM_BENCHMARK="1", HAZEL_METAL_TRACE="1")
-    else:
+    elif not args.exposure_benchmark:
         env.update(MTL_DEBUG_LAYER="1", MTL_SHADER_VALIDATION="1")
     report = {"config": args.config, "project": str(project), "status": "INCOMPLETE", "backends": {}}
     try:
@@ -273,12 +327,16 @@ def main():
             if run.returncode:
                 raise RuntimeError(f"{backend} failed. See {log_path}")
             record = {"command": list(map(str, cmd)), "checks": [line for line in log.splitlines()
-                      if line.startswith(("BLOOM_", "CAMERA_")) and not line.startswith(("BLOOM_TIMING", "BLOOM_PHASES"))]}
+                      if line.startswith(("BLOOM_", "CAMERA_")) and not line.startswith(
+                          ("BLOOM_TIMING", "BLOOM_PHASES", "CAMERA_METER_TIMING", "CAMERA_FRAME_TIMING"))]}
             report["backends"][backend] = record
+            if args.exposure_benchmark:
+                record["timing"] = exposure_timings(log, folder, backend)
+                continue
             if args.benchmark:
                 record["timing"] = timings(log, folder / "timing.csv", backend)
                 continue
-            for state in ("off", "on"):
+            for state in ("off", "on", "auto"):
                 png(folder / (state + ".png"), *SIZE, pixels(folder / f"{state}-{POSES // 2}.bin"))
             for state in ("reference", "physical", "compensated"):
                 capture = folder / f"camera-{state}.bin"
@@ -287,9 +345,9 @@ def main():
             if args.motion:
                 reflection_diagnostic.write_motion(folder / "matched-motion.png", folder, pixels,
                                                    modes=("off", "on"), poses=POSES)
-        if not args.benchmark and args.backend == "both":
+        if not args.benchmark and not args.exposure_benchmark and args.backend == "both":
             report["aaOffParity"] = compare(output)
-        report["status"] = "PASS focused HDR bloom study"
+        report["status"] = "PASS exposure timings" if args.exposure_benchmark else "PASS focused HDR bloom and camera study"
     finally:
         (output / "results.json").write_text(json.dumps(report, indent=2) + "\n")
 

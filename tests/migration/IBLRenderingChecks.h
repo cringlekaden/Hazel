@@ -163,7 +163,7 @@ static void IBLRenderingChecks()
     auto world = glm::dvec3(view.Radiance->ReadColorPixel(0, 64, 64));
     for (float ev : {-2.f, 2.f})
     {
-        frame.Presentation.Exposure = ev;
+        frame.Presentation.Exposure.CompensationStops = ev;
         render();
         NearRGB(display->ReadColorPixel(0, 64, 64), OracleNeutral(world * std::exp2(double(ev))),
                 .001, "IBL exposure and one Neutral presentation");
@@ -179,13 +179,13 @@ static void IBLRenderingChecks()
     };
     for (float ev : {-8.f, 8.f})
     {
-        frame.Presentation.Exposure = ev;
+        frame.Presentation.Exposure.CompensationStops = ev;
         render([] {}, ui);
         NearRGB(display->ReadColorPixel(0, 64, 64), {.25, .5, .75}, .001,
                 "IBL exposure changed independent UI");
         Check(display->ReadPixel(1, 64, 64) == 456, "IBL UI picking");
     }
-    frame.Presentation.Exposure = 0;
+    frame.Presentation.Exposure.CompensationStops = 0;
     // Axis-linear HDR: exact sky direction and E/pi = 1 + 2*N/3. RGBE source
     // quantization contributes <=.008 radiance; cube/LUT interpolation is separate.
     frame.Environment = axes;

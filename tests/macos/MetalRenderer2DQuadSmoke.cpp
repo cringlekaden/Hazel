@@ -768,7 +768,7 @@ int main(int argc, char** argv)
             Check(first->Color != changed->Color && first->Entity != changed->Entity,
                 "Camera/texture changes failed to reach Scene submission");
             scene->Presentation().SceneReferred = true;
-            scene->Presentation().Exposure = 1;
+            scene->Presentation().Exposure.CompensationStops = 1;
             auto hdr = renderScene();
             const auto center = 32 * 96 + 32;
             Check(hdr->Entity[center] == int(entity) && hdr->Depth[center] == changed->Depth[center],

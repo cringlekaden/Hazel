@@ -1,6 +1,7 @@
 #pragma once
 #include "SceneSubmission.h"
 #include "Bloom.h"
+#include "ExposureMeter.h"
 #include "Hazel/Renderer/Resources/Framebuffer.h"
 #include <functional>
 #include <array>
@@ -28,6 +29,15 @@ struct TemporalViewState {
     glm::vec2 Jitter{0};
     glm::mat4 JitteredViewProjection{1};
 };
+struct ExposureViewState {
+    Ref<Framebuffer> Histogram;
+    std::array<Ref<Framebuffer>, 2> Gain;
+    SceneCameraView Camera;
+    uint64_t Scene = 0;
+    glm::uvec2 Extent{0};
+    unsigned Latest = 0;
+    std::shared_ptr<std::atomic<bool>> Submitted;
+};
 class SceneRenderView
 {
   public:
@@ -53,6 +63,8 @@ class SceneRenderView
     Ref<Framebuffer> ShadowDepth, SpotShadowDepth, PointShadowDepth;
     Ref<Framebuffer> AmbientDepth; // Per-view masked mesh depth preparation.
     BloomPyramid Bloom;
+    ExposureViewState Exposure;
+    std::shared_ptr<ExposureMeterTiming> ExposureTiming; // Explicit qualification instrumentation.
     std::shared_ptr<BloomTiming> BloomMetrics;
     Ref<Framebuffer> Radiance; // Optional per-view world target, never authored/history.
     void Reset()
@@ -60,6 +72,7 @@ class SceneRenderView
         LocalMetrics=std::make_shared<LocalLightingMetrics>();
         Radiance.reset();
         Bloom = {};
+        Exposure = {};
         ReflectionSurface.reset();
         ReflectionProbes = {};
         Jittered.reset();Motion.reset();Temporal={};

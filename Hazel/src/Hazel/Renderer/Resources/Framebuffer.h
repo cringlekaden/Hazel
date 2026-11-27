@@ -10,6 +10,7 @@
 #include <string>
 
 namespace Hazel {
+    struct ExposureMeterPass;
 
 	enum class FramebufferTextureFormat
 	{
@@ -109,7 +110,7 @@ namespace Hazel {
         // writes only a separate encoded RGBA8 output. Radius is framebuffer pixels.
         virtual void DrawEntityOutlineTo(const Ref<Framebuffer>& destination,int entity,int radius,glm::vec4 encodedColor) = 0;
         virtual void ResolveReflectionsTo(const Ref<Framebuffer>& destination, const ScreenReflectionResolve& parameters) = 0;
-        virtual void CompositeWorldTo(const Ref<Framebuffer> &destination, float exposure, const BloomPyramid* bloom = nullptr) = 0;
+        virtual void CompositeWorldTo(const Ref<Framebuffer> &destination, float exposure, const BloomPyramid* bloom = nullptr, const ExposureMeterPass* meter = nullptr) = 0;
         virtual glm::vec4 ReadColorPixel(uint32_t attachment, int x, int y) = 0;
         virtual void ResetEditorReadback() {}
         virtual int ReadEditorEntity(int x, int y) { return ReadPixel(1, x, y); }

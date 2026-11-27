@@ -245,9 +245,9 @@ namespace Hazel {
 		void SynchronizePhysics2D();
 
         void RenderScene(NavigationCamera &camera, SceneRenderView *view,
-                         const Ref<Framebuffer> &display);
+                         const Ref<Framebuffer> &display, Timestep ts);
         void DrawView(const SceneCameraView &camera, SceneRenderView *view,
-                      const Ref<Framebuffer> &display);
+                      const Ref<Framebuffer> &display, Timestep ts);
         void DrawWorld2D(const glm::mat4 &viewProjection);
         void AdvanceAnimations(double timestep);
 	private:
