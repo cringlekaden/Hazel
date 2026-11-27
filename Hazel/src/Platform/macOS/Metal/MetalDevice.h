@@ -78,6 +78,8 @@ private:
     void EncodeExposure(const std::shared_ptr<MetalRenderer2DFrame>& frame);
     void PrepareDefocus(const std::shared_ptr<MetalRenderer2DFrame>& frame);
     void EncodeDefocus(const std::shared_ptr<MetalRenderer2DFrame>& frame);
+    void PrepareShutter(const std::shared_ptr<MetalRenderer2DFrame>& frame);
+    void EncodeShutter(const std::shared_ptr<MetalRenderer2DFrame>& frame);
     void PrepareTemporal(const std::shared_ptr<MetalRenderer2DFrame>& frame);
     void EncodeTemporal(const std::shared_ptr<MetalRenderer2DFrame>& frame);
     void PrepareAmbientOcclusion(const std::shared_ptr<MetalRenderer2DFrame>& frame);

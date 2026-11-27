@@ -27,7 +27,7 @@ namespace Hazel {
         void ResolveReflectionsTo(const Ref<Framebuffer>& destination, const ScreenReflectionResolve& parameters) override;
         void CompositeWorldTo(const Ref<Framebuffer> &destination, float exposure,
             const BloomPyramid* bloom = nullptr, const ExposureMeterPass* meter = nullptr,
-            const DepthOfFieldPass* defocus = nullptr) override;
+            const DepthOfFieldPass* defocus = nullptr, const CameraMotionPass* shutter = nullptr) override;
         std::vector<glm::vec4> ReadColorPixels() override;
         virtual glm::vec4 ReadColorPixel(uint32_t attachment, int x, int y) override;
         virtual int ReadPixel(uint32_t attachmentIndex, int x, int y) override;
@@ -39,8 +39,11 @@ namespace Hazel {
 		virtual const FramebufferSpecification& GetSpecification() const override { return m_Specification; }
 	private:
         uint32_t MeterExposure(const ExposureMeterPass& meter);
-        uint32_t FilterBloom(const BloomPyramid& bloom, bool timePasses, const DepthOfFieldPass* defocus);
-        void FilterDefocus(const DepthOfFieldPass& defocus);
+        uint32_t FilterBloom(const BloomPyramid& bloom, bool timePasses, const DepthOfFieldPass* defocus,
+            const CameraMotionPass* shutter);
+        void FilterDefocus(const DepthOfFieldPass& defocus, const CameraMotionPass* shutter);
+        void FilterShutter(const CameraMotionPass& shutter);
+        void BindShutterLayer(Shader& shader, const CameraMotionPass* shutter) const;
         void BindDefocusLayers(Shader& shader, const DepthOfFieldPass* defocus) const;
         void ReadFloatColors(uint32_t attachment, int x, int y, int width, int height, glm::vec4 *pixels);
       Ref<Shader> m_OutputShader, m_BloomShader, m_ToneShader, m_OutlineShader, m_ReflectionShader;
@@ -48,6 +51,8 @@ namespace Hazel {
       Ref<UniformBuffer> m_ExposureParameters;
       Ref<Shader> m_DefocusTiles, m_DefocusPrefilter, m_DefocusGather;
       Ref<UniformBuffer> m_DefocusParameters;
+      Ref<Shader> m_ShutterShader;
+      Ref<UniformBuffer> m_ShutterParameters;
       Ref<UniformBuffer> m_BloomParameters, m_ToneParameters, m_ReflectionParameters;
       std::array<uint32_t, 4> m_BloomQueries{};
       bool m_BloomQueriesPending = false;

@@ -12,6 +12,7 @@
 namespace Hazel {
     struct ExposureMeterPass;
     struct DepthOfFieldPass;
+    struct CameraMotionPass;
 
 	enum class FramebufferTextureFormat
 	{
@@ -52,7 +53,7 @@ namespace Hazel {
 
 	struct FramebufferSpecification
 	{
-        enum class CameraScratch { None, Exposure, Defocus };
+        enum class CameraScratch { None, Exposure, Defocus, MotionBlur };
 		uint32_t Width = 0, Height = 0;
 		FramebufferAttachmentSpecification Attachments;
 		uint32_t Samples = 1;
@@ -115,7 +116,7 @@ namespace Hazel {
         virtual void ResolveReflectionsTo(const Ref<Framebuffer>& destination, const ScreenReflectionResolve& parameters) = 0;
         virtual void CompositeWorldTo(const Ref<Framebuffer> &destination, float exposure,
             const BloomPyramid* bloom = nullptr, const ExposureMeterPass* meter = nullptr,
-            const DepthOfFieldPass* defocus = nullptr) = 0;
+            const DepthOfFieldPass* defocus = nullptr, const CameraMotionPass* shutter = nullptr) = 0;
         virtual glm::vec4 ReadColorPixel(uint32_t attachment, int x, int y) = 0;
         virtual void ResetEditorReadback() {}
         virtual int ReadEditorEntity(int x, int y) { return ReadPixel(1, x, y); }

@@ -1,6 +1,7 @@
 #pragma once
 #include "SceneSubmission.h"
 #include "Bloom.h"
+#include "CameraMotion.h"
 #include "DepthOfField.h"
 #include "ExposureMeter.h"
 #include "Hazel/Renderer/Resources/Framebuffer.h"
@@ -47,6 +48,12 @@ struct FocusViewState {
     double InverseDistance = 0;
     double TrackedGoal = 0;
 };
+struct ShutterViewState {
+    SceneSubmission Previous;
+    CameraMotionPass Pass;
+    glm::uvec2 Extent{0};
+    Ref<Framebuffer> SpatialVectors;
+};
 class SceneRenderView
 {
   public:
@@ -74,6 +81,8 @@ class SceneRenderView
     BloomPyramid Bloom;
     ExposureViewState Exposure;
     FocusViewState Focus;
+    ShutterViewState Shutter;
+    std::shared_ptr<CameraMotionTiming> ShutterTiming; // Explicit qualification instrumentation.
     std::shared_ptr<DepthOfFieldTiming> DefocusTiming; // Explicit qualification instrumentation.
     std::shared_ptr<ExposureMeterTiming> ExposureTiming; // Explicit qualification instrumentation.
     std::shared_ptr<BloomTiming> BloomMetrics;
@@ -85,6 +94,7 @@ class SceneRenderView
         Bloom = {};
         Exposure = {};
         Focus = {};
+        Shutter = {};
         ReflectionSurface.reset();
         ReflectionProbes = {};
         Jittered.reset();Motion.reset();Temporal={};

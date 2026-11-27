@@ -8,6 +8,7 @@
 #include "Hazel/Project/RendererRequestsSerializer.h"
 #include "Hazel/Project/RuntimeStorage.h"
 #include "Hazel/Renderer/Cameras/CameraDefocus.h"
+#include "Hazel/Renderer/Cameras/CameraShutter.h"
 #include "Hazel/Renderer/Scene/Lighting.h"
 #include "Hazel/Renderer/Scene/ReflectionProbe.h"
 #include "Hazel/Scripting/ScriptEngine.h"
@@ -66,6 +67,23 @@ DepthOfFieldSettings ReadDepthOfField(const YAML::Node& node)
     settings.FocusHalfLife = node["FocusHalfLifeSeconds"].as<float>();
     if (const auto subject = node["TrackedSubject"])
         settings.TrackedSubject = subject.as<uint64_t>();
+    settings.Validate();
+    return settings;
+}
+MotionBlurSettings ReadMotionBlur(const YAML::Node& node)
+{
+    Keys(node, {"Version", "Enabled", "Shutter", "ShutterAngleDegrees", "Quality"}, "MotionBlur");
+    if (node["Version"].as<unsigned>() != 1)
+        throw std::runtime_error("Unsupported MotionBlur version");
+    MotionBlurSettings settings;
+    settings.Enabled = node["Enabled"].as<bool>();
+    const auto shutter = node["Shutter"].as<std::string>();
+    if (shutter == "Angle") settings.Shutter = MotionShutterMode::Angle;
+    else if (shutter != "Duration") throw std::runtime_error("Unknown motion-blur shutter mode");
+    const auto quality = node["Quality"].as<std::string>();
+    if (quality == "Cinematic") settings.Quality = MotionBlurQuality::Cinematic;
+    else if (quality != "Balanced") throw std::runtime_error("Unknown motion-blur quality");
+    settings.ShutterAngleDegrees = node["ShutterAngleDegrees"].as<float>();
     settings.Validate();
     return settings;
 }
@@ -169,7 +187,9 @@ bool Scene(const YAML::Node& root, bool prefabDocument)
         else legacy = true; // documented identity transform
         if (auto n = entity["CameraComponent"])
         {
-            Keys(n, {"Camera", "Primary", "FixedAspectRatio", "CameraExposure", "DepthOfField"}, "CameraComponent");
+            Keys(n, {"Camera", "Primary", "FixedAspectRatio", "CameraExposure", "DepthOfField", "MotionBlur"}, "CameraComponent");
+            if (const auto motion = n["MotionBlur"])
+                ReadMotionBlur(motion);
             if (const auto defocus = n["DepthOfField"])
                 ReadDepthOfField(defocus);
             if (const auto exposure = n["CameraExposure"]) SceneDefaults::ReadExposure(exposure);

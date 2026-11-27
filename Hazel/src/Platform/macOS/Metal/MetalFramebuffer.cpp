@@ -62,6 +62,8 @@ std::shared_ptr<const MetalFramebufferAttachments> MetalFramebuffer::Allocate(ui
     if (m_Specification.Scratch == FramebufferSpecification::CameraScratch::Exposure) generation->Role = "exposure_meter";
     else if (m_Specification.Scratch == FramebufferSpecification::CameraScratch::Defocus)
         generation->Role = defocusLayers ? "defocus_layers" : "defocus_scratch";
+    else if (m_Specification.Scratch == FramebufferSpecification::CameraScratch::MotionBlur)
+        generation->Role = "shutter_scratch";
     else if (temporalHistory) generation->Role = "taa_history";
     else if (depthOnly) generation->Role = "depth_prepass";
     else if (singleFloat) generation->Role = "float_scratch";
@@ -376,7 +378,7 @@ void MetalFramebuffer::ResolveReflectionsTo(const Ref<Framebuffer>& destination,
 }
 void MetalFramebuffer::CompositeWorldTo(const Ref<Framebuffer>& destination, float exposure,
                                         const BloomPyramid* bloom, const ExposureMeterPass* meter,
-                                        const DepthOfFieldPass* defocus)
+                                        const DepthOfFieldPass* defocus, const CameraMotionPass* shutter)
 {
     auto target = std::dynamic_pointer_cast<MetalFramebuffer>(destination);
     Check(target && target.get() != this && target->m_Device == m_Device && std::isfinite(exposure) && exposure >= -16 && exposure <= 16, "Invalid Metal world destination/exposure");
@@ -385,6 +387,27 @@ void MetalFramebuffer::CompositeWorldTo(const Ref<Framebuffer>& destination, flo
         m_Frame->Width == target->m_Frame->Width && m_Frame->Height == target->m_Frame->Height,
         "World conversion requires an unbound world and a bound empty destination of equal extent");
     target->m_Frame->PresentationShader = std::static_pointer_cast<MetalShader>(Backend().LoadShader("WorldPresentation"));
+    if (shutter) {
+        target->m_Frame->ShutterSubmitted = shutter->Submitted;
+        if (shutter->Valid) {
+            if (!m_Frame->MotionSource) {
+                auto& vectors = static_cast<MetalFramebuffer&>(*shutter->Vectors);
+                Check(vectors.m_Frame && !Backend().IsFramebufferBound(vectors.m_Frame),
+                    "Shutter requires an unbound vector producer");
+                m_Frame->MotionSource = std::move(vectors.m_Frame);
+                m_Frame->MotionSource->Readback = false;
+                vectors.m_SubmittedGeneration = true;
+            }
+            MetalShutter pass;
+            pass.TileMax = static_cast<const MetalFramebuffer&>(*shutter->TileMax).m_Attachments;
+            pass.NeighborMax = static_cast<const MetalFramebuffer&>(*shutter->NeighborMax).m_Attachments;
+            pass.Filtered = static_cast<const MetalFramebuffer&>(*shutter->Filtered).m_Attachments;
+            pass.Shader = std::static_pointer_cast<MetalShader>(Backend().LoadShader("ShutterFilter"));
+            pass.Parameters = shutter->Parameters;
+            pass.Timing = shutter->Timing;
+            target->m_Frame->Shutter = std::move(pass);
+        }
+    }
     if (defocus) {
         MetalDefocus pass;
         pass.Tiles = static_cast<const MetalFramebuffer&>(*defocus->Tiles).m_Attachments;

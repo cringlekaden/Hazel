@@ -1095,6 +1095,20 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
                 }
             }
 
+            auto& motion = component.MotionBlur;
+            PropertyUI::Checkbox("motion-blur", "Motion blur", motion.Enabled);
+            if (motion.Enabled && ImGui::TreeNode("Motion blur settings"))
+            {
+                int mode = int(motion.Shutter);
+                if (PropertyUI::Combo("motion-shutter", "Shutter mode", mode, "Physical duration\0Angle\0"))
+                    motion.Shutter = MotionShutterMode(mode);
+                if (motion.Shutter == MotionShutterMode::Angle)
+                    PropertyUI::DragFloat("motion-angle", "Shutter angle (degrees)", motion.ShutterAngleDegrees, 1, 0, 360);
+                int quality = int(motion.Quality);
+                if (PropertyUI::Combo("motion-quality", "Quality", quality, "Balanced\0Cinematic\0"))
+                    motion.Quality = MotionBlurQuality(quality);
+                ImGui::TreePop();
+            }
             bool usePhysical = camera.GetPhysicalCamera().has_value();
             if (PropertyUI::Checkbox("physical-camera", "Physical camera", usePhysical))
             {

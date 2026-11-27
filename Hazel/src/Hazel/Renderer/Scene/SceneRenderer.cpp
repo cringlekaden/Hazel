@@ -58,6 +58,20 @@ bool CameraCut(const SceneSubmission& frame,const SceneCameraView& previous) {
     }
     return false;
 }
+void MatchMotion(SceneSubmission& motion, const SceneSubmission& previousFrame, bool valid)
+{
+    motion.PreviousViewProjection = valid ? previousFrame.Camera.ViewProjection : motion.Camera.ViewProjection;
+    std::map<std::pair<uint64_t, int>, const SubmittedMesh*> previous;
+    if (valid)
+        for (const auto& draw : previousFrame.Meshes)
+            if (draw.Identity) previous.emplace(std::make_pair(draw.Identity, draw.Picking), &draw);
+    for (auto& draw : motion.Meshes) {
+        auto found = previous.find({draw.Identity, draw.Picking});
+        draw.PreviousValid = found != previous.end() && draw.Geometry == found->second->Geometry &&
+            draw.Materials == found->second->Materials;
+        if (draw.PreviousValid) draw.PreviousWorld = found->second->World;
+    }
+}
 }
 
 void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
@@ -255,16 +269,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
         glm::mat4 offset(1);offset[3][0]=2*jitter.x/float(extent.Width);offset[3][1]=2*jitter.y/float(extent.Height);
         sample.Camera.ViewProjection=offset*frame.Camera.ViewProjection;
         sample.TemporalPhase=state.Phase%64+1;
-        motion.PreviousViewProjection=historyValid?state.Previous.Camera.ViewProjection:frame.Camera.ViewProjection;
-        std::map<std::pair<uint64_t,int>,const SubmittedMesh*> previous;
-        if(historyValid)for(const auto& old:state.Previous.Meshes)if(old.Identity)previous.emplace(std::make_pair(old.Identity,old.Picking),&old);
-        for(auto& draw:motion.Meshes) {
-            draw.PreviousValid=false;
-            auto old=previous.find({draw.Identity,draw.Picking});
-            if(old!=previous.end() && draw.Geometry==old->second->Geometry && draw.Materials==old->second->Materials) {
-                draw.PreviousWorld=old->second->World;draw.PreviousValid=true;
-            }
-        }
+        MatchMotion(motion, state.Previous, historyValid);
         submitted=std::make_shared<std::atomic<bool>>(false);
     }
     if(frame.LocalLightingView>3)throw std::runtime_error("Unsupported local-light inspection");
@@ -294,8 +299,100 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
         frame.LocalLightingView == 0 && frame.ShadowView == 0 && view.TemporalDebug == 0;
     const bool automatic = exposure.Mode == ExposureMode::Automatic && photographic;
     const bool defocus = frame.Camera.DepthOfField.Enabled && photographic && !frame.Camera.Orthographic;
+    const bool shutter = frame.Camera.MotionBlur.Enabled && photographic && display;
     if (!automatic) view.Exposure = {};
     if (!defocus) view.Focus = {};
+    if (!shutter) view.Shutter = {};
+    auto prepareShutter = [&] {
+        if (!shutter) return;
+        const auto& spec = view.Radiance->GetSpecification();
+        const glm::uvec2 extent(spec.Width, spec.Height);
+        const auto& settings = frame.Camera.MotionBlur;
+        settings.Validate();
+        auto& state = view.Shutter;
+        auto& pass = state.Pass;
+        const auto optics = frame.Camera.Physical.value_or(PhysicalCamera{});
+        optics.Validate();
+        const double fraction = settings.Fraction(optics, frame.FrameSeconds >= 1e-6f ? frame.FrameSeconds : 0.0);
+        const bool continuous = temporal ? historyValid :
+            pass.Submitted && pass.Submitted->load() && extent == state.Extent &&
+            state.Previous.SceneIdentity == frame.SceneIdentity && state.Previous.Assets == frame.Assets &&
+            !frame.CameraDiscontinuity && !CameraCut(frame, state.Previous.Camera);
+        pass.Valid = continuous && fraction > 0 && ValidCamera(frame.Camera.ViewProjection);
+        pass.Submitted = std::make_shared<std::atomic<bool>>(false);
+        if (!pass.Valid) {
+            pass.Vectors.reset();
+            if (fraction == 0) {
+                pass.TileMax.reset(); pass.NeighborMax.reset(); pass.Filtered.reset();
+                state.SpatialVectors.reset();
+            }
+            return;
+        }
+        pass.Timing = view.ShutterTiming;
+        auto& moving = pass.Parameters.MovingIDMask;
+        moving = glm::uvec4(0);
+        auto requiresVector = [&](const SubmittedMesh& draw) {
+            const bool needed = !draw.PreviousValid || draw.PreviousWorld != draw.World;
+            if (needed && draw.Picking >= 0) {
+                const auto bit = (uint32_t(draw.Picking) * 0x9e3779b9u) >> 26;
+                moving[bit / 32] |= 1u << (bit % 32);
+            }
+            return needed;
+        };
+        if (temporal) {
+            state.SpatialVectors.reset();
+            pass.Vectors = view.Motion;
+            for (const auto& draw : motion.Meshes) requiresVector(draw);
+        } else {
+            motion = frame;
+            MatchMotion(motion, state.Previous, true);
+            motion.Meshes.erase(std::remove_if(motion.Meshes.begin(), motion.Meshes.end(),
+                [&](const auto& draw) { return !requiresVector(draw); }), motion.Meshes.end());
+            auto size = display->GetSpecification();
+            size.Width = motion.Meshes.empty() ? 1 : (extent.x + 1) / 2;
+            size.Height = motion.Meshes.empty() ? 1 : (extent.y + 1) / 2;
+            size.Samples = 1;
+            size.Scratch = FramebufferSpecification::CameraScratch::MotionBlur;
+            size.Attachments = {FramebufferTextureFormat::RGBA32F, FramebufferTextureFormat::RED_INTEGER,
+                RendererAPI::GetAPI() == RendererAPI::API::Metal ? FramebufferTextureFormat::DEPTH32F : FramebufferTextureFormat::Depth};
+            if (!state.SpatialVectors)
+                state.SpatialVectors = Framebuffer::Create(size);
+            else if (state.SpatialVectors->GetSpecification().Width != size.Width ||
+                     state.SpatialVectors->GetSpecification().Height != size.Height)
+                state.SpatialVectors->Resize(size.Width, size.Height);
+            pass.Vectors = state.SpatialVectors;
+            RenderCommand::StateScope scope;
+#ifdef HZ_PLATFORM_MACOS
+            if (RendererAPI::GetAPI() == RendererAPI::API::Metal)
+                std::static_pointer_cast<MetalFramebuffer>(pass.Vectors)->SetTemporalProducer(true);
+#endif
+            pass.Vectors->Bind();
+            if (RendererAPI::GetAPI() == RendererAPI::API::Metal)
+                pass.Vectors->Clear(glm::vec4(0));
+            else {
+                RenderCommand::SetClearColor(glm::vec4(0));
+                RenderCommand::Clear();
+                pass.Vectors->ClearAttachment(1, -1);
+            }
+            auto raster = RenderCommand::GetRasterState();
+            raster.Viewport = {0, 0, size.Width, size.Height};
+            RenderCommand::SetRasterState(raster);
+            Renderer3D::Render(motion, false, false, true);
+            pass.Vectors->Unbind();
+        }
+        pass.Prepare(extent);
+        const glm::mat4 inverse = glm::inverse(frame.Camera.ViewProjection);
+        glm::mat4 direction(1);
+        direction[3] = glm::vec4(-frame.Camera.Position, 0);
+        pass.Parameters.CurrentToPrevious = motion.PreviousViewProjection * inverse;
+        pass.Parameters.SkyToPrevious = motion.PreviousViewProjection * direction * inverse;
+        const bool cinematic = settings.Quality == MotionBlurQuality::Cinematic;
+        const float radius = cinematic ? std::min(40.f, extent.y * .016f) : std::min(24.f, extent.y * .008f);
+        pass.Parameters.Shutter = {float(.5 * fraction), radius, cinematic ? 17.f : 5.f, 0};
+        const auto& p = frame.Camera.Projection;
+        pass.Parameters.Projection = {p[2][2], p[3][2], frame.Camera.Orthographic ? 1.f : 0.f,
+            frame.Camera.Orthographic ? 1.f / p[2][2] : 0.f};
+    };
     auto presentWorld = [&] {
         auto lens = frame.Camera.Physical.value_or(PhysicalCamera{});
         lens.Validate();
@@ -353,8 +450,13 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
         }
         const auto* bloomPass = useBloom ? &view.Bloom : nullptr;
         const auto* defocusPass = defocus ? &view.Focus.Pass : nullptr;
+        const auto* shutterPass = shutter ? &view.Shutter.Pass : nullptr;
+        if (shutter) {
+            view.Shutter.Previous = frame;
+            view.Shutter.Extent = extent;
+        }
         if (!automatic) {
-            view.Radiance->CompositeWorldTo(display, gain, bloomPass, nullptr, defocusPass);
+            view.Radiance->CompositeWorldTo(display, gain, bloomPass, nullptr, defocusPass, shutterPass);
             return;
         }
 
@@ -379,7 +481,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
              {exposure.SpotCenter, exposure.SpotRadius, float(exposure.Metering)},
              {step(exposure.BrighteningRate), step(exposure.DarkeningRate), valid ? 1.f : 0.f, exposure.IncludeSky ? 1.f : 0.f}},
             std::make_shared<std::atomic<bool>>(false), view.ExposureTiming};
-        view.Radiance->CompositeWorldTo(display, gain, bloomPass, &meter, defocusPass);
+        view.Radiance->CompositeWorldTo(display, gain, bloomPass, &meter, defocusPass, shutterPass);
         state.Latest = 1 - state.Latest;
         state.Submitted = std::move(meter.Submitted);
         state.Camera = frame.Camera;
@@ -513,6 +615,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
                 RenderCommand::SetRasterState(worldState);
                 world2D();
                 view.Radiance->Unbind();
+                prepareShutter();
                 display->Bind();
                 presentWorld();
             }
@@ -541,6 +644,8 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
         {
             view.Temporal={};
             view.Focus = {};
+            if (view.Shutter.SpatialVectors) view.Shutter.SpatialVectors->Cancel();
+            view.Shutter = {};
             Renderer2D::CancelScene();
             if(view.Jittered)view.Jittered->Cancel();
             if(view.ReflectionSurface)view.ReflectionSurface->Cancel();
@@ -636,6 +741,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
     if (hdr)
     {
         worldBinding.Finish();
+        prepareShutter();
         display->Bind();
         presentWorld();
     }

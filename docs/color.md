@@ -78,6 +78,13 @@ support and fewer samples than **Cinematic**. The optional aperture polygon
 controls highlight shape. The effect uses HDR world color before bloom and
 leaves screen UI sharp. [Depth of field](design/camera-depth-of-field.md)
 
+**Motion blur** is an independent Camera Inspector control. **Physical
+duration** uses the lens shutter in seconds. **Angle** uses a fraction of
+the elapsed frame time for blur and keeps the lens exposure settings.
+Balanced and Cinematic bound the shutter gather and its maximum spread.
+Motion blur resets on camera cuts and precedes depth of field and bloom.
+[Camera motion blur](design/camera-motion-blur.md)
+
 A final pass applies the piecewise sRGB transfer into RGBA8, or into Nutella's
 window with `GL_FRAMEBUFFER_SRGB` disabled. Alpha is copied. The editor's output
 texture has RGBA8 storage, so ImGui samples the encoded values unchanged. Prefab,

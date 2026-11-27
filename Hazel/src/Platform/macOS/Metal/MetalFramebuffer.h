@@ -62,7 +62,7 @@ public:
     void ResolveReflectionsTo(const Ref<Framebuffer>& destination, const ScreenReflectionResolve& parameters) override;
     void CompositeWorldTo(const Ref<Framebuffer>& destination, float exposure,
         const BloomPyramid* bloom = nullptr, const ExposureMeterPass* meter = nullptr,
-        const DepthOfFieldPass* defocus = nullptr) override;
+        const DepthOfFieldPass* defocus = nullptr, const CameraMotionPass* shutter = nullptr) override;
     EditorTexture GetEditorTexture() const override;
     void ResetEditorReadback() override { m_EditorReadback.reset(); m_EditorPendingReadbacks.clear(); }
     int ReadEditorEntity(int x, int y) override;

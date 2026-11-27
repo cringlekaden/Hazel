@@ -1,6 +1,7 @@
 // CPU checks for exact target ECS/YAML dependencies and portable camera state.
 #include "Hazel/Scene/SceneCamera.h"
 #include "Hazel/Renderer/Cameras/CameraDefocus.h"
+#include "Hazel/Renderer/Cameras/CameraShutter.h"
 #include "Hazel/Renderer/Scene/SceneRenderer.h"
 #include "Hazel/Project/RuntimeStorage.h"
 #include "Hazel/Core/FileSystem.h"
@@ -166,6 +167,50 @@ static void CameraDefocusContracts()
     Check(children.size() == 1 && duplicate.GetComponent<CameraComponent>().DepthOfField.TrackedSubject == children.front(),
           "Camera subtree duplication lost its local focus reference");
     std::cout << "PASS: signed perspective circle of confusion versus independent FP64 edge-ray intersection\n";
+}
+static void CameraShutterContracts()
+{
+    using namespace Hazel;
+    PhysicalCamera lens;
+    lens.ShutterSeconds = 1.f / 64;
+    MotionBlurSettings shutter;
+    Check(shutter.Fraction(lens, 1. / 60) == 0, "Photography settings enabled shutter blur");
+    shutter.Enabled = true;
+    constexpr double pixelsPerSecond = 384;
+    for (double fps : {24., 30., 60., 120.}) {
+        const double dt = 1 / fps;
+        const double imageDelta = 384 * dt;
+        const double measuredSupport = imageDelta * shutter.Fraction(lens, dt) * .5;
+        Check(std::abs(measuredSupport - 3) < 1e-12,
+              "An absolute shutter should preserve smear length under a frame-rate change");
+    }
+    shutter.Shutter = MotionShutterMode::Angle;
+    shutter.ShutterAngleDegrees = 180;
+    for (double fps : {24., 30., 60., 120.}) {
+        // Independently integrate two times at the quarter-frame endpoints.
+        const double dt = 1 / fps;
+        const double width = pixelsPerSecond * dt * shutter.Fraction(lens, dt);
+        const double reference = pixelsPerSecond * dt * .25 - pixelsPerSecond * (-dt * .25);
+        Check(std::abs(width - reference) < 1e-12, "Angle shutter support differs from its time-domain ray");
+    }
+    Check(shutter.Fraction(lens, 0) == 0 &&
+          shutter.Fraction(lens, std::numeric_limits<double>::infinity()) == 0,
+          "Discontinuous elapsed time retained a shutter support");
+    const auto originalEV = lens.EV100();
+    shutter.ShutterAngleDegrees = 0;
+    Check(shutter.Fraction(lens, 1. / 120) == 0 && lens.EV100() == originalEV,
+          "Motion angle changed physical exposure");
+    auto scene = CreateRef<Scene>();
+    auto camera = scene->CreateEntity("Motion shutter");
+    shutter.ShutterAngleDegrees = 144;
+    shutter.Quality = MotionBlurQuality::Cinematic;
+    camera.AddComponent<CameraComponent>().MotionBlur = shutter;
+    auto copy = CreateRef<Scene>();
+    SceneSerializer reader(copy);
+    Check(reader.DeserializeText(SceneSerializer(scene).SerializeText()) &&
+          copy->GetEntityByUUID(camera.GetUUID()).GetComponent<CameraComponent>().MotionBlur == shutter,
+          "Camera shutter settings did not round-trip");
+    std::cout << "PASS: motion shutter duration, angle, invalid elapsed time and persistence\n";
 }
 static void CameraExposureMigration()
 {
@@ -487,7 +532,7 @@ int main()
         StorageChecks();
         AssetCookingChecks();ImportCookingChecks();
         Hazel::Log::Init();
-        PhysicalCameraContracts();CameraDefocusContracts();CameraExposureMigration();LocalLightContracts();AuthoredComparisonContracts();ImportPublicationChecks();
+        PhysicalCameraContracts();CameraDefocusContracts();CameraShutterContracts();CameraExposureMigration();LocalLightContracts();AuthoredComparisonContracts();ImportPublicationChecks();
         CPUFontFamilyDocument();
         Hazel::EditorDocumentChecks();
         Hazel::EditorStateChecks();

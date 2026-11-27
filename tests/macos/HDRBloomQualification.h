@@ -95,6 +95,354 @@ inline void HDRBloomQualification(const std::filesystem::path& output,
         if (!file) throw std::runtime_error("Could not save HDR readback");
     };
 
+    if (!FileSystem::GetEnvironmentPath("HAZEL_CAMERA_SHUTTER_BENCHMARK").empty()) {
+        constexpr int samples = 31;
+        struct FrameQuery {
+            GLuint ID = 0;
+            ~FrameQuery() { if (ID) glDeleteQueries(1, &ID); }
+        } query;
+        if (!metal) glGenQueries(1, &query.ID);
+        for (const auto extent : {glm::uvec2(1280,720), glm::uvec2(1920,1080), glm::uvec2(3840,2160)}) {
+            target->Resize(extent.x, extent.y);
+            const auto shot = [&](int i, bool enabled) {
+                auto frame = study((i + 4) * .04f, extent);
+                frame.FrameSeconds = 1.f / 60;
+                frame.Camera.MotionBlur = {enabled, MotionShutterMode::Angle, 270, MotionBlurQuality::Balanced};
+                return frame;
+            };
+            {
+                SceneRenderView view;
+                view.ShutterTiming = std::make_shared<CameraMotionTiming>();
+                for (int i = -4; i < samples; ++i) {
+                    auto frame = shot(i, true);
+                    frame.Presentation.TemporalAA = false;
+                    frame.Presentation.Bloom.Enabled = false;
+                    frame.Presentation.AmbientOcclusion.Enabled = false;
+                    frame.Presentation.ScreenReflections.Enabled = false;
+                    frame.Presentation.Shadows.Enabled = false;
+                    frame.LocalLights.clear();
+                    frame.ReflectionProbes.clear();
+                    *view.ShutterTiming = {};
+                    render(frame, view);
+                    if (i >= 0) {
+                        const auto& t = *view.ShutterTiming;
+                        if (t.WorkingBytes == 0 || t.WorkingBytes > 96 * 1024 * 1024 ||
+                            *std::min_element(t.Milliseconds.begin(), t.Milliseconds.end()) <= 0)
+                            throw std::runtime_error("Shutter timing or scratch outside the measurement contract");
+                        std::cout << "SHUTTER_PASS_TIMING " << extent.x << ' ' << extent.y << ' ' << i;
+                        for (auto ms : t.Milliseconds) std::cout << ' ' << ms;
+                        std::cout << ' ' << t.WorkingBytes << '\n';
+                    }
+                }
+            }
+            std::array<SceneRenderView, 2> views;
+            for (int i = -4; i < samples; ++i) {
+                for (bool enabled : {i % 2 != 0, i % 2 == 0}) {
+                    const auto result = render(shot(i, enabled), views[enabled], query.ID);
+                    GLuint64 ns = 0;
+                    if (query.ID) glGetQueryObjectui64v(query.ID, GL_QUERY_RESULT, &ns);
+                    if (i >= 0)
+                        std::cout << "SHUTTER_FRAME_TIMING " << extent.x << ' ' << extent.y << ' ' << enabled << ' '
+                                  << i << ' ' << result->Serial << ' ' << ns << '\n';
+                }
+            }
+        }
+        return;
+    }
+
+    if (!FileSystem::GetEnvironmentPath("HAZEL_CAMERA_SHUTTER_TEST").empty()) {
+        constexpr glm::uvec2 extent(1280, 720);
+        target->Resize(extent.x, extent.y);
+        SceneSubmission frame;
+        frame.Assets = assets;
+        frame.FrameSeconds = 1.f / 60;
+        frame.Presentation.SceneReferred = true;
+        frame.Camera.Orthographic = true;
+        frame.Camera.Position = {0, 0, 2};
+        frame.Camera.View = glm::lookAt(frame.Camera.Position, glm::vec3(0), glm::vec3(0, 1, 0));
+        frame.Camera.Projection = glm::ortho(-1.f, 1.f, -1.f, 1.f, .1f, 20.f);
+        frame.Camera.ViewProjection = frame.Camera.Projection * frame.Camera.View;
+        frame.Camera.MotionBlur = {true, MotionShutterMode::Angle, 180, MotionBlurQuality::Cinematic};
+        auto cube = assets->Mesh("Native/Direct_v1/UnitCube.hmesh");
+        if (!cube.Accepted) throw std::runtime_error(cube.Error);
+        auto material = CreateRef<MaterialDefinition>();
+        material->BaseColor = {0, 0, 0, 1};
+        material->Emissive = {.5f, 0, 0};
+        material->EmissiveStrength = 1;
+        SubmittedMesh stripe;
+        stripe.Geometry = cube.Accepted;
+        stripe.Identity = stripe.Picking = 7;
+        stripe.Materials = {material};
+        frame.Meshes.push_back(stripe);
+        auto move = [&](float center) {
+            frame.Meshes[0].SetWorld(glm::translate(glm::mat4(1), glm::vec3(center * 2 / extent.x, 0, 0)) *
+                glm::scale(glm::mat4(1), glm::vec3(10.f / extent.x, 1, .1f)));
+        };
+        const auto moment = [&](const auto& image) {
+            double signal = 0, position = 0, distance = 0;
+            const double baseline = image->Color[extent.x * extent.y / 2 + extent.x / 2 - 27].r;
+            for (int x = -30; x <= 30; ++x) {
+                const auto i = extent.x * extent.y / 2 + extent.x / 2 + x;
+                const double w = std::max(0.0, double(image->Color[i].r) - baseline);
+                signal += w;
+                position += (x + .5) * w;
+                distance += (x + .5) * (x + .5) * w;
+            }
+            if (signal <= 0) throw std::runtime_error("Motion study lost its emitter");
+            return std::array{signal, position / signal, distance / signal - std::pow(position / signal, 2)};
+        };
+        const auto referenceCamera = frame.Camera;
+        SceneRenderView view;
+        const auto run = [&](const char* name, double support, const std::function<void()>& advance) {
+            view.Reset();
+            frame.CameraDiscontinuity = false;
+            render(frame, view);
+            if (view.Shutter.Pass.Valid)
+                throw std::runtime_error("Cold motion blur used a previous result");
+            advance();
+            const auto blur = render(frame, view);
+            if (!view.Shutter.Pass.Valid)
+                throw std::runtime_error("Motion blur did not use submitted history");
+            frame.CameraDiscontinuity = true;
+            const auto sharp = render(frame, view);
+            coverage(blur, sharp);
+            if (std::string_view(name) == "moving-object") {
+                save("shutter-motion", blur);
+                save("shutter-cut", sharp);
+            }
+            const auto [energy, center, variance] = moment(blur);
+            const auto [sharpEnergy, sharpCenter, sharpVariance] = moment(sharp);
+            const double width = 2 * std::sqrt(std::max(0., 3 * (variance - sharpVariance)));
+            const double endpointError = std::abs(center - sharpCenter) + .5 * std::abs(width - support);
+            const double energyRatio = energy / sharpEnergy;
+            std::cout << "SHUTTER_SUPPORT case=" << name << " reference=" << support << " measured=" << width
+                      << " centerError=" << center - sharpCenter << " endpointError=" << endpointError
+                      << " energyRatio=" << energyRatio << std::endl;
+            if (!(endpointError <= 1 && std::abs(energyRatio - 1) <= .12))
+                throw std::runtime_error("Native global shutter differs from the sampled constant-motion reference");
+        };
+        move(-16);
+        run("moving-object", 8, [&] { move(0); });
+
+        frame.Camera.MotionBlur.Quality = MotionBlurQuality::Balanced;
+        move(-16);
+        run("balanced-moving-object", 8, [&] { move(0); });
+        frame.Camera.MotionBlur.Quality = MotionBlurQuality::Cinematic;
+        frame.FrameSeconds = 1.f / 24;
+        move(-32);
+        run("fast-object-24hz", 16, [&] { move(0); });
+        frame.FrameSeconds = 1.f / 60;
+
+        // An orthographic camera translating by the equivalent world distance
+        // has the same image-space exposure endpoints for a stationary object.
+        frame.Camera.Position.x = 32.f / extent.x;
+        frame.Camera.View = glm::lookAt(frame.Camera.Position, {frame.Camera.Position.x, 0, 0}, {0, 1, 0});
+        frame.Camera.ViewProjection = frame.Camera.Projection * frame.Camera.View;
+        run("translating-camera", 8, [&] { frame.Camera = referenceCamera; });
+
+        frame.Camera.Orthographic = false;
+        frame.Camera.Projection = glm::perspective(glm::radians(50.f), float(extent.x) / extent.y, .1f, 20.f);
+        frame.Camera.ViewProjection = frame.Camera.Projection * frame.Camera.View;
+        const auto straight = frame.Camera;
+        const float projectionX = straight.Projection[0][0];
+        const float yaw = std::atan(32.f / (extent.x * projectionX));
+        frame.Camera.View = glm::lookAt(frame.Camera.Position, {std::sin(yaw), 0, 2 - std::cos(yaw)}, {0, 1, 0});
+        frame.Camera.ViewProjection = frame.Camera.Projection * frame.Camera.View;
+        frame.Camera.ToCamera = glm::vec3(glm::inverse(frame.Camera.View)[2]);
+        frame.Meshes[0].SetWorld(glm::scale(glm::mat4(1), glm::vec3(19.5f / (projectionX * extent.x), 1, .1f)));
+        run("rotating-camera", 8, [&] { frame.Camera = straight; });
+
+        frame.Camera = referenceCamera;
+        frame.Camera.Physical = PhysicalCamera{};
+        frame.Camera.Physical->ShutterSeconds = 1.f / 48;
+        frame.Camera.MotionBlur.Shutter = MotionShutterMode::Duration;
+        frame.Presentation.Exposure.CompensationStops = float(frame.Camera.Physical->EV100() - PhysicalCamera::ReferenceEV100);
+        for (int fps : {24, 120}) {
+            frame.FrameSeconds = 1.f / fps;
+            move(-384.f / fps);
+            run(fps == 24 ? "duration-24hz" : "duration-120hz", 8, [&] { move(0); });
+        }
+        frame.Camera = referenceCamera;
+        frame.Presentation.Exposure.CompensationStops = 0;
+        frame.FrameSeconds = 1.f / 60;
+        frame.CameraDiscontinuity = false;
+        view.Reset();
+        move(-648);
+        render(frame, view);
+        move(-636);
+        const auto edge = render(frame, view);
+        frame.CameraDiscontinuity = true;
+        const auto edgeSharp = render(frame, view);
+        frame.CameraDiscontinuity = false;
+        for (unsigned x = extent.x - 20; x < extent.x; ++x)
+            if (edge->Color[extent.x * extent.y / 2 + x] != edgeSharp->Color[extent.x * extent.y / 2 + x])
+                throw std::runtime_error("Shutter reconstruction wrapped across the viewport edge");
+        const auto ui = [] {
+            Renderer2D::BeginScene(glm::mat4(1));
+            Renderer2D::DrawQuad({0, 0, -.99f}, {.06f, .06f}, glm::vec4(1));
+            Renderer2D::EndScene();
+        };
+        const auto showUI = [&](bool enabled) {
+            view.Reset();
+            move(-16);
+            render(frame, view);
+            move(0);
+            return enabled ? render(frame, view, 0, ui) : render(frame, view);
+        };
+        const auto clean = showUI(false);
+        const auto composed = showUI(true);
+        size_t changed = 0;
+        for (unsigned y = 0; y < extent.y; ++y) {
+            for (unsigned x = 0; x < extent.x; ++x) {
+                const auto i = y * extent.x + x;
+                if (clean->Color[i] == composed->Color[i]) continue;
+                if (std::abs(int(x) - int(extent.x / 2)) > 20 || std::abs(int(y) - int(extent.y / 2)) > 12)
+                    throw std::runtime_error("Screen UI contributed to the shutter reconstruction");
+                ++changed;
+            }
+        }
+        if (!changed) throw std::runtime_error("Shutter study did not render the screen overlay");
+        std::cout << "SHUTTER_COVERAGE screenEdge=pass screenUI=pass\n";
+
+        frame = {};
+        frame.Assets = assets;
+        frame.FrameSeconds = 1.f / 60;
+        frame.Presentation.SceneReferred = true;
+        PhysicalCamera opticsLens;
+        opticsLens.Aperture = 1.8f;
+        opticsLens.FocusDistance = 2;
+        frame.Camera.Physical = opticsLens;
+        frame.Camera.MotionBlur = {true, MotionShutterMode::Angle, 180, MotionBlurQuality::Cinematic};
+        frame.Camera.DepthOfField = {true, DepthOfFieldQuality::Cinematic, 0, 0, 0};
+        frame.Camera.Projection = glm::perspective(float(opticsLens.VerticalFOV(double(extent.x) / extent.y)),
+            float(extent.x) / extent.y, .2f, 100.f);
+        frame.Camera.ViewProjection = frame.Camera.Projection;
+        frame.Presentation.Exposure.CompensationStops = float(opticsLens.EV100() - PhysicalCamera::ReferenceEV100);
+        auto dark = CreateRef<MaterialDefinition>(*material);
+        dark->Emissive = glm::vec3(0);
+        auto plate = stripe;
+        plate.Identity = plate.Picking = 8;
+        plate.Materials = {dark};
+        plate.SetWorld(glm::translate(glm::mat4(1), glm::vec3(0, 0, -6.0025f)) *
+            glm::scale(glm::mat4(1), glm::vec3(30, 30, .001f)));
+        frame.Meshes = {stripe, plate};
+        const float worldPixel = 12 / (frame.Camera.Projection[0][0] * extent.x);
+        const auto movePoint = [&](float pixels) {
+            frame.Meshes[0].SetWorld(glm::translate(glm::mat4(1), glm::vec3(pixels * worldPixel, 0, -6.0005f)) *
+                glm::scale(glm::mat4(1), glm::vec3(3 * worldPixel, 3 * worldPixel, .001f)));
+        };
+        const auto spreads = [&](const auto& image) {
+            double weight = 0, x = 0, y = 0, xx = 0, yy = 0;
+            for (int iy = -24; iy <= 24; ++iy) {
+                for (int ix = -24; ix <= 24; ++ix) {
+                    const double w = image->Color[(int(extent.y / 2) + iy) * extent.x + int(extent.x / 2) + ix].r;
+                    weight += w;
+                    x += w * (ix + .5);
+                    y += w * (iy + .5);
+                    xx += w * (ix + .5) * (ix + .5);
+                    yy += w * (iy + .5) * (iy + .5);
+                }
+            }
+            if (weight <= .001) throw std::runtime_error("Combined physical optics lost the emitter");
+            return glm::dvec2(xx / weight - std::pow(x / weight, 2), yy / weight - std::pow(y / weight, 2));
+        };
+        view.Reset();
+        movePoint(-16);
+        render(frame, view);
+        movePoint(0);
+        const auto integrated = render(frame, view);
+        frame.Camera.DepthOfField.Enabled = false;
+        frame.Camera.MotionBlur.Enabled = false;
+        const auto point = render(frame, view);
+        coverage(integrated, point);
+        const auto kernel = spreads(integrated) - spreads(point);
+        // Independent projected-time and circular-pupil second moments.
+        const double lensRadius = (1. / (1. / 50 - 1. / 2000) /
+            (1. / (1. / 50 - 1. / 6000)) - 1) * 50 / (2 * 1.8) * 720 / 20.25;
+        const double measuredLens = 2 * std::sqrt(std::max(0.0, kernel.y));
+        const double measuredShutter = std::sqrt(std::max(0.0, 3 * (kernel.x - kernel.y)));
+        std::cout << "SHUTTER_LENS apertureRadius=" << measuredLens << " referenceAperture=" << lensRadius
+                  << " shutterHalfWidth=" << measuredShutter << " referenceShutter=4" << std::endl;
+        if (!(std::abs(measuredLens - lensRadius) <= 1 && std::abs(measuredShutter - 4) <= 1))
+            throw std::runtime_error("Combined shutter and pupil exceeded the independent support bound");
+
+        target->Resize(640, 360);
+        SceneRenderView optics, baseline;
+        for (unsigned pose = 0; pose < 7; ++pose) {
+            auto shot = study(.15f * pose, {640, 360});
+            shot.FrameSeconds = 1.f / 60;
+            shot.Presentation.Exposure.Mode = ExposureMode::Automatic;
+            shot.Camera.Physical = PhysicalCamera{};
+            shot.Camera.Physical->FocalLengthMM = 135;
+            shot.Camera.Physical->Aperture = 1.2f;
+            shot.Camera.Physical->FocusDistance = 5.5f;
+            shot.Camera.DepthOfField = {true, DepthOfFieldQuality::Cinematic, 8, .22f, 0};
+            shot.CameraDiscontinuity = pose == 4;
+            auto sharp = render(shot, baseline);
+            shot.Camera.MotionBlur = {true, MotionShutterMode::Angle, 270, MotionBlurQuality::Cinematic};
+            auto blurred = render(shot, optics);
+            coverage(sharp, blurred);
+            if (pose == 2 && (!optics.Shutter.Pass.Valid || sharp->Color == blurred->Color))
+                throw std::runtime_error("Combined world shot did not exercise shutter blur");
+            if ((pose == 0 || pose == 4) && (optics.Shutter.Pass.Valid || sharp->Color != blurred->Color))
+                throw std::runtime_error("World shutter blur survived a cut");
+            if (pose == 2) {
+                save("shutter-gallery-sharp", sharp);
+                save("shutter-gallery-motion", blurred);
+            }
+        }
+        std::cout << "SHUTTER_COMBINED optics=pass cut=pass pickingDepth=exact"
+                  << (metal ? " reuseTemporalVectors=pass" : " spatialVectors=pass") << '\n';
+#if defined(HZ_PLATFORM_MACOS) && __has_include(<Metal/Metal.hpp>)
+        if (metal) {
+            auto& backend = static_cast<MetalRendererAPI&>(RenderCommand::Backend());
+            target->Resize(257, 149);
+            std::array<Ref<const FramebufferReadback>, 3> queued, serial;
+            SceneRenderView history;
+            const auto shot = [&](unsigned i) {
+                auto world = study(i * .13f, {257, 149});
+                world.FrameSeconds = 1.f / 60;
+                world.Presentation.TemporalAA = false;
+                world.Camera.MotionBlur = {true, MotionShutterMode::Angle, 270, MotionBlurQuality::Cinematic};
+                return world;
+            };
+            for (unsigned i = 0; i < serial.size(); ++i) serial[i] = render(shot(i), history);
+            history.Reset();
+            auto release = backend.GateQueueForTesting();
+            try {
+                for (unsigned i = 0; i < queued.size(); ++i) {
+                    draw(shot(i), history);
+                    if (i > 0 && !history.Shutter.Pass.Valid)
+                        throw std::runtime_error("Queued shutter frame lost populated history");
+                    target->Unbind();
+                    queued[i] = target->Submit();
+                    if (!queued[i] || queued[i]->Completed)
+                        throw std::runtime_error("Shutter queue did not hold the submitted packet");
+                }
+                history.Reset();
+                target->Resize(1, 1);
+                if (backend.Observe()->Snapshot().InFlight != queued.size())
+                    throw std::runtime_error("Shutter test did not use all three queue slots");
+            } catch (...) {
+                release();
+                throw;
+            }
+            release();
+            for (unsigned i = 0; i < queued.size(); ++i) {
+                for (unsigned tries = 0; !queued[i]->Completed && tries < 2500; ++tries) {
+                    target->Poll();
+                    if (!queued[i]->Completed) std::this_thread::sleep_for(std::chrono::milliseconds(2));
+                }
+                if (!queued[i]->Completed || !queued[i]->Error.empty() || queued[i]->Color != serial[i]->Color)
+                    throw std::runtime_error("Queued shutter output differed from the serial reference");
+                coverage(queued[i], serial[i]);
+            }
+            std::cout << "SHUTTER_LIFETIME queue=3 reset=pass resize=pass history=exact\n";
+        }
+#endif
+        return;
+    }
+
     if (!FileSystem::GetEnvironmentPath("HAZEL_CAMERA_DEFOCUS_BENCHMARK").empty()) {
         struct FrameQuery {
             GLuint ID = 0;

@@ -278,6 +278,20 @@ namespace Hazel {
 					out << YAML::Key << "TrackedSubject" << YAML::Value << defocus.TrackedSubject;
 				out << YAML::EndMap;
 			}
+			const auto& shutter = cameraComponent.MotionBlur;
+			if (!(shutter == MotionBlurSettings{}))
+			{
+				shutter.Validate();
+				out << YAML::Key << "MotionBlur" << YAML::Value << YAML::BeginMap;
+				out << YAML::Key << "Version" << YAML::Value << 1;
+				out << YAML::Key << "Enabled" << YAML::Value << shutter.Enabled;
+				out << YAML::Key << "Shutter" << YAML::Value
+				    << (shutter.Shutter == MotionShutterMode::Angle ? "Angle" : "Duration");
+				out << YAML::Key << "ShutterAngleDegrees" << YAML::Value << shutter.ShutterAngleDegrees;
+				out << YAML::Key << "Quality" << YAML::Value
+				    << (shutter.Quality == MotionBlurQuality::Cinematic ? "Cinematic" : "Balanced");
+				out << YAML::EndMap;
+			}
 			out << YAML::Key << "Primary" << YAML::Value << cameraComponent.Primary;
 			out << YAML::Key << "FixedAspectRatio" << YAML::Value << cameraComponent.FixedAspectRatio;
 
@@ -635,6 +649,8 @@ namespace Hazel {
 						cc.ExposureOverride = SceneDefaults::ReadExposure(exposure);
 					if (const auto defocus = cameraComponent["DepthOfField"])
 						cc.DepthOfField = DocumentSchema::ReadDepthOfField(defocus);
+					if (const auto motion = cameraComponent["MotionBlur"])
+						cc.MotionBlur = DocumentSchema::ReadMotionBlur(motion);
 					cc.Primary = cameraComponent["Primary"].as<bool>();
 					cc.FixedAspectRatio = cameraComponent["FixedAspectRatio"].as<bool>();
 				}

@@ -164,6 +164,7 @@ quantization error within its range.
    depth for both. Compare against combined time/lens sampling before
    qualifying that order; both are single-view approximations with missing
    occluded information.
+   [Phase 4 implementation and native evidence](camera-motion-blur.md)
 5. **Optics.** From visible HDR highlights build reduced-resolution flare,
    ghosts, halo and optional streak/starburst. Flare injection follows the
    DOF/motion chain and shares exposure with the image. Dirt modulates glare

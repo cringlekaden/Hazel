@@ -16,8 +16,31 @@ layout(binding=4) uniform sampler2D u_DefocusDepth;
 layout(binding=5) uniform sampler2D u_DefocusNear;
 layout(binding=6) uniform sampler2D u_DefocusFar;
 layout(binding=7) uniform sampler2D u_DefocusBounds;
+layout(binding=8) uniform sampler2D u_ShutterLayer;
 // Mode (extract=0, down=1, up=2), coarse contribution, inverse source extent.
-layout(std140,binding=5) uniform Bloom { vec4 u_Filter, u_Defocus; };
+layout(std140,binding=5) uniform Bloom { vec4 u_Filter, u_Defocus, u_Optics; };
+// SHUTTER RECONSTRUCTION
+vec3 reconstructShutter(vec3 sceneColor, ivec2 pixel, float mode)
+{
+    ivec2 size = textureSize(u_ShutterLayer, 0);
+    vec2 point = (vec2(pixel) + .5) * .5;
+    vec4 layer;
+    if (mode < 1.5) {
+        layer = texture(u_ShutterLayer, point / vec2(size));
+    } else {
+        vec2 p = point - .5;
+        ivec2 base = ivec2(floor(p));
+        ivec2 last = size - 1;
+        vec2 f = fract(p);
+        vec4 a = texelFetch(u_ShutterLayer, clamp(base, ivec2(0), last), 0);
+        vec4 b = texelFetch(u_ShutterLayer, clamp(base + ivec2(1, 0), ivec2(0), last), 0);
+        vec4 c = texelFetch(u_ShutterLayer, clamp(base + ivec2(0, 1), ivec2(0), last), 0);
+        vec4 d = texelFetch(u_ShutterLayer, clamp(base + ivec2(1, 1), ivec2(0), last), 0);
+        layer = mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+    }
+    return sceneColor * (1.0 - layer.a) + layer.rgb;
+}
+// END SHUTTER RECONSTRUCTION
 
 // DEFOCUS RECONSTRUCTION
 vec4 sampleDefocusLayer(sampler2D layer, vec2 uv, bool explicitFiltering)
@@ -55,6 +78,7 @@ vec3 reconstructDefocus(vec3 world, ivec2 pixel, vec4 lens, bool nearInfluences)
 vec3 highlight(ivec2 p, ivec2 last, bool nearInfluences) {
     p = min(p,last);
     vec3 world = texelFetch(u_Source,p,0).rgb;
+    if (u_Optics.z > .5) world = reconstructShutter(world, p, u_Optics.z);
     if (u_Defocus.w > .5) world = reconstructDefocus(world,p,u_Defocus,nearInfluences);
     vec3 c=max(world,vec3(0.0));
     if (any(isnan(c)) || any(isinf(c))) return vec3(0.0);

@@ -16,7 +16,30 @@ layout(binding=4) uniform sampler2D u_DefocusDepth;
 layout(binding=5) uniform sampler2D u_DefocusNear;
 layout(binding=6) uniform sampler2D u_DefocusFar;
 layout(binding=7) uniform sampler2D u_DefocusBounds;
+layout(binding=8) uniform sampler2D u_ShutterLayer;
 layout(std140,binding=5) uniform Presentation {vec4 u_Presentation, u_Defocus;};
+// SHUTTER RECONSTRUCTION
+vec3 reconstructShutter(vec3 sceneColor, ivec2 pixel, float mode)
+{
+    ivec2 size = textureSize(u_ShutterLayer, 0);
+    vec2 point = (vec2(pixel) + .5) * .5;
+    vec4 layer;
+    if (mode < 1.5) {
+        layer = texture(u_ShutterLayer, point / vec2(size));
+    } else {
+        vec2 p = point - .5;
+        ivec2 base = ivec2(floor(p));
+        ivec2 last = size - 1;
+        vec2 f = fract(p);
+        vec4 a = texelFetch(u_ShutterLayer, clamp(base, ivec2(0), last), 0);
+        vec4 b = texelFetch(u_ShutterLayer, clamp(base + ivec2(1, 0), ivec2(0), last), 0);
+        vec4 c = texelFetch(u_ShutterLayer, clamp(base + ivec2(0, 1), ivec2(0), last), 0);
+        vec4 d = texelFetch(u_ShutterLayer, clamp(base + ivec2(1, 1), ivec2(0), last), 0);
+        layer = mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+    }
+    return sceneColor * (1.0 - layer.a) + layer.rgb;
+}
+// END SHUTTER RECONSTRUCTION
 // DEFOCUS RECONSTRUCTION
 vec4 sampleDefocusLayer(sampler2D layer, vec2 uv, bool explicitFiltering)
 {
@@ -61,6 +84,7 @@ vec3 neutral(vec3 radiance){
 }
 void main() {
     vec4 world=texture(u_World,v_UV);
+    if (u_Presentation.w > .5) world.rgb = reconstructShutter(world.rgb, ivec2(gl_FragCoord.xy), u_Presentation.w);
     if (u_Defocus.w > .5) {
         ivec2 pixel = ivec2(gl_FragCoord.xy);
         bool nearInfluences = texelFetch(u_DefocusBounds, pixel / 16, 0).x >= .5;

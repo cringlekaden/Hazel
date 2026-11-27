@@ -26,6 +26,12 @@ def produce(configuration, destination, sources=None, force=False):
         return source.split('// DEFOCUS RECONSTRUCTION\n', 1)[1].split('// END DEFOCUS RECONSTRUCTION', 1)[0]
     if defocus_reconstruction('BloomFilter') != defocus_reconstruction('WorldPresentation'):
         raise RuntimeError('Depth of field reconstruction differs between bloom and world presentation')
+    shutter = []
+    for name in ('BloomFilter', 'WorldPresentation', 'DefocusPrefilter'):
+        source = (sources / f'{name}.glsl').read_text()
+        shutter.append(source.split('// SHUTTER RECONSTRUCTION\n', 1)[1].split('// END SHUTTER RECONSTRUCTION', 1)[0])
+    if len(set(shutter)) != 1:
+        raise RuntimeError('Shutter reconstruction differs across the world optical passes')
     tool = hz.binaries(configuration) / 'MetalShaderTools/MetalShaderTools'
     destination.mkdir(parents=True, exist_ok=True)
     env = os.environ.copy()
@@ -63,8 +69,8 @@ def produce(configuration, destination, sources=None, force=False):
                 # second same-filesystem rename publishes the completed package.
                 (work / (variant + '.hzmetal')).replace(destination / (variant + '.hzmetal'))
             results[variant] = 'REBUILT'
-    if len(results) != 17:
-        raise RuntimeError('Expected sixteen raster shaders (seventeen variant packages)')
+    if len(results) != 18:
+        raise RuntimeError('Expected seventeen raster shaders (eighteen variant packages)')
     # Dear ImGui uses its upstream MSL directly; no shader source is compiled at runtime.
     source = hz.ROOT / 'Hazel/Resources/shaders/ImGui.metal'
     identity = hashlib.sha256(source.read_bytes() + producer.encode()).hexdigest()

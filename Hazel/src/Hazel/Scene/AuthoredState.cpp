@@ -168,6 +168,10 @@ std::string SceneSerializer::CaptureAuthoredState(Entity only, const std::type_i
             state.Value(c.DepthOfField.ApertureRotation);
             state.Value(c.DepthOfField.FocusHalfLife);
             state.Value(c.DepthOfField.TrackedSubject);
+            state.Value(c.MotionBlur.Enabled);
+            state.Value(unsigned(c.MotionBlur.Shutter));
+            state.Value(c.MotionBlur.ShutterAngleDegrees);
+            state.Value(unsigned(c.MotionBlur.Quality));
             state.Value(c.Primary);
             state.Value(c.FixedAspectRatio);
         });
