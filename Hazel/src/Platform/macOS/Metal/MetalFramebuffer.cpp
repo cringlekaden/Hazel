@@ -20,12 +20,16 @@ void MetalFramebuffer::Validate(const FramebufferSpecification& specification)
 {
     const auto& attachments = specification.Attachments.Attachments;
     const bool depthOnly=attachments.size()==1 && attachments[0].TextureFormat==FramebufferTextureFormat::DEPTH32F;
+    const bool reflectionSurface=attachments.size()==6 &&
+        attachments[3].TextureFormat==FramebufferTextureFormat::RGBA16F &&
+        attachments[4].TextureFormat==FramebufferTextureFormat::RGBA16F &&
+        attachments[5].TextureFormat==FramebufferTextureFormat::RGBA32F;
     Check(specification.Width && specification.Height && specification.Width <= 4096 && specification.Height <= 4096 && uint64_t(specification.Width) * specification.Height <= (depthOnly?16777216u:8388608u) &&
-        specification.Samples == 1 && !specification.SwapChainTarget && ((attachments.size() == 1 && (attachments[0].TextureFormat == FramebufferTextureFormat::RGBA8 || attachments[0].TextureFormat == FramebufferTextureFormat::DEPTH32F)) || (attachments.size() == 3 &&
+        specification.Samples == 1 && !specification.SwapChainTarget && ((attachments.size() == 1 && (attachments[0].TextureFormat == FramebufferTextureFormat::RGBA8 || attachments[0].TextureFormat == FramebufferTextureFormat::DEPTH32F)) || ((attachments.size() == 3 || reflectionSurface) &&
         attachments[0].TextureFormat == FramebufferTextureFormat::RGBA32F &&
         attachments[1].TextureFormat == FramebufferTextureFormat::RED_INTEGER &&
         attachments[2].TextureFormat == FramebufferTextureFormat::DEPTH32F)),
-        "Metal framebuffer requires 1..4096 extent / at most 8M color or 16M depth-only pixels, one sample, ordered RGBA32F/R32Sint/Depth32F, depth-only preparation or RGBA8 output attachments and no swapchain target");
+        "Metal framebuffer requires 1..4096 extent / at most 8M color or 16M depth-only pixels, one sample, ordered RGBA32F/R32Sint/Depth32F, optional reflection surface data, depth-only preparation or RGBA8 output attachments and no swapchain target");
 }
 MetalFramebuffer::MetalFramebuffer(std::shared_ptr<MetalDevice> device, const FramebufferSpecification& specification)
     : m_Device(std::move(device)), m_Specification(specification)
@@ -43,9 +47,10 @@ std::shared_ptr<const MetalFramebufferAttachments> MetalFramebuffer::Allocate(ui
     auto descriptor = NS::TransferPtr(MTL::TextureDescriptor::alloc()->init());
     descriptor->setTextureType(MTL::TextureType2D); descriptor->setWidth(width); descriptor->setHeight(height);
     descriptor->setStorageMode(MTL::StorageModePrivate); descriptor->setUsage(MTL::TextureUsageRenderTarget | MTL::TextureUsageShaderRead);
-    const MTL::PixelFormat formats[] = {MTL::PixelFormatRGBA32Float, MTL::PixelFormatR32Sint, MTL::PixelFormatDepth32Float};
+    const MTL::PixelFormat formats[] = {MTL::PixelFormatRGBA32Float, MTL::PixelFormatR32Sint, MTL::PixelFormatDepth32Float,
+        MTL::PixelFormatRGBA16Float, MTL::PixelFormatRGBA16Float, MTL::PixelFormatRGBA32Float};
     const bool depthOnly=m_Specification.Attachments.Attachments.size()==1 && m_Specification.Attachments.Attachments[0].TextureFormat==FramebufferTextureFormat::DEPTH32F;
-    for (size_t i = depthOnly?2u:0u; i < (depthOnly?3u:temporalHistory?2u:m_Specification.Attachments.Attachments.size() == 1 ? 1u : 3u); ++i)
+    for (size_t i = depthOnly?2u:0u; i < (depthOnly?3u:temporalHistory?2u:m_Specification.Attachments.Attachments.size()); ++i)
     {
         descriptor->setUsage(MTL::TextureUsageRenderTarget | MTL::TextureUsageShaderRead | ((i == 0 && m_Specification.Attachments.Attachments.size() == 3) || temporalHistory ? MTL::TextureUsageShaderWrite : 0));
         descriptor->setPixelFormat(!depthOnly && m_Specification.Attachments.Attachments.size() == 1 ? MTL::PixelFormatBGRA8Unorm : formats[i]);
@@ -76,7 +81,7 @@ void MetalFramebuffer::PrepareAmbientOcclusion(const Ref<Framebuffer>& depth, co
     Check(source && source.get()!=this && source->m_Device==m_Device && source->m_Frame && m_Frame &&
         !Backend().IsFramebufferBound(source->m_Frame) && Backend().IsFramebufferBound(m_Frame) &&
         source->m_Frame->Width==m_Frame->Width && source->m_Frame->Height==m_Frame->Height &&
-        source->m_Attachments->Targets[2] && m_Specification.Attachments.Attachments.size()==3,
+        source->m_Attachments->Targets[2] && m_Attachments->Targets[1],
         "XeGTAO requires an unbound depth producer and bound equal-size lighting target");
     auto constants=AmbientOcclusionConstants(camera,settings,m_Frame->Width,m_Frame->Height,temporalPhase);
     constants.Quality.w=temporalPhase?288u*((temporalPhase-1)%64):0u;
@@ -313,16 +318,33 @@ void MetalFramebuffer::DispatchColorTo(const Ref<Framebuffer>& destination, cons
 }
 void MetalFramebuffer::SetWorldProducer()
 {
-    Check(!m_Frame && !m_TemporalProducer && m_Specification.Attachments.Attachments.size()==3,
+    Check(!m_Frame && !m_TemporalProducer && m_Attachments->Targets[1],
         "Private world scratch requires an empty HDR framebuffer");
     if(!m_WorldProducer)Check(!m_SubmittedGeneration && m_Available.empty(),"World scratch must be configured before first use");
     m_WorldProducer=true;
+}
+void MetalFramebuffer::ResolveReflectionsTo(const Ref<Framebuffer>& destination,
+                                          const ScreenReflectionResolve& parameters)
+{
+    auto target=std::dynamic_pointer_cast<MetalFramebuffer>(destination);
+    Check(target && target.get()!=this && target->m_Device==m_Device && m_WorldProducer &&
+        m_Attachments->Targets[3] && target->m_Specification.Attachments.Attachments.size()==3 &&
+        m_Frame && !m_Frame->World && !Backend().IsFramebufferBound(m_Frame) && target->m_Frame &&
+        Backend().IsFramebufferBound(target->m_Frame) && target->m_Frame->Draws.empty() &&
+        !target->m_Frame->World && m_Frame->Width==target->m_Frame->Width &&
+        m_Frame->Height==target->m_Frame->Height,
+        "SSR requires a private unbound surface producer and a bound empty HDR destination");
+    target->m_Frame->PresentationShader=std::static_pointer_cast<MetalShader>(Backend().LoadShader("ScreenReflections"));
+    target->m_Frame->Reflections=parameters;
+    m_Frame->Readback=false;
+    target->m_Frame->World=std::move(m_Frame);
+    m_SubmittedGeneration=true;
 }
 void MetalFramebuffer::CompositeWorldTo(const Ref<Framebuffer>& destination, float exposure)
 {
     auto target = std::dynamic_pointer_cast<MetalFramebuffer>(destination);
     Check(target && target.get() != this && target->m_Device == m_Device && std::isfinite(exposure) && exposure >= -16 && exposure <= 16, "Invalid Metal world destination/exposure");
-    Check(m_Specification.Attachments.Attachments.size()==3 && target->m_Specification.Attachments.Attachments.size()==3 && m_Frame && !m_Frame->World && !Backend().IsFramebufferBound(m_Frame) && target->m_Frame &&
+    Check(m_Specification.Attachments.Attachments.size()==3 && target->m_Specification.Attachments.Attachments.size()==3 && m_Frame && !Backend().IsFramebufferBound(m_Frame) && target->m_Frame &&
         Backend().IsFramebufferBound(target->m_Frame) && target->m_Frame->Draws.empty() && !target->m_Frame->World &&
         m_Frame->Width == target->m_Frame->Width && m_Frame->Height == target->m_Frame->Height,
         "World conversion requires an unbound world and a bound empty destination of equal extent");

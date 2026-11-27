@@ -42,6 +42,7 @@ class SceneRenderView
     std::weak_ptr<void> NativeDevice; // Detect native backend recreation without retaining it.
     std::shared_ptr<TemporalTiming> TemporalMetrics=std::make_shared<TemporalTiming>();
     Ref<Framebuffer> Jittered, Motion;
+    Ref<Framebuffer> ReflectionSurface;
     unsigned AmbientOcclusionView = 0; // Transient, never authored.
     unsigned ShadowView = 0;
     unsigned LocalLightingView = 0;
@@ -55,6 +56,7 @@ class SceneRenderView
     {
         LocalMetrics=std::make_shared<LocalLightingMetrics>();
         Radiance.reset();
+        ReflectionSurface.reset();
         ReflectionProbes = {};
         Jittered.reset();Motion.reset();Temporal={};
         TemporalMetrics=std::make_shared<TemporalTiming>();

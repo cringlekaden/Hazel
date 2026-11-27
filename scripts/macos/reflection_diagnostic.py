@@ -202,11 +202,11 @@ Entities:
 """)
 
 
-def write_motion(path, folder, read_pixels):
+def write_motion(path, folder, read_pixels, modes=("global", "local"), poses=POSES):
     """Pack the same camera sequence side by side into a looping RGB APNG."""
     width, height = SIZE
     output_height = height // 2
-    frame_order = [*range(POSES), *range(POSES - 2, 0, -1)]
+    frame_order = [*range(poses), *range(poses - 2, 0, -1)]
 
     def chunk(kind, data):
         return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data))
@@ -221,8 +221,8 @@ def write_motion(path, folder, read_pixels):
                                         for c in range(3)) for image in images)
 
     compressed = []
-    for pose in range(POSES):
-        images = [read_pixels(folder / f"{mode}-{pose}.bin") for mode in ("global", "local")]
+    for pose in range(poses):
+        images = [read_pixels(folder / f"{mode}-{pose}.bin") for mode in modes]
         if any(len(image) != width * height for image in images):
             raise RuntimeError("Incomplete reflection gallery motion frame")
         compressed.append(zlib.compress(b"".join(rows(images))))

@@ -12,7 +12,7 @@ class MetalDevice;
 class MetalShader final : public Shader
 {
 public:
-    MetalShader(std::shared_ptr<MetalDevice> device, const std::string& name, uint32_t slots = 32, bool drawableOutput = false, const RasterState* raster = nullptr);
+    MetalShader(std::shared_ptr<MetalDevice> device, const std::string& name, uint32_t slots = 32, bool drawableOutput = false, const RasterState* raster = nullptr, bool reflectionSurface = false);
     const std::string& GetName() const override { return m_Artifact.Name; }
     ProgramLoadingPath GetProgramLoadingPath() const override { return ProgramLoadingPath::MetalLibrary; }
     const MetalShaderArtifact& Artifact() const { return m_Artifact; }

@@ -411,18 +411,19 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
     }
     if (quad->World) {
         auto table = NS::TransferPtr(MTL4::ArgumentTableDescriptor::alloc()->init());
-        table->setInitializeBindings(true); table->setMaxBufferBindCount(6); table->setMaxTextureBindCount(2); table->setMaxSamplerStateBindCount(1);
+        table->setInitializeBindings(true); table->setMaxBufferBindCount(6); table->setMaxTextureBindCount(quad->Reflections ? 6 : 2); table->setMaxSamplerStateBindCount(1);
         quad->PresentationArguments = NS::TransferPtr(m_Device->newArgumentTable(table.get(), &error));
         auto sampler = NS::TransferPtr(MTL::SamplerDescriptor::alloc()->init());
         sampler->setMinFilter(MTL::SamplerMinMagFilterNearest); sampler->setMagFilter(MTL::SamplerMinMagFilterNearest);
         sampler->setSAddressMode(MTL::SamplerAddressModeClampToEdge); sampler->setTAddressMode(MTL::SamplerAddressModeClampToEdge);
         if (!quad->OutputSampler) quad->OutputSampler = NS::TransferPtr(m_Device->newSamplerState(sampler.get()));
         glm::vec4 presentation(quad->Exposure, 0, 0, 0);
-        auto uniform = AcquireRenderer2DBuffer(sizeof(presentation), &presentation);
+        auto uniform = quad->Reflections ? AcquireRenderer2DBuffer(sizeof(*quad->Reflections), &*quad->Reflections) :
+            AcquireRenderer2DBuffer(sizeof(presentation), &presentation);
         Check(bool(quad->PresentationArguments) && bool(quad->OutputSampler) && bool(uniform), "Cannot allocate world presentation bindings");
         quad->PresentationArguments->setAddress(uniform->gpuAddress(), 5);
-        quad->PresentationArguments->setTexture(quad->World->Attachments->Targets[0]->gpuResourceID(), 0);
-        quad->PresentationArguments->setTexture(quad->World->Attachments->Targets[1]->gpuResourceID(), 1);
+        for (unsigned slot=0; slot<(quad->Reflections ? 6u : 2u); ++slot)
+            quad->PresentationArguments->setTexture(quad->World->Attachments->Targets[slot]->gpuResourceID(), slot);
         quad->PresentationArguments->setSamplerState(quad->OutputSampler->gpuResourceID(), 0);
         quad->Residency->addAllocation(uniform.get()); quad->Buffers.push_back(std::move(uniform));
     }
@@ -541,13 +542,13 @@ void MetalDevice::EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFra
         compute->endEncoding();
     }
     auto pass = NS::TransferPtr(MTL4::RenderPassDescriptor::alloc()->init());
-    for (size_t i = 0; i < 2; ++i)
+    for (size_t i = 0; i < quad->Attachments->Targets.size(); ++i)
     {
-        if(!quad->Attachments->Targets[i])continue;
-        auto* attachment = pass->colorAttachments()->object(i);
+        if(i==2 || !quad->Attachments->Targets[i])continue;
+        auto* attachment = pass->colorAttachments()->object(i<2 ? i : i-1);
         attachment->setTexture(quad->Attachments->Targets[i].get()); attachment->setLoadAction(quad->Temporal?MTL::LoadActionLoad:MTL::LoadActionClear);
         attachment->setStoreAction(MTL::StoreActionStore);
-        attachment->setClearColor(i == 0 ? MTL::ClearColor{quad->Clear.r, quad->Clear.g, quad->Clear.b, quad->Clear.a} : MTL::ClearColor{double(quad->ClearEntity), 0, 0, 0});
+        attachment->setClearColor(i == 0 ? MTL::ClearColor{quad->Clear.r, quad->Clear.g, quad->Clear.b, quad->Clear.a} : (i == 1 ? MTL::ClearColor{double(quad->ClearEntity), 0, 0, 0} : MTL::ClearColor{0, 0, 0, 0}));
     }
     pass->depthAttachment()->setTexture(quad->Attachments->Targets[2].get()); pass->depthAttachment()->setLoadAction((quad->World || quad->Temporal) ? MTL::LoadActionLoad : MTL::LoadActionClear);
     pass->depthAttachment()->setStoreAction(MTL::StoreActionStore); pass->depthAttachment()->setClearDepth(1);

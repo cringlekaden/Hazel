@@ -19,8 +19,18 @@ void AmbientOcclusionSettings::Validate() const {
        !std::isfinite(Falloff) || Falloff<.05f || Falloff>1)
         throw std::runtime_error("AO requires quality 0..3, radius .001..100, strength 0..1 and falloff .05..1");
 }
+void ScreenReflectionSettings::Validate() const
+{
+    if (Quality > 2 || Steps < 8 || Steps > 96 || !std::isfinite(Distance) ||
+        Distance < .1f || Distance > 100 || !std::isfinite(Thickness) ||
+        Thickness < .005f || Thickness > 1)
+        throw std::runtime_error("Invalid screen-space reflection settings");
+}
 void ScenePresentation::Validate() const {
     AmbientOcclusion.Validate();
+    ScreenReflections.Validate();
+    if (ScreenReflections.Enabled && !SceneReferred)
+        throw std::runtime_error("Screen-space reflections require scene-referred HDR presentation");
     Shadows.Validate();
     Environment.Validate();
     if(TemporalAA && !SceneReferred)throw std::runtime_error("TAA requires scene-referred HDR presentation");
@@ -64,6 +74,12 @@ YAML::Node Encode(const ScenePresentation& value) {
         a["Enabled"]=v.Enabled;a["Quality"]=v.Quality;a["Radius"]=v.Radius;
         a["Strength"]=v.Strength;a["Falloff"]=v.Falloff;
     }
+    if (!(value.ScreenReflections==ScreenReflectionSettings{})) {
+        auto nSSR=n["ScreenReflections"];
+        const auto& ssr=value.ScreenReflections;
+        nSSR["Enabled"]=ssr.Enabled; nSSR["Quality"]=ssr.Quality; nSSR["Steps"]=ssr.Steps;
+        nSSR["Distance"]=ssr.Distance; nSSR["Thickness"]=ssr.Thickness;
+    }
     if (!(value.Shadows==DirectionalShadowSettings{})) {
         auto a=n["Shadows"];const auto& v=value.Shadows;
         a["Enabled"]=v.Enabled;a["Resolution"]=v.Resolution;a["Distance"]=v.Distance;
@@ -72,7 +88,7 @@ YAML::Node Encode(const ScenePresentation& value) {
     return n;
 }
 ScenePresentation ReadPresentation(const YAML::Node& n) {
-    DocumentSchema::Keys(n, {"Mode", "Background", "Exposure", "Environment", "AmbientOcclusion", "TemporalAA", "Shadows"}, "Presentation");
+    DocumentSchema::Keys(n, {"Mode", "Background", "Exposure", "Environment", "AmbientOcclusion", "TemporalAA", "Shadows", "ScreenReflections"}, "Presentation");
     const auto mode = n["Mode"].as<std::string>();
     if (mode != "DisplayReferred" && mode != "SceneReferred")
         throw std::runtime_error("Unknown world presentation");
@@ -97,6 +113,13 @@ ScenePresentation ReadPresentation(const YAML::Node& n) {
         DocumentSchema::Keys(a,{"Enabled","Quality","Radius","Strength","Falloff"},"ambient occlusion");
         auto& v=result.AmbientOcclusion;v.Enabled=a["Enabled"].as<bool>();v.Quality=a["Quality"].as<unsigned>();
         v.Radius=a["Radius"].as<float>();v.Strength=a["Strength"].as<float>();v.Falloff=a["Falloff"].as<float>();
+    }
+    if(auto a=n["ScreenReflections"]) {
+        DocumentSchema::Keys(a,{"Enabled","Quality","Steps","Distance","Thickness"},"screen-space reflections");
+        auto& ssr=result.ScreenReflections;
+        ssr.Enabled=a["Enabled"].as<bool>(); ssr.Quality=a["Quality"].as<unsigned>();
+        ssr.Steps=a["Steps"].as<unsigned>(); ssr.Distance=a["Distance"].as<float>();
+        ssr.Thickness=a["Thickness"].as<float>();
     }
     if(auto a=n["Shadows"]) {
         DocumentSchema::Keys(a,{"Enabled","Resolution","Distance","SplitLambda","NormalBias","DepthBias","Blend"},"directional shadows");

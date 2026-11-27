@@ -205,6 +205,15 @@ camera and exposure. The gallery includes a matched moving sequence and a
 distant-lookup control for judging parallax.
 [Generate, launch and inspect the Reflection Gallery](../../docs/design/reflection-gallery.md).
 
+### Screen-space Reflection Gallery
+
+Screen-space reflections add visible scene detail to reflective materials in
+scene-referred HDR on Metal 4 and OpenGL 4.1. The SSR gallery compares polished,
+satin, and matte surfaces with the existing local and global probe fallback.
+Enable SSR per scene in **Scene Settings**. [Controls, gallery, and
+qualification](../../docs/design/screen-space-reflections.md).
+
+
 ## XeGTAO contact study (Metal 4)
 
 `RenderingReference-XeGTAO.hproj` opens a separate contact/crevice study with a

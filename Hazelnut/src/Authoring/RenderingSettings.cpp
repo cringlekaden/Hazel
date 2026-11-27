@@ -79,7 +79,10 @@ namespace Hazel {
         {
             m_ScenePresentationDraft.SceneReferred = mode == 1;
             m_ScenePresentationDraft.Exposure = 0;
-            if(!mode)m_ScenePresentationDraft.TemporalAA=false;
+            if(!mode) {
+                m_ScenePresentationDraft.TemporalAA=false;
+                m_ScenePresentationDraft.ScreenReflections.Enabled=false;
+            }
         }
         if (mode)
             PropertyUI::SliderFloat("scene-exposure", "Exposure (stops)",
@@ -90,6 +93,20 @@ namespace Hazel {
         ImGui::EndDisabled();
         ImGui::TextWrapped("Full-resolution rigid-mesh antialiasing. Requires scene-referred HDR. World 2D and screen UI stay unjittered. History rejects cuts and newly exposed geometry.");
         if(Renderer::GetAPI()!=RendererAPI::API::Metal)ImGui::TextWrapped("TAA is unavailable on OpenGL; the saved request is inactive.");
+        ImGui::SeparatorText("Screen-space reflections");
+        auto& ssr=m_ScenePresentationDraft.ScreenReflections;
+        ImGui::BeginDisabled(!mode);
+        PropertyUI::Checkbox("ssr-enable","Screen-space reflections",ssr.Enabled);
+        ImGui::BeginDisabled(!ssr.Enabled);
+        int reflectionQuality=int(ssr.Quality), reflectionSteps=int(ssr.Steps);
+        if (PropertyUI::Combo("ssr-quality","Trace quality",reflectionQuality,"Low\0Medium\0High\0"))
+            ssr.Quality=unsigned(reflectionQuality);
+        if (PropertyUI::SliderInt("ssr-steps","Maximum trace steps",reflectionSteps,8,96))
+            ssr.Steps=unsigned(reflectionSteps);
+        PropertyUI::DragFloat("ssr-distance","Ray distance (world units)",ssr.Distance,.1f,.1f,100);
+        PropertyUI::DragFloat("ssr-thickness","Depth thickness (world units)",ssr.Thickness,.005f,.005f,1);
+        ImGui::EndDisabled();
+        ImGui::EndDisabled();
         ImGui::SeparatorText("Directional shadows");
         auto& shadows=m_ScenePresentationDraft.Shadows;
         PropertyUI::Checkbox("shadows-enable","Cascaded shadows",shadows.Enabled);

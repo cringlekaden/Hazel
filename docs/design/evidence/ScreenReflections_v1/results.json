@@ -1,0 +1,238 @@
+{
+  "baseline": "8e7194cbc26a84e62f48a0fb2fff20fb435d85cf",
+  "validationHost": "Apple M4, Apple OpenGL 4.1 and native Metal 4, macOS 27.3",
+  "shaderSHA256": {
+    "ForwardPBR.glsl": "971a33bca964343a3a18ea75e13b52f42e1a6d563da11ee3da790dce697093a9",
+    "ScreenReflections.glsl": "fd15bcce62a4f9b9b3c06046533dd0a0914e412edc3f11496a4f303021c07fa9",
+    "metal/ForwardPBR.hzmetal": "67b1c5b98c8e57acef39bfe139eef8d4d6f1afdcf670809a47c2d125b32b1c7b",
+    "metal/ScreenReflections.hzmetal": "223841de54be19425f05fab9e19ce439a9f807080316d0886599278292a0038b"
+  },
+  "gallery": {
+    "debug": {
+      "checks": {
+        "metal": [
+          "SSR_ORACLE ortho=0 expected=1946 found=1946 missedWall=11794 falseHit=0",
+          "SSR_DISOCCLUSION compared=2350 maxStaleRed=0",
+          "SSR_ORACLE ortho=1 expected=3816 found=3816 missedWall=12060 falseHit=0",
+          "SSR_EDGE rows=59 maxEdgeRatio=0.0787324",
+          "SSR_COMPOSITE changed=39639 preserved=127922 probeSensitive=23575",
+          "SSR_LIFETIME queue=3 reset=pass resize=pass",
+          "SSR_GALLERY poses=17 ID/depth=pass deterministic=pass resize=pass AO/TAA=pass"
+        ],
+        "opengl": [
+          "SSR_ORACLE ortho=0 expected=1946 found=1927 missedWall=11794 falseHit=0",
+          "SSR_ORACLE ortho=1 expected=3816 found=3816 missedWall=12060 falseHit=0",
+          "SSR_EDGE rows=59 maxEdgeRatio=0.0787325",
+          "SSR_COMPOSITE changed=39315 preserved=128274 probeSensitive=23498",
+          "SSR_GALLERY poses=17 ID/depth=pass deterministic=pass resize=pass"
+        ]
+      },
+      "poses": 17,
+      "worstStableRGBp99": 5.486607551574707e-05,
+      "worstPickingMismatches": 2
+    },
+    "release": {
+      "checks": {
+        "metal": [
+          "SSR_ORACLE ortho=0 expected=1946 found=1946 missedWall=11794 falseHit=0",
+          "SSR_DISOCCLUSION compared=2350 maxStaleRed=0",
+          "SSR_ORACLE ortho=1 expected=3816 found=3816 missedWall=12060 falseHit=0",
+          "SSR_EDGE rows=59 maxEdgeRatio=0.0787324",
+          "SSR_COMPOSITE changed=39639 preserved=127922 probeSensitive=23575",
+          "SSR_LIFETIME queue=3 reset=pass resize=pass",
+          "SSR_GALLERY poses=17 ID/depth=pass deterministic=pass resize=pass AO/TAA=pass"
+        ],
+        "opengl": [
+          "SSR_ORACLE ortho=0 expected=1946 found=1927 missedWall=11794 falseHit=0",
+          "SSR_ORACLE ortho=1 expected=3816 found=3816 missedWall=12060 falseHit=0",
+          "SSR_EDGE rows=59 maxEdgeRatio=0.0787325",
+          "SSR_COMPOSITE changed=39315 preserved=128274 probeSensitive=23498",
+          "SSR_GALLERY poses=17 ID/depth=pass deterministic=pass resize=pass"
+        ]
+      },
+      "poses": 17,
+      "worstStableRGBp99": 5.486607551574707e-05,
+      "worstPickingMismatches": 2
+    }
+  },
+  "performance": {
+    "pairedMeasuredFrames": 15,
+    "pairedWarmupFrames": 4,
+    "steps": 64,
+    "quality": 1,
+    "distance": 20,
+    "scope": {
+      "metal": "completed offscreen command packet including readback",
+      "opengl": "elapsed query, world through display composite"
+    },
+    "gpuMilliseconds": {
+      "metal": {
+        "1280x720": {
+          "off": {
+            "median": 2.595666970591992,
+            "p95": 3.8514999905601144
+          },
+          "on": {
+            "median": 4.314582969527692,
+            "p95": 6.16049999371171
+          },
+          "pairedDelta": {
+            "median": 1.6170419985428452,
+            "p95": 2.3090000031515956
+          }
+        },
+        "1920x1080": {
+          "off": {
+            "median": 4.407542000990361,
+            "p95": 4.532166989520192
+          },
+          "on": {
+            "median": 7.134667015634477,
+            "p95": 7.328167033847421
+          },
+          "pairedDelta": {
+            "median": 2.727624960243702,
+            "p95": 2.906832960434258
+          }
+        },
+        "2560x1440": {
+          "off": {
+            "median": 7.477250008378178,
+            "p95": 7.622167002409697
+          },
+          "on": {
+            "median": 12.323000002652407,
+            "p95": 12.501832970883697
+          },
+          "pairedDelta": {
+            "median": 4.8480830155313015,
+            "p95": 4.988999920897186
+          }
+        }
+      },
+      "opengl": {
+        "1280x720": {
+          "off": {
+            "median": 5.294666,
+            "p95": 6.012417
+          },
+          "on": {
+            "median": 5.888084,
+            "p95": 6.174875
+          },
+          "pairedDelta": {
+            "median": 0.6155399999999993,
+            "p95": 0.9506250000000005
+          }
+        },
+        "1920x1080": {
+          "off": {
+            "median": 5.750125,
+            "p95": 6.491459
+          },
+          "on": {
+            "median": 9.40225,
+            "p95": 10.246208
+          },
+          "pairedDelta": {
+            "median": 3.337499,
+            "p95": 4.787706999999999
+          }
+        },
+        "2560x1440": {
+          "off": {
+            "median": 7.906251,
+            "p95": 8.494791
+          },
+          "on": {
+            "median": 13.714916,
+            "p95": 14.368626
+          },
+          "pairedDelta": {
+            "median": 6.2235000000000005,
+            "p95": 7.119916000000001
+          }
+        }
+      }
+    }
+  },
+  "package": {
+    "archiveIntegrity": "PASS",
+    "metalSourceFree": {
+      "exitCode": 0,
+      "results": [
+        "SSR_ORACLE ortho=0 expected=1946 found=1946 missedWall=11794 falseHit=0",
+        "SSR_DISOCCLUSION compared=2350 maxStaleRed=0",
+        "SSR_ORACLE ortho=1 expected=3816 found=3816 missedWall=12060 falseHit=0",
+        "SSR_COMPOSITE changed=39639 preserved=127922 probeSensitive=23575",
+        "SSR_LIFETIME queue=3 reset=pass resize=pass",
+        "SSR_GALLERY poses=17 ID/depth=pass deterministic=pass resize=pass AO/TAA=pass"
+      ]
+    },
+    "openglSourceFree": {
+      "exitCode": 0,
+      "results": [
+        "SSR_ORACLE ortho=0 expected=1946 found=1927 missedWall=11794 falseHit=0",
+        "SSR_ORACLE ortho=1 expected=3816 found=3816 missedWall=12060 falseHit=0",
+        "SSR_COMPOSITE changed=39315 preserved=128274 probeSensitive=23498",
+        "SSR_GALLERY poses=17 ID/depth=pass deterministic=pass resize=pass"
+      ]
+    },
+    "metalPlayer": "PASS",
+    "openglPlayer": "PASS"
+  },
+  "desktop": {
+    "Nutella": {
+      "Metal": {
+        "minimumRendered": 60,
+        "shutdown": "PASS",
+        "submitted": 66,
+        "completed": 66,
+        "presented": 61,
+        "completedPresented": 61,
+        "errors": 0
+      },
+      "OpenGL": {
+        "minimumRendered": 60,
+        "shutdown": "PASS"
+      }
+    },
+    "Hazelnut": {
+      "Metal": {
+        "minimumRendered": 60,
+        "shutdown": "PASS",
+        "submitted": 73,
+        "completed": 73,
+        "presented": 66,
+        "completedPresented": 66,
+        "errors": 0
+      },
+      "OpenGL": {
+        "minimumRendered": 60,
+        "shutdown": "PASS"
+      }
+    }
+  },
+  "regressions": {
+    "debug": {
+      "baked probes": "PASS",
+      "GGX component oracle and parity": "PASS",
+      "native TAA regression": "PASS",
+      "135 native shared 3D cases": "PASS",
+      "frozen IBL RendererFeaturesSmoke": "PASS"
+    },
+    "release": {
+      "baked probes": "PASS",
+      "GGX component oracle and parity": "PASS",
+      "native TAA regression": "PASS",
+      "135 native shared 3D cases": "PASS",
+      "frozen IBL RendererFeaturesSmoke": "PASS"
+    }
+  },
+  "notRun": [
+    "native 2x backing-scale presentation",
+    "Windows",
+    "Linux",
+    "Intel GPUs"
+  ]
+}

@@ -104,7 +104,7 @@ void Renderer3D::Shutdown()
     shadowBuffer.reset();
 }
 void Renderer3D::Render(const SceneSubmission &frame, bool drawBackground, bool depthOnly, bool motionOnly,
-                        const ViewReflectionProbes *probes)
+                        const ViewReflectionProbes *probes, bool reflectionSurface)
 {
     auto raster = RenderCommand::GetRasterState();
     if(depthOnly && !depthShader)
@@ -174,7 +174,8 @@ void Renderer3D::Render(const SceneSubmission &frame, bool drawBackground, bool 
         materialBuffer->Bind();
         ViewData camera{frame.Camera.ViewProjection,
                         glm::vec4(frame.Camera.Position, frame.Camera.Orthographic ? 1 : 0),
-                        glm::vec4(frame.Camera.ToCamera, int(frame.Debug) + (frame.LinearLightingInspection ? 16 : 0)),
+                        glm::vec4(frame.Camera.ToCamera, int(frame.Debug) + (frame.LinearLightingInspection ? 16 : 0) +
+                                  (reflectionSurface ? 32 : 0)),
                         glm::vec4(frame.Light ? frame.Light->ToLight : glm::vec3(0, 0, 1), 0),
                         glm::vec4(frame.Light ? frame.Light->Incident : glm::vec3(0), 0)};
         cameraBuffer->SetData(&camera, sizeof(camera));

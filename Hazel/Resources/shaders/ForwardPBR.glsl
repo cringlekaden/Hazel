@@ -23,6 +23,9 @@ layout(location=3) in vec2 v_UV;
 layout(location=4) in vec4 v_Color;
 layout(location=0) out vec4 o_Color;
 layout(location=1) out int o_Entity;
+layout(location=2) out vec4 o_ReflectionNormals;
+layout(location=3) out vec4 o_ReflectionWeight;
+layout(location=4) out vec4 o_ReflectionFallback;
 layout(std140,binding=2) uniform View {mat4 u_VP;vec4 u_Eye;vec4 u_ToCamera;vec4 u_Light;vec4 u_Incident;};
 layout(std140,binding=3) uniform Object {mat4 u_Model;mat4 u_NormalMatrix;ivec4 u_Identity;};
 layout(std140,binding=4) uniform Material {vec4 u_BaseFactor;vec4 u_EmissionCutoff;vec4 u_Surface;vec4 u_Options;};
@@ -369,7 +372,15 @@ float pointVisibility(vec3 p, vec3 Ng, vec3 L, float distanceSquared, float farD
     return mix(1, visibility / (1 + weights.x + weights.y + weights.z),
                smoothstep(2 * nearDepth, 4 * nearDepth, distanceToLight));
 }
+vec2 encodeReflectionNormal(vec3 n)
+{
+    n /= abs(n.x) + abs(n.y) + abs(n.z);
+    return n.z >= 0 ? n.xy : (1 - abs(n.yx)) * mix(vec2(-1), vec2(1), greaterThanEqual(n.xy, vec2(0)));
+}
 void main(){
+    int diagnostic=int(u_ToCamera.w);
+    bool reflectionSurface=(diagnostic&32)!=0;
+    vec3 reflectionWeight=vec3(0), reflectionFallback=vec3(0);
     // Evaluate geometric derivatives before a potentially nonuniform mask discard.
     vec3 geometricNormal=normalize(cross(dFdx(v_Position),dFdy(v_Position)));
     int maps=int(u_Options.z);vec4 base=u_BaseFactor*v_Color*texture(u_Base,v_UV);
@@ -449,7 +460,7 @@ void main(){
         if(u_LocalMeta.y==2)localProbe=vec3(float(useTiles?tileCount:uint(localCount))/64,0.1,0);
         if(u_LocalMeta.y==3)localProbe=useTiles&&tileCount>64u?vec3(1,0,1):vec3(0);
 #endif
-        if(u_EnvOptions.x>.5 || u_EnvOptions.w>0){
+        if(u_EnvOptions.x>.5 || u_EnvOptions.w>0 || reflectionSurface){
             float nv=clamp(dot(N,V),0,1);
             SurfaceEnergy energy=surfaceEnergy(f0,sampleBRDF(nv,r));
             if(dot(geometricNormal,V)>0){
@@ -493,6 +504,12 @@ void main(){
                                        localSpecular.rgb / max(1, localSpecular.w);
                     specularTerm = (prefilteredProbe * (f0 * ab.x + ab.y) + multiple * globalGain) * ao;
                 }
+                if (reflectionSurface && dot(N,V)>0 && r<.55)
+                {
+                    reflectionWeight = (f0*ab.x+ab.y)*ao;
+                    reflectionFallback = reflectionWeight *
+                        (localSpecular.w > 0 ? prefilteredProbe : prefiltered*globalGain);
+                }
                 float diffuseAO=ao;
     #ifdef HZ_METAL
                 if(u_EnvOptions.y>0) diffuseAO=min(ao,mix(1,texelFetch(u_ScreenAO,ivec2(gl_FragCoord.xy),0).r,u_EnvOptions.y));
@@ -502,7 +519,7 @@ void main(){
         }
         result=directTerm+diffuseTerm+specularTerm+u_EmissionCutoff.rgb*texture(u_Emissive,v_UV).rgb;
     }
-    int diagnostic=int(u_ToCamera.w);int inspect=diagnostic&15;bool linearInspection=(diagnostic&16)!=0;
+    int inspect=diagnostic&15;bool linearInspection=(diagnostic&16)!=0;
     if(inspect==1)result=base.rgb;
     if(inspect==2)result=N*.5+.5;
     if(inspect==3)result=T*.5+.5;
@@ -527,4 +544,10 @@ void main(){
     if(u_LocalMeta.y>0)result=localProbe;
     if(u_ShadowRange.w>0)result=shadowInspection(v_Position,geometricNormal,normalize(u_Light.xyz));
     o_Color=vec4(result,1);o_Entity=u_Identity.x;
+    if (reflectionSurface)
+    {
+        o_ReflectionNormals=vec4(encodeReflectionNormal(N),encodeReflectionNormal(geometricNormal));
+        o_ReflectionWeight=vec4(reflectionWeight,max(rough,.045));
+        o_ReflectionFallback=vec4(reflectionFallback,0);
+    }
 }

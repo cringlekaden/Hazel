@@ -8,7 +8,7 @@ class Renderer3D
 {
   public:
     static void Render(const SceneSubmission &frame, bool drawBackground, bool depthOnly = false, bool motionOnly = false,
-                       const ViewReflectionProbes *probes = nullptr);
+                       const ViewReflectionProbes *probes = nullptr, bool reflectionSurface = false);
     static void Shutdown();
 };
 }

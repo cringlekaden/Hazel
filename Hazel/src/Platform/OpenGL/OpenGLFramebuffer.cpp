@@ -323,6 +323,50 @@ void OpenGLFramebuffer::ReadFloatColors(uint32_t attachment, int x, int y, int w
     glPixelStorei(GL_PACK_SKIP_PIXELS, skipPixels);
     glBindBuffer(GL_PIXEL_PACK_BUFFER, pack);
 }
+void OpenGLFramebuffer::ResolveReflectionsTo(const Ref<Framebuffer>& destination,
+                                            const ScreenReflectionResolve& parameters)
+{
+    auto target = std::dynamic_pointer_cast<OpenGLFramebuffer>(destination);
+    if (!target || target.get() == this || m_Specification.Samples != 1 ||
+        target->m_Specification.Samples != 1 ||
+        m_Specification.Width != target->m_Specification.Width ||
+        m_Specification.Height != target->m_Specification.Height ||
+        m_ColorAttachments.size() != 5 || target->m_ColorAttachments.size() != 2 ||
+        !m_DepthAttachment || !target->m_DepthAttachment)
+        throw std::runtime_error("SSR requires matching single-sample HDR source and destination");
+    RenderCommand::StateScope state;
+    auto raster = RenderCommand::GetRasterState();
+    raster.DepthTest = raster.DepthWrite = raster.Blend = raster.ClipEnabled = raster.SRGB = false;
+    raster.Cull = CullFace::None;
+    raster.ColorMask = raster.PickingMask = glm::bvec4(true);
+    RenderCommand::SetRasterState(raster);
+    Utils::FramebufferState bindings;
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target->m_RendererID);
+    if (!m_ReflectionShader)
+        m_ReflectionShader=Shader::Create((Resources::Get().Root/"shaders/ScreenReflections.glsl").generic_u8string());
+    if (!m_ReflectionParameters)
+        m_ReflectionParameters=UniformBuffer::Create(sizeof(parameters), 5);
+    m_ReflectionParameters->Bind();
+    m_ReflectionParameters->SetData(&parameters, sizeof(parameters));
+    m_ReflectionShader->Bind();
+    const char* names[]{"u_Radiance", "u_Identity", "u_Depth", "u_Normals", "u_Weight", "u_Fallback"};
+    const uint32_t textures[]{m_ColorAttachments[0], m_ColorAttachments[1], m_DepthAttachment,
+        m_ColorAttachments[2], m_ColorAttachments[3], m_ColorAttachments[4]};
+    for (unsigned slot=0; slot<6; ++slot) {
+        m_ReflectionShader->SetInt(names[slot], int(slot));
+        glActiveTexture(GL_TEXTURE0+slot);
+        glBindTexture(GL_TEXTURE_2D, textures[slot]);
+        glBindSampler(slot, 0);
+    }
+    if (!m_OutputVAO)
+        glGenVertexArrays(1, &m_OutputVAO);
+    glBindVertexArray(m_OutputVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+    const auto width=m_Specification.Width, height=m_Specification.Height;
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, m_RendererID);
+    glBlitFramebuffer(0, 0, width, height, 0, 0, width, height,
+                      GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
+}
 void OpenGLFramebuffer::CompositeWorldTo(const Ref<Framebuffer> &destination, float exposure)
 {
     auto target = std::dynamic_pointer_cast<OpenGLFramebuffer>(destination);
@@ -400,7 +444,7 @@ void OpenGLFramebuffer::DisableIntegerBlending()
     // native Intel/Mesa producing zero IDs when blending is globally enabled.
     if (m_PreviousBlending.empty()) {
         for (uint32_t i=0;i<m_ColorAttachmentSpecifications.size();++i)
-            if (m_ColorAttachmentSpecifications[i].TextureFormat==FramebufferTextureFormat::RED_INTEGER)
+            if (m_ColorAttachmentSpecifications[i].TextureFormat==FramebufferTextureFormat::RED_INTEGER || i>=2)
                 m_PreviousBlending.emplace_back(i,glIsEnabledi(GL_BLEND,i)==GL_TRUE);
     }
     for (const auto& [index,enabled]:m_PreviousBlending) glDisablei(GL_BLEND,index);

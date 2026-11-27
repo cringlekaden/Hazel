@@ -1,6 +1,7 @@
 #include "hzpch.h"
 #include "MetalShaderArtifact.h"
 #include "Hazel/Renderer/Drawing/Renderer3DUniforms.h"
+#include "Hazel/Renderer/Resources/Framebuffer.h"
 #include "Hazel/Renderer/Scene/DirectionalShadows.h"
 #include "Hazel/Renderer/Scene/SpotShadows.h"
 #include "Hazel/Renderer/Scene/PointShadows.h"
@@ -38,6 +39,10 @@ Layout CPUContract(const std::string& name)
         offsetof(SpotShadowData, Tiles), offsetof(SpotShadowData, LightIndices)}};
     if (name == "LocalLights") return {sizeof(Renderer3DUniforms::LocalLightData), {0, 16}};
     if (name == "Presentation") return {sizeof(glm::vec4), {0}};
+    if (name == "Reflections") return {sizeof(ScreenReflectionResolve), {
+        offsetof(ScreenReflectionResolve,Projection), offsetof(ScreenReflectionResolve,InverseProjection),
+        offsetof(ScreenReflectionResolve,View), offsetof(ScreenReflectionResolve,Trace),
+        offsetof(ScreenReflectionResolve,Camera)}};
     if (name == "Outline") return {32, {0, 4, 8, 16}}; // Explicit declaration-only legacy adaptation.
     throw std::runtime_error("Unqualified CPU block: " + name);
 }

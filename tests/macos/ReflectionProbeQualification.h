@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Renderer3DParity.h"
+#include "ScreenReflectionQualification.h"
 #include "Hazel/Core/FileDocument.h"
 #include "Hazel/Renderer/Scene/ReflectionProbeCapture.h"
 #include <thread>
@@ -111,6 +112,10 @@ inline void ReflectionProbeQualification(const std::filesystem::path &output,
     std::filesystem::create_directories(output);
     const auto project = Project::LoadCandidate(FileSystem::GetEnvironmentPath("HAZEL_RENDERING_REFERENCE_PROJECT"));
     auto assets = CreateRef<ProjectAssets>(project->GetAssetRoot());
+    if (!FileSystem::GetEnvironmentPath("HAZEL_SSR_GALLERY").empty()) {
+        ScreenReflectionQualification(output,project,assets,capture);
+        return;
+    }
     const auto captureSide = FileSystem::GetEnvironmentPath("HAZEL_PROBE_CAPTURE_SIDE").generic_u8string();
     if (!captureSide.empty())
     {

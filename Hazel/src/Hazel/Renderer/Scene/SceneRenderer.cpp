@@ -78,7 +78,8 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
     try {
         if (input.CaptureRadiance &&
             (!display || !input.Presentation.SceneReferred || input.Presentation.TemporalAA ||
-             input.Presentation.AmbientOcclusion.Enabled || !input.ReflectionProbes.empty() ||
+             input.Presentation.AmbientOcclusion.Enabled || input.Presentation.ScreenReflections.Enabled ||
+             !input.ReflectionProbes.empty() ||
              (input.Environment && input.Environment->SceneCapture) || input.Debug != SurfaceView::Shaded ||
              display->GetSpecification().Samples != 1 || display->GetSpecification().Attachments.Attachments.empty() ||
              display->GetSpecification().Attachments.Attachments[0].TextureFormat != FramebufferTextureFormat::RGBA32F))
@@ -278,6 +279,44 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
     if (frame.LinearLightingInspection && (!display || display->GetSpecification().Attachments.Attachments.empty() ||
         display->GetSpecification().Attachments.Attachments[0].TextureFormat != FramebufferTextureFormat::RGBA32F))
         throw std::runtime_error("Linear lighting inspection requires an explicit FP32 color target");
+    const bool reflections = frame.Presentation.ScreenReflections.Enabled && frame.Presentation.SceneReferred &&
+        !frame.CaptureRadiance && frame.Debug==SurfaceView::Shaded && frame.AmbientOcclusionView==0 &&
+        frame.ShadowView==0 && frame.LocalLightingView==0 && !frame.Meshes.empty();
+    if (!reflections)
+        view.ReflectionSurface.reset();
+    auto prepareReflectionSurface = [&](FramebufferSpecification size) {
+        size.Samples=1;
+        size.Attachments.Attachments.insert(size.Attachments.Attachments.end(), {
+            FramebufferTextureFormat::RGBA16F, FramebufferTextureFormat::RGBA16F, FramebufferTextureFormat::RGBA32F});
+        if (!view.ReflectionSurface)
+            view.ReflectionSurface=Framebuffer::Create(size);
+        else if (view.ReflectionSurface->GetSpecification().Width!=size.Width ||
+                 view.ReflectionSurface->GetSpecification().Height!=size.Height)
+            view.ReflectionSurface->Resize(size.Width,size.Height);
+    };
+    auto reflectionParameters = [&](const SceneCameraView& camera) {
+        const auto& settings=frame.Presentation.ScreenReflections;
+        settings.Validate();
+        if (!ValidCamera(camera.View) || !ValidCamera(camera.ViewProjection))
+            throw std::runtime_error("SSR requires finite invertible view and view-projection matrices");
+        // Camera entity transforms can inherit scale. Use a Euclidean
+        // frame for reflection directions and keep the exact raster VP.
+        const glm::mat4 cameraWorld=glm::inverse(camera.View);
+        const glm::vec3 back=glm::normalize(glm::vec3(cameraWorld[2]));
+        const glm::vec3 right=glm::normalize(glm::cross(glm::vec3(cameraWorld[1]),back));
+        const glm::vec3 up=glm::cross(back,right);
+        const glm::mat4 rigidWorld(glm::vec4(right,0),glm::vec4(up,0),glm::vec4(back,0),cameraWorld[3]);
+        const glm::mat4 projection=camera.ViewProjection*rigidWorld;
+        const glm::mat4 inverse=glm::inverse(projection);
+        const glm::vec4 nearPoint=inverse*glm::vec4(0,0,-1,1);
+        const float nearPlane=-nearPoint.z/nearPoint.w;
+        if (!std::isfinite(nearPlane) || (!camera.Orthographic && nearPlane<=0))
+            throw std::runtime_error("SSR requires a finite camera near plane");
+        const float stride[]{6,4,2};
+        return ScreenReflectionResolve{projection,inverse,glm::inverse(rigidWorld),
+            {settings.Distance,settings.Thickness,float(settings.Steps),stride[settings.Quality]},
+            {nearPlane,camera.Orthographic?1.f:0.f,0,0}};
+    };
     if (RendererAPI::GetAPI() == RendererAPI::API::Metal)
     {
         if (!display)
@@ -321,6 +360,25 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
                 std::static_pointer_cast<MetalFramebuffer>(view.Radiance)->SetWorldProducer();
 #endif
                 display->Cancel();
+                auto drawOpaque = [&](const Ref<Framebuffer>& target, const SceneSubmission& submission) {
+                    auto surface=target;
+                    if (reflections) {
+                        prepareReflectionSurface(size);
+                        surface=view.ReflectionSurface;
+#ifdef HZ_PLATFORM_MACOS
+                        std::static_pointer_cast<MetalFramebuffer>(surface)->SetWorldProducer();
+#endif
+                    }
+                    surface->Bind();
+                    surface->Clear(frame.Presentation.Background);
+                    prepareLighting(surface);
+                    Renderer3D::Render(submission,true,false,false,&view.ReflectionProbes,reflections);
+                    if (reflections) {
+                        surface->Unbind();
+                        target->Bind();
+                        surface->ResolveReflectionsTo(target,reflectionParameters(submission.Camera));
+                    }
+                };
                 if(temporal) {
                     auto ensure=[&](Ref<Framebuffer>& target) {
                         if(!target)target=Framebuffer::Create(size);
@@ -331,8 +389,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
                     std::static_pointer_cast<MetalFramebuffer>(view.Jittered)->SetTemporalProducer();
                     std::static_pointer_cast<MetalFramebuffer>(view.Motion)->SetTemporalProducer();
 #endif
-                    view.Jittered->Bind();view.Jittered->Clear(frame.Presentation.Background);
-                    prepareLighting(view.Jittered);Renderer3D::Render(sample,true,false,false,&view.ReflectionProbes);view.Jittered->Unbind();
+                    drawOpaque(view.Jittered,sample);view.Jittered->Unbind();
                     view.Motion->Bind();view.Motion->Clear(glm::vec4(0));Renderer3D::Render(motion,false,false,true);view.Motion->Unbind();
                     view.Radiance->Bind();
 #ifdef HZ_PLATFORM_MACOS
@@ -343,8 +400,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
                     std::static_pointer_cast<MetalFramebuffer>(view.Radiance)->ResolveTemporal(view.Jittered,view.Motion,jitter,historyValid,view.TemporalDebug,skyMotion,skyMode,submitted,view.TemporalMetrics);
 #endif
                 } else {
-                    view.Radiance->Bind();view.Radiance->Clear(frame.Presentation.Background);
-                    prepareLighting(view.Radiance);Renderer3D::Render(frame,true,false,false,&view.ReflectionProbes);
+                    drawOpaque(view.Radiance,frame);
                 }
                 auto worldState = raster;
                 RenderCommand::SetRasterState(worldState);
@@ -379,6 +435,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
             view.Temporal={};
             Renderer2D::CancelScene();
             if(view.Jittered)view.Jittered->Cancel();
+            if(view.ReflectionSurface)view.ReflectionSurface->Cancel();
             if(view.Motion)view.Motion->Cancel();
             if (view.AmbientDepth) view.AmbientDepth->Cancel();
             if (view.ShadowDepth) view.ShadowDepth->Cancel();
@@ -444,16 +501,24 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
                                 FramebufferTextureFormat::Depth};
             view.Radiance = Framebuffer::Create(size);
         }
-        view.Radiance->Bind();
-        worldBinding.Pending = view.Radiance;
+        if (reflections)
+            prepareReflectionSurface(view.Radiance->GetSpecification());
+        worldBinding.Pending = reflections ? view.ReflectionSurface : view.Radiance;
+        worldBinding.Pending->Bind();
         RenderCommand::SetClearColor(frame.Presentation.Background);
         RenderCommand::Clear();
-        view.Radiance->ClearAttachment(1, -1);
+        worldBinding.Pending->ClearAttachment(1, -1);
     }
     else
         view.Radiance.reset();
-    if (anyShadows) prepareShadowDepth(hdr ? view.Radiance : display);
-    Renderer3D::Render(frame,hdr || frame.CaptureRadiance,false,false,&view.ReflectionProbes);
+    if (anyShadows) prepareShadowDepth(hdr ? worldBinding.Pending : display);
+    Renderer3D::Render(frame,hdr || frame.CaptureRadiance,false,false,&view.ReflectionProbes,reflections);
+    if (reflections) {
+        worldBinding.Finish();
+        view.Radiance->Bind();
+        worldBinding.Pending=view.Radiance;
+        view.ReflectionSurface->ResolveReflectionsTo(view.Radiance,reflectionParameters(frame.Camera));
+    }
     raster = RenderCommand::GetRasterState();
     raster.Cull = CullFace::None;
     raster.Clockwise = false;

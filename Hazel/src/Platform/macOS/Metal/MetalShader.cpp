@@ -114,7 +114,7 @@ std::string ValidateReflection(MTL::RenderPipelineState* pipeline, const MetalSh
     return output.str();
 }
 }
-MetalShader::MetalShader(std::shared_ptr<MetalDevice> deviceOwner, const std::string& shaderName, uint32_t slots, bool drawableOutput, const RasterState* raster)
+MetalShader::MetalShader(std::shared_ptr<MetalDevice> deviceOwner, const std::string& shaderName, uint32_t slots, bool drawableOutput, const RasterState* raster, bool reflectionSurface)
     : m_Device(std::move(deviceOwner))
 {
     auto pool = NS::TransferPtr(NS::AutoreleasePool::alloc()->init());
@@ -185,6 +185,14 @@ MetalShader::MetalShader(std::shared_ptr<MetalDevice> deviceOwner, const std::st
         {
             descriptor->colorAttachments()->object(1)->setPixelFormat(MTL::PixelFormatR32Sint);
             descriptor->colorAttachments()->object(1)->setWriteMask(MTL::ColorWriteMaskNone);
+        }
+        if (reflectionSurface) {
+            descriptor->colorAttachments()->object(2)->setPixelFormat(MTL::PixelFormatRGBA16Float);
+            descriptor->colorAttachments()->object(3)->setPixelFormat(MTL::PixelFormatRGBA16Float);
+            descriptor->colorAttachments()->object(4)->setPixelFormat(MTL::PixelFormatRGBA32Float);
+            if (shaderName == "EnvironmentSky")
+                for (unsigned slot=2; slot<=4; ++slot)
+                    descriptor->colorAttachments()->object(slot)->setWriteMask(MTL::ColorWriteMaskNone);
         }
         if (raster && shaderName!="DepthPBR")
         {

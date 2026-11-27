@@ -8,6 +8,7 @@
 #include "Hazel/Renderer/Resources/Framebuffer.h"
 #include <Metal/Metal.hpp>
 #include <memory>
+#include <optional>
 #include <atomic>
 #include <vector>
 #include <set>
@@ -68,6 +69,7 @@ struct MetalRenderer2DFrame
     std::shared_ptr<MetalShader> PresentationShader;
     NS::SharedPtr<MTL4::ArgumentTable> PresentationArguments;
     float Exposure = 0;
+    std::optional<ScreenReflectionResolve> Reflections;
     std::shared_ptr<MetalRenderer2DFrame> AOSource;
     std::shared_ptr<MetalRenderer2DFrame> ShadowSource, SpotShadowSource, PointShadowSource;
     std::shared_ptr<MetalAOPass> AO;

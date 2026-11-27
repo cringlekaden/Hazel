@@ -70,6 +70,12 @@ namespace Hazel {
         std::vector<float> Depth;
     };
 
+    // std140 input to the linear HDR reflection resolve.
+    struct alignas(16) ScreenReflectionResolve {
+        glm::mat4 Projection, InverseProjection, View;
+        glm::vec4 Trace, Camera;
+    };
+    static_assert(sizeof(ScreenReflectionResolve) == 224);
     class ComputePipeline;
     enum class ShadowMapKind { Directional, Spot, Point };
 	class Framebuffer
@@ -101,6 +107,7 @@ namespace Hazel {
         // Optional editor presentation operation: reads depth-resolved ID coverage,
         // writes only a separate encoded RGBA8 output. Radius is framebuffer pixels.
         virtual void DrawEntityOutlineTo(const Ref<Framebuffer>& destination,int entity,int radius,glm::vec4 encodedColor) = 0;
+        virtual void ResolveReflectionsTo(const Ref<Framebuffer>& destination, const ScreenReflectionResolve& parameters) = 0;
         virtual void CompositeWorldTo(const Ref<Framebuffer> &destination, float exposure) = 0;
         virtual glm::vec4 ReadColorPixel(uint32_t attachment, int x, int y) = 0;
         virtual void ResetEditorReadback() {}

@@ -23,7 +23,8 @@ namespace Hazel {
 		virtual void EncodeOutput(const Ref<Framebuffer>& destination = {}) override;
         virtual void Resize(uint32_t width, uint32_t height) override;
         virtual void DrawEntityOutlineTo(const Ref<Framebuffer>& destination,int entity,int radius,glm::vec4 encodedColor) override;
-        virtual void CompositeWorldTo(const Ref<Framebuffer> &destination, float exposure) override;
+        void ResolveReflectionsTo(const Ref<Framebuffer>& destination, const ScreenReflectionResolve& parameters) override;
+        void CompositeWorldTo(const Ref<Framebuffer> &destination, float exposure) override;
         std::vector<glm::vec4> ReadColorPixels() override;
         virtual glm::vec4 ReadColorPixel(uint32_t attachment, int x, int y) override;
         virtual int ReadPixel(uint32_t attachmentIndex, int x, int y) override;
@@ -35,8 +36,8 @@ namespace Hazel {
 		virtual const FramebufferSpecification& GetSpecification() const override { return m_Specification; }
 	private:
         void ReadFloatColors(uint32_t attachment, int x, int y, int width, int height, glm::vec4 *pixels);
-      Ref<Shader> m_OutputShader, m_ToneShader, m_OutlineShader;
-      Ref<UniformBuffer> m_ToneParameters;
+      Ref<Shader> m_OutputShader, m_ToneShader, m_OutlineShader, m_ReflectionShader;
+      Ref<UniformBuffer> m_ToneParameters, m_ReflectionParameters;
       uint32_t m_OutputVAO = 0;
       void Release();
       void DisableIntegerBlending();

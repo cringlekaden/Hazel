@@ -165,12 +165,13 @@ void MetalRendererAPI::DrawIndexed(const Ref<VertexArray>& array, uint32_t count
         if (draw.Raster.ColorMask[i]) state |= 1u << (i + 1);
         if (draw.Raster.PickingMask[i]) state |= 1u << (i + 5);
     }
-    const auto key = m_BoundShader + "/raster/" + std::to_string(state);
+    const bool reflectionSurface=bool(frame->Attachments->Targets[3]);
+    const auto key = m_BoundShader + "/raster/" + std::to_string(state) + (reflectionSurface ? "/ssr" : "");
     {
         std::lock_guard<std::mutex> lock(m_ShaderMutex);
         auto found = m_Shaders.find(key);
         if (found == m_Shaders.end())
-            found = m_Shaders.emplace(key, std::make_shared<MetalShader>(m_Device, m_BoundShader, 32, false, &draw.Raster)).first;
+            found = m_Shaders.emplace(key, std::make_shared<MetalShader>(m_Device, m_BoundShader, 32, false, &draw.Raster, reflectionSurface)).first;
         draw.Shader = std::static_pointer_cast<MetalShader>(found->second);
     }
     if (frame->Draws.size() >= 65536) throw std::runtime_error("Metal frame exceeds 65536 draws");

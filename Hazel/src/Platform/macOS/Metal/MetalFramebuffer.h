@@ -22,7 +22,7 @@ struct MetalRenderer2DFrame;
 struct MetalFramebufferAttachments
 {
     uint32_t Width = 0, Height = 0;
-    std::array<NS::SharedPtr<MTL::Texture>, 3> Targets;
+    std::array<NS::SharedPtr<MTL::Texture>, 6> Targets;
 
 };
 class MetalFramebuffer final : public Framebuffer
@@ -57,6 +57,7 @@ public:
     void ClearAttachment(uint32_t attachment, int value) override;
     void EncodeOutput(const Ref<Framebuffer>& destination = {}) override;
     void DrawEntityOutlineTo(const Ref<Framebuffer>& destination, int entity, int radius, glm::vec4 color) override;
+    void ResolveReflectionsTo(const Ref<Framebuffer>& destination, const ScreenReflectionResolve& parameters) override;
     void CompositeWorldTo(const Ref<Framebuffer>& destination, float exposure) override;
     EditorTexture GetEditorTexture() const override;
     void ResetEditorReadback() override { m_EditorReadback.reset(); m_EditorPendingReadbacks.clear(); }

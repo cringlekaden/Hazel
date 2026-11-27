@@ -65,6 +65,7 @@ SceneSubmission SceneRenderer::Collect(Scene &scene, const SceneCameraView &came
             throw std::runtime_error("Probe capture requires scene-referred presentation");
         frame.Presentation.AmbientOcclusion.Enabled = false;
         frame.Presentation.TemporalAA = false;
+        frame.Presentation.ScreenReflections.Enabled = false;
     }
     frame.Assets = scene.GetAssets();
     if (!frame.Presentation.Environment.Asset.empty())

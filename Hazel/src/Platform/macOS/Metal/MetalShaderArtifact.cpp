@@ -49,7 +49,7 @@ std::string MetalShaderArtifact::Digest(const std::string& bytes)
 }
 void MetalShaderArtifact::ValidateName(const std::string& name, uint32_t slots)
 {
-    const std::set<std::string> names = {"DisplayOutput", "EntityOutline", "EnvironmentSky", "ForwardPBR", "DepthPBR", "MotionPBR",
+    const std::set<std::string> names = {"DisplayOutput", "EntityOutline", "EnvironmentSky", "ForwardPBR", "DepthPBR", "MotionPBR", "ScreenReflections",
         "Renderer2D_Circle", "Renderer2D_Line", "Renderer2D_Quad", "Renderer2D_Text", "WorldPresentation"};
     Check(names.count(name) == 1 && (slots == 32 || (name == "Renderer2D_Quad" && slots == 16)), "unsupported shader/variant " + name);
 }
