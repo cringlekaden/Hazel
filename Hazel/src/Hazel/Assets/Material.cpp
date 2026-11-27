@@ -48,6 +48,7 @@ void MaterialDefinition::Validate() const
         range(BaseColor[i], 0, 1);
     for (int i = 0; i < 3; ++i)
         range(Emissive[i], 0, 1);
+    range(EmissiveStrength, 0, 1000);
     range(Metallic, 0, 1);
     range(Roughness, 0, 1);
     range(NormalScale, -16, 16);
@@ -65,7 +66,7 @@ void MaterialDefinition::Validate() const
     }
     if (Model == MaterialModel::Unlit &&
         (!Textures[1].Image.empty() || !Textures[2].Image.empty() || !Textures[3].Image.empty() ||
-         !Textures[4].Image.empty() || Emissive != glm::vec3(0)))
+         !Textures[4].Image.empty() || Emissive != glm::vec3(0) || EmissiveStrength != 1))
         throw std::runtime_error("Unlit materials support base color and alpha only");
 }
 bool MaterialDefinition::operator==(const MaterialDefinition &b) const
@@ -76,7 +77,7 @@ bool MaterialDefinition::operator==(const MaterialDefinition &b) const
         values &= same(BaseColor[i], b.BaseColor[i]);
     for (int i = 0; i < 3; ++i)
         values &= same(Emissive[i], b.Emissive[i]);
-    return values && Name == b.Name && Model == b.Model && same(Metallic, b.Metallic) &&
+    return values && same(EmissiveStrength, b.EmissiveStrength) && Name == b.Name && Model == b.Model && same(Metallic, b.Metallic) &&
            same(Roughness, b.Roughness) && same(NormalScale, b.NormalScale) &&
            same(OcclusionStrength, b.OcclusionStrength) && same(AlphaCutoff, b.AlphaCutoff) &&
            Alpha == b.Alpha && DoubleSided == b.DoubleSided && Textures == b.Textures;
@@ -107,7 +108,7 @@ MaterialDefinition ReadMaterialText(const std::string &bytes)
     DocumentSchema::Keys(root, {"Material"}, "root");
     auto n = root["Material"];
     DocumentSchema::Keys(n,
-                         {"Version", "Name", "Model", "BaseColor", "Emissive", "Metallic",
+                         {"Version", "Name", "Model", "BaseColor", "Emissive", "EmissiveStrength", "Metallic",
                           "Roughness", "NormalScale", "OcclusionStrength", "Alpha", "AlphaCutoff",
                           "DoubleSided", "Textures"},
                          "Material");
@@ -124,6 +125,8 @@ MaterialDefinition ReadMaterialText(const std::string &bytes)
         throw std::runtime_error("Unknown material model");
     ReadVector(n["BaseColor"], d.BaseColor);
     ReadVector(n["Emissive"], d.Emissive);
+    if (n["EmissiveStrength"])
+        d.EmissiveStrength = n["EmissiveStrength"].as<float>();
     d.Metallic = n["Metallic"].as<float>();
     d.Roughness = n["Roughness"].as<float>();
     d.NormalScale = n["NormalScale"].as<float>();
@@ -171,6 +174,8 @@ std::string WriteMaterialText(const MaterialDefinition &d)
     WriteVector(o, d.BaseColor);
     o << YAML::Key << "Emissive" << YAML::Value;
     WriteVector(o, d.Emissive);
+    if (d.EmissiveStrength != 1)
+        o << YAML::Key << "EmissiveStrength" << YAML::Value << d.EmissiveStrength;
     o << YAML::Key << "Metallic" << YAML::Value << d.Metallic << YAML::Key << "Roughness"
       << YAML::Value << d.Roughness << YAML::Key << "NormalScale" << YAML::Value << d.NormalScale
       << YAML::Key << "OcclusionStrength" << YAML::Value << d.OcclusionStrength << YAML::Key

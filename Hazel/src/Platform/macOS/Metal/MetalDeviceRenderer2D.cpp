@@ -6,6 +6,7 @@
 #include "MetalAmbientOcclusion.h"
 #include "MetalTemporalAA.h"
 #include "Hazel/Renderer/Scene/SceneSubmission.h"
+#include "Hazel/Renderer/Scene/Bloom.h"
 #include "Hazel/Renderer/Drawing/Renderer2DQuad.h"
 #include <algorithm>
 #include <chrono>
@@ -49,6 +50,8 @@ void MetalRenderer2DFrame::CollectAllocations(std::set<const MTL::Allocation*>& 
     if(TemporalSource)TemporalSource->CollectAllocations(allocations);
     if(MotionSource)MotionSource->CollectAllocations(allocations);
     if (ComputeSource) ComputeSource->CollectAllocations(allocations);
+    for (const auto& pass : BloomPasses)
+        allocations.insert(pass.Output->Targets[0].get());
     if (World) World->CollectAllocations(allocations);
     if (DisplaySource) DisplaySource->CollectAllocations(allocations);
 }
@@ -69,6 +72,29 @@ void MetalRenderer2DFrame::MarkMipmapsSubmitted() const
 void MetalRenderer2DFrame::ResolveAmbientOcclusionTimings()
 {
     for(auto &pass:LocalLights)pass->Resolve();
+    if (BloomCounters && BloomTimestampFrequency) {
+        const auto count = 2 * (BloomPasses.size() + 1);
+        const auto values = NS::RetainPtr(BloomCounters->resolveCounterRange(NS::Range::Make(0, count)));
+        if (values && values->length() == count * sizeof(MTL4::TimestampHeapEntry)) {
+            BloomTiming result;
+            result.Valid = true;
+            for (size_t i = 0; i <= BloomPasses.size(); ++i) {
+                MTL4::TimestampHeapEntry entries[2];
+                const auto* bytes = static_cast<const uint8_t*>(values->bytes());
+                std::memcpy(entries, bytes + 2 * i * sizeof(entries[0]), sizeof(entries));
+                const auto start = entries[0].timestamp, end = entries[1].timestamp;
+                result.Valid &= start && end >= start;
+                const auto phase = i == BloomPasses.size() ? 3 : int(BloomPasses[i].Parameters.x);
+                if (end >= start)
+                    result.Milliseconds[phase] += double(end - start) * 1000. / BloomTimestampFrequency;
+                if (i < BloomPasses.size())
+                    result.WorkingBytes += BloomPasses[i].Output->Targets[0]->allocatedSize();
+            }
+            if (result.Valid)
+                *BloomMetrics = result;
+        }
+        BloomCounters.reset();
+    }
     if(AO)AO->ResolveTimings();
     if(ShadowSource)ShadowSource->ResolveAmbientOcclusionTimings();
     if(SpotShadowSource)SpotShadowSource->ResolveAmbientOcclusionTimings();
@@ -409,15 +435,53 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
         quad->OutputArguments->setTexture((quad->DisplaySource ? quad->DisplaySource : quad)->Attachments->Targets[0]->gpuResourceID(), 0);
         quad->OutputArguments->setSamplerState(quad->OutputSampler->gpuResourceID(), 0);
     }
+    if (!quad->BloomPasses.empty()) {
+        if (quad->BloomMetrics) {
+            auto counters = NS::TransferPtr(MTL4::CounterHeapDescriptor::alloc()->init());
+            counters->setType(MTL4::CounterHeapTypeTimestamp);
+            const auto count = 2 * (quad->BloomPasses.size() + 1);
+            counters->setCount(count);
+            quad->BloomCounters = NS::TransferPtr(m_Device->newCounterHeap(counters.get(), &error));
+            if (quad->BloomCounters) {
+                quad->BloomCounters->invalidateCounterRange(NS::Range::Make(0, count));
+                quad->BloomTimestampFrequency = m_Device->queryTimestampFrequency();
+            }
+        }
+        auto sampler = NS::TransferPtr(MTL::SamplerDescriptor::alloc()->init());
+        sampler->setMinFilter(MTL::SamplerMinMagFilterLinear);
+        sampler->setMagFilter(MTL::SamplerMinMagFilterLinear);
+        sampler->setSAddressMode(MTL::SamplerAddressModeClampToEdge);
+        sampler->setTAddressMode(MTL::SamplerAddressModeClampToEdge);
+        quad->BloomSampler = NS::TransferPtr(m_Device->newSamplerState(sampler.get()));
+        Check(bool(quad->BloomSampler), "Cannot allocate bloom sampler");
+        auto table = NS::TransferPtr(MTL4::ArgumentTableDescriptor::alloc()->init());
+        table->setInitializeBindings(true);
+        table->setMaxBufferBindCount(6);
+        table->setMaxTextureBindCount(2);
+        table->setMaxSamplerStateBindCount(2);
+        for (auto& pass : quad->BloomPasses) {
+            pass.Arguments = NS::TransferPtr(m_Device->newArgumentTable(table.get(), &error));
+            Check(bool(pass.Arguments), "Cannot allocate bloom filter bindings");
+            auto uniform = AcquireRenderer2DBuffer(sizeof(pass.Parameters), &pass.Parameters);
+            pass.Arguments->setAddress(uniform->gpuAddress(), 5);
+            pass.Arguments->setTexture(pass.Source->Targets[0]->gpuResourceID(), 0);
+            pass.Arguments->setTexture(pass.Fine->Targets[0]->gpuResourceID(), 1);
+            pass.Arguments->setSamplerState(quad->BloomSampler->gpuResourceID(), 0);
+            pass.Arguments->setSamplerState(quad->BloomSampler->gpuResourceID(), 1);
+            quad->Residency->addAllocation(pass.Output->Targets[0].get());
+            quad->Residency->addAllocation(uniform.get());
+            quad->Buffers.push_back(std::move(uniform));
+        }
+    }
     if (quad->World) {
         auto table = NS::TransferPtr(MTL4::ArgumentTableDescriptor::alloc()->init());
-        table->setInitializeBindings(true); table->setMaxBufferBindCount(6); table->setMaxTextureBindCount(quad->Reflections ? 6 : 2); table->setMaxSamplerStateBindCount(1);
+        table->setInitializeBindings(true); table->setMaxBufferBindCount(6); table->setMaxTextureBindCount(quad->Reflections ? 6 : 3); table->setMaxSamplerStateBindCount(quad->Reflections ? 1 : 3);
         quad->PresentationArguments = NS::TransferPtr(m_Device->newArgumentTable(table.get(), &error));
         auto sampler = NS::TransferPtr(MTL::SamplerDescriptor::alloc()->init());
         sampler->setMinFilter(MTL::SamplerMinMagFilterNearest); sampler->setMagFilter(MTL::SamplerMinMagFilterNearest);
         sampler->setSAddressMode(MTL::SamplerAddressModeClampToEdge); sampler->setTAddressMode(MTL::SamplerAddressModeClampToEdge);
         if (!quad->OutputSampler) quad->OutputSampler = NS::TransferPtr(m_Device->newSamplerState(sampler.get()));
-        glm::vec4 presentation(quad->Exposure, 0, 0, 0);
+        glm::vec4 presentation(quad->Exposure, quad->BloomIntensity, 0, 0);
         auto uniform = quad->Reflections ? AcquireRenderer2DBuffer(sizeof(*quad->Reflections), &*quad->Reflections) :
             AcquireRenderer2DBuffer(sizeof(presentation), &presentation);
         Check(bool(quad->PresentationArguments) && bool(quad->OutputSampler) && bool(uniform), "Cannot allocate world presentation bindings");
@@ -425,6 +489,12 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
         for (unsigned slot=0; slot<(quad->Reflections ? 6u : 2u); ++slot)
             quad->PresentationArguments->setTexture(quad->World->Attachments->Targets[slot]->gpuResourceID(), slot);
         quad->PresentationArguments->setSamplerState(quad->OutputSampler->gpuResourceID(), 0);
+        if (!quad->Reflections) {
+            auto glow = quad->BloomPasses.empty() ? quad->World->Attachments : quad->BloomPasses.back().Output;
+            auto sampler = quad->BloomSampler ? quad->BloomSampler : quad->OutputSampler;
+            quad->PresentationArguments->setTexture(glow->Targets[0]->gpuResourceID(), 2);
+            quad->PresentationArguments->setSamplerState(sampler->gpuResourceID(), 2);
+        }
         quad->Residency->addAllocation(uniform.get()); quad->Buffers.push_back(std::move(uniform));
     }
     if (quad->OutlineShader) {
@@ -524,6 +594,25 @@ void MetalDevice::EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFra
     if (quad->World) {
         m_Commands->useResidencySet(quad->World->Residency.get());
         EncodeRenderer2DFrame(quad->World);
+        auto* counters = quad->BloomCounters.get();
+        size_t timestamp = 0;
+        for (const auto& bloom : quad->BloomPasses) {
+            auto pass = NS::TransferPtr(MTL4::RenderPassDescriptor::alloc()->init());
+            auto* color = pass->colorAttachments()->object(0);
+            color->setTexture(bloom.Output->Targets[0].get());
+            color->setLoadAction(MTL::LoadActionDontCare);
+            color->setStoreAction(MTL::StoreActionStore);
+            auto* render = m_Commands->renderCommandEncoder(pass.get());
+            Check(render != nullptr, "Cannot encode HDR bloom filter");
+            // Includes readers of this per-view scratch from earlier frames.
+            render->barrierAfterQueueStages(MTL::StageAll, MTL::StageAll, MTL4::VisibilityOptionDevice);
+            render->setRenderPipelineState(quad->BloomShader->Pipeline());
+            render->setArgumentTable(bloom.Arguments.get(), MTL::RenderStageFragment);
+            if (counters) render->writeTimestamp(MTL4::TimestampGranularityPrecise, MTL::RenderStageFragment, counters, timestamp++);
+            render->drawPrimitives(MTL::PrimitiveTypeTriangle, NS::UInteger(0), NS::UInteger(3));
+            if (counters) render->writeTimestamp(MTL4::TimestampGranularityPrecise, MTL::RenderStageFragment, counters, timestamp++);
+            render->endEncoding();
+        }
         auto* copy = m_Commands->computeCommandEncoder();
         if (!copy) { m_Commands->endCommandBuffer(); throw std::runtime_error("Cannot encode world depth transfer"); }
         copy->barrierAfterQueueStages(MTL::StageAll, MTL::StageBlit, MTL4::VisibilityOptionDevice);
@@ -568,7 +657,11 @@ void MetalDevice::EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFra
     bool boundDepthWrite=false;
     if (quad->World) {
         render->setArgumentTable(quad->PresentationArguments.get(), MTL::RenderStageFragment);
+        auto* counters = quad->BloomCounters.get();
+        const auto timestamp = 2 * quad->BloomPasses.size();
+        if (counters) render->writeTimestamp(MTL4::TimestampGranularityPrecise, MTL::RenderStageFragment, counters, timestamp);
         render->drawPrimitives(MTL::PrimitiveTypeTriangle, NS::UInteger(0), NS::UInteger(3));
+        if (counters) render->writeTimestamp(MTL4::TimestampGranularityPrecise, MTL::RenderStageFragment, counters, timestamp + 1);
     }
     for (size_t i = 0; i < quad->Draws.size(); ++i)
     {

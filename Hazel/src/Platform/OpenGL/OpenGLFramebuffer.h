@@ -3,6 +3,7 @@
 
 #include "Hazel/Renderer/Resources/Framebuffer.h"
 #include "Hazel/Renderer/Resources/UniformBuffer.h"
+#include <array>
 #include <utility>
 
 namespace Hazel {
@@ -24,7 +25,7 @@ namespace Hazel {
         virtual void Resize(uint32_t width, uint32_t height) override;
         virtual void DrawEntityOutlineTo(const Ref<Framebuffer>& destination,int entity,int radius,glm::vec4 encodedColor) override;
         void ResolveReflectionsTo(const Ref<Framebuffer>& destination, const ScreenReflectionResolve& parameters) override;
-        void CompositeWorldTo(const Ref<Framebuffer> &destination, float exposure) override;
+        void CompositeWorldTo(const Ref<Framebuffer> &destination, float exposure, const BloomPyramid* bloom = nullptr) override;
         std::vector<glm::vec4> ReadColorPixels() override;
         virtual glm::vec4 ReadColorPixel(uint32_t attachment, int x, int y) override;
         virtual int ReadPixel(uint32_t attachmentIndex, int x, int y) override;
@@ -35,9 +36,12 @@ namespace Hazel {
 
 		virtual const FramebufferSpecification& GetSpecification() const override { return m_Specification; }
 	private:
+        uint32_t FilterBloom(const BloomPyramid& bloom, bool timePasses);
         void ReadFloatColors(uint32_t attachment, int x, int y, int width, int height, glm::vec4 *pixels);
-      Ref<Shader> m_OutputShader, m_ToneShader, m_OutlineShader, m_ReflectionShader;
-      Ref<UniformBuffer> m_ToneParameters, m_ReflectionParameters;
+      Ref<Shader> m_OutputShader, m_BloomShader, m_ToneShader, m_OutlineShader, m_ReflectionShader;
+      Ref<UniformBuffer> m_BloomParameters, m_ToneParameters, m_ReflectionParameters;
+      std::array<uint32_t, 4> m_BloomQueries{};
+      bool m_BloomQueriesPending = false;
       uint32_t m_OutputVAO = 0;
       void Release();
       void DisableIntegerBlending();

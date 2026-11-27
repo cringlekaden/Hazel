@@ -173,6 +173,25 @@ remain even on Ultra. Static determinism does not imply motion stability.
 Functional/correctness acceptance and the incomplete final visual-quality
 qualification are recorded in [XeGTAO](design/xegtao.md).
 
+### HDR bloom and manual exposure (development branch)
+
+In **Scene Settings**, use scene-referred presentation and enable **HDR bloom**.
+**Bloom intensity** scales the added highlight light. **Bloom radius** shifts
+more of the filter weight to wider scales. The default intensity is 0.08 and
+existing scenes keep bloom off. **Apply** participates in Undo/Redo, and
+**Save** persists the controls. New-scene defaults can seed the enable switch.
+
+**Exposure compensation (EV)** scales the scene by two per positive stop
+before Neutral tone mapping. A value of 0 EV leaves the scene scale at unity.
+Bloom responds to the same exposure as the scene and keeps the same
+scene-linear highlight roll-in. In the material editor, **Emissive strength**
+scales the emissive color in linear light. Use it to give a practical light
+source HDR radiance. Screen UI, editor overlays, and outlines follow scene
+presentation and do not feed bloom.
+
+The [HDR bloom study](design/hdr-bloom.md) documents the pipeline, native
+evidence, and steps to produce matched camera captures.
+
 ### HDR temporal antialiasing (development branch)
 
 Scene Settings offers **HDR TAA (Metal 4)** for scene-referred presentation.

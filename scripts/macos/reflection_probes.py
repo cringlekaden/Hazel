@@ -216,7 +216,7 @@ def timing_summary(path, count=3):
     return summary
 
 
-def qualify_archive(archive, out, report, offscreen_only, diagnostic=False, ssr_gallery=None):
+def qualify_archive(archive, out, report, offscreen_only, diagnostic=False, ssr_gallery=None, hdr_bloom=None):
     from internal.package_tests import extract_verified
     from macos.packaging import relocate_executable, sign
     from macos.qualification import isolation_command, product_acceptance
@@ -237,6 +237,11 @@ def qualify_archive(archive, out, report, offscreen_only, diagnostic=False, ssr_
             reflection = resources / "shaders/metal/ScreenReflections.hzmetal"
             if hashlib.sha256(reflection.read_bytes()).hexdigest() != meta["metal_shaders"][reflection.name]:
                 raise RuntimeError("Packaged SSR artifact differs from its manifest")
+        if hdr_bloom:
+            for name in ("BloomFilter.hzmetal", "WorldPresentation.hzmetal"):
+                shader = resources / "shaders/metal" / name
+                if hashlib.sha256(shader.read_bytes()).hexdigest() != meta["metal_shaders"][name]:
+                    raise RuntimeError(f"Packaged {name} differs from its manifest")
         runtime_assets = resources / "Project"
         source_cubes = [p for p in runtime_assets.glob("**/CapturedReflections/**/*.hlight")
                         if not any(part.endswith(".henv.prepared") for part in p.parts)]
@@ -258,7 +263,7 @@ def qualify_archive(archive, out, report, offscreen_only, diagnostic=False, ssr_
             shutil.copy2(hz.binaries("Release") / binary / binary, exe)
             relocate_executable(exe)
             sign(exe)
-            filename = ssr_gallery or (gallery.LOCAL_PROJECT if diagnostic else PROJECT_NAME)
+            filename = hdr_bloom or ssr_gallery or (gallery.LOCAL_PROJECT if diagnostic else PROJECT_NAME)
             project = resource_root / "Project" / filename
             variables = {key: value for key, value in os.environ.items()
                          if not key.startswith(("HAZEL_", "MTL_", "DYLD_"))}
@@ -270,6 +275,8 @@ def qualify_archive(archive, out, report, offscreen_only, diagnostic=False, ssr_
                 variables.update(HAZEL_REFLECTION_DIAGNOSTIC="1", HAZEL_REFLECTION_GALLERY_CENTER="1")
             if ssr_gallery:
                 variables.update(HAZEL_SSR_GALLERY="1", HAZEL_REFLECTION_DIAGNOSTIC="1")
+            if hdr_bloom:
+                variables.update(HAZEL_HDR_BLOOM="1", HAZEL_REFLECTION_DIAGNOSTIC="1")
             log = out / f"{backend}-source-free.log"
             captures = working / f"{backend}-source-free-captures"
             command = [exe, resource_root, captures, "--reflection-probes"] if backend == "metal" else [
@@ -278,7 +285,7 @@ def qualify_archive(archive, out, report, offscreen_only, diagnostic=False, ssr_
                 result = subprocess.run(isolation_command(command, sdk, metal=backend == "metal"), cwd=working,
                                         env=variables, stdout=stream, stderr=subprocess.STDOUT, timeout=120)
             report["relocation"][backend + "SourceFree"] = {"exitCode": result.returncode,
-                "results": [line for line in log.read_text().splitlines() if line.startswith(("REFLECTION_", "SSR_"))]}
+                "results": [line for line in log.read_text().splitlines() if line.startswith(("REFLECTION_", "SSR_", "BLOOM_"))]}
             if result.returncode:
                 raise RuntimeError(f"Source-free {backend} reflection failed. See {log}")
         if offscreen_only:

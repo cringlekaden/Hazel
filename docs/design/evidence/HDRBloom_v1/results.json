@@ -1,0 +1,356 @@
+{
+  "device": "Apple M4",
+  "macOS": "27.3 (26C5047e)",
+  "opengl": "Apple 4.1 Metal - 91.7",
+  "base": "83986ef0f8e178e429bb5bf84572137062af6da4",
+  "shaderSHA256": {
+    "BloomFilter.glsl": "2132c229c4a6e9cd32faaad815858e3b71eb25de10693d6f31ae219d797dcc3e",
+    "WorldPresentation.glsl": "6b70177bd93eec404b29b813d64c3940210091fabcfd078c87245c18ada52fd8",
+    "metal/BloomFilter.hzmetal": "1b1a2dfb74d3aa6f3ef0f763471fe891360404f4afd9ccc38dd91abdcd0bf2b2",
+    "metal/WorldPresentation.hzmetal": "4f0d2fd7022811921c62539009b6e40e8cf63f62fd16b6c8502ea5451aa67ec5",
+    "ForwardPBR.glsl": "971a33bca964343a3a18ea75e13b52f42e1a6d563da11ee3da790dce697093a9",
+    "ScreenReflections.glsl": "fd15bcce62a4f9b9b3c06046533dd0a0914e412edc3f11496a4f303021c07fa9"
+  },
+  "study": {
+    "Release": {
+      "checks": {
+        "metal": [
+          "BLOOM_ORACLE uniformCases=27 maxLinearError=1.43051e-08",
+          "BLOOM_IMPULSE fourPhases=pass minEnergy=6.47153 maxEnergy=6.47153",
+          "BLOOM_DISOCCLUSION maxResidual=0",
+          "BLOOM_LIFETIME queue=3 reset=pass oddResize=pass onePixel=pass",
+          "BLOOM_STUDY poses=17 ID/depth=pass disabled=pass UI=pass AO/TAA=pass exposureHistory=pass"
+        ],
+        "opengl": [
+          "BLOOM_ORACLE uniformCases=27 maxLinearError=1.43051e-08",
+          "BLOOM_IMPULSE fourPhases=pass minEnergy=6.47153 maxEnergy=6.47153",
+          "BLOOM_STUDY poses=17 ID/depth=pass disabled=pass UI=pass"
+        ]
+      },
+      "aaOffParity": {
+        "bloomIncrementRGBp99": 1.1920928955078125e-07,
+        "idDifferences": 1,
+        "compared": 230399
+      }
+    },
+    "Debug": {
+      "checks": {
+        "metal": [
+          "BLOOM_ORACLE uniformCases=27 maxLinearError=1.43051e-08",
+          "BLOOM_IMPULSE fourPhases=pass minEnergy=6.47153 maxEnergy=6.47153",
+          "BLOOM_DISOCCLUSION maxResidual=0",
+          "BLOOM_LIFETIME queue=3 reset=pass oddResize=pass onePixel=pass",
+          "BLOOM_STUDY poses=17 ID/depth=pass disabled=pass UI=pass AO/TAA=pass exposureHistory=pass"
+        ],
+        "opengl": [
+          "BLOOM_ORACLE uniformCases=27 maxLinearError=1.43051e-08",
+          "BLOOM_IMPULSE fourPhases=pass minEnergy=6.47153 maxEnergy=6.47153",
+          "BLOOM_STUDY poses=17 ID/depth=pass disabled=pass UI=pass"
+        ]
+      },
+      "aaOffParity": {
+        "bloomIncrementRGBp99": 1.1920928955078125e-07,
+        "idDifferences": 1,
+        "compared": 230399
+      }
+    }
+  },
+  "archive": {
+    "archiveIntegrity": "PASS",
+    "metalSourceFree": {
+      "exitCode": 0,
+      "results": [
+        "BLOOM_ORACLE uniformCases=27 maxLinearError=1.43051e-08",
+        "BLOOM_IMPULSE fourPhases=pass minEnergy=6.47153 maxEnergy=6.47153",
+        "BLOOM_DISOCCLUSION maxResidual=0",
+        "BLOOM_LIFETIME queue=3 reset=pass oddResize=pass onePixel=pass",
+        "BLOOM_STUDY poses=17 ID/depth=pass disabled=pass UI=pass AO/TAA=pass exposureHistory=pass"
+      ]
+    },
+    "openglSourceFree": {
+      "exitCode": 0,
+      "results": [
+        "BLOOM_ORACLE uniformCases=27 maxLinearError=1.43051e-08",
+        "BLOOM_IMPULSE fourPhases=pass minEnergy=6.47153 maxEnergy=6.47153",
+        "BLOOM_STUDY poses=17 ID/depth=pass disabled=pass UI=pass"
+      ]
+    },
+    "metalPlayer": "PASS",
+    "openglPlayer": "PASS"
+  },
+  "desktops": {
+    "Hazelnut": {
+      "metal": {
+        "renderedAndClosed": true,
+        "submitted": 73,
+        "completed": 73,
+        "presented": 67,
+        "completedPresented": 67,
+        "gpuErrors": 0
+      },
+      "opengl": {
+        "renderedAndClosed": true
+      }
+    },
+    "Nutella": {
+      "metal": {
+        "renderedAndClosed": true,
+        "submitted": 66,
+        "completed": 66,
+        "presented": 62,
+        "completedPresented": 62,
+        "gpuErrors": 0
+      },
+      "opengl": {
+        "renderedAndClosed": true
+      }
+    }
+  },
+  "referenceRegressions": {
+    "SSR": {
+      "Debug": "PASS",
+      "Release": "PASS"
+    },
+    "TAA": {
+      "Debug": "PASS",
+      "Release": "PASS"
+    },
+    "EditorAndFrozenIBL": {
+      "Debug": "PASS",
+      "Release": "PASS"
+    },
+    "KullaContyGGX": {
+      "Debug": "PASS",
+      "Release": "PASS"
+    },
+    "CombinedShadows": {
+      "Debug": "PASS",
+      "Release": "PASS"
+    },
+    "ShaderSmoke": {
+      "Debug": "PASS",
+      "Release": "PASS"
+    },
+    "PBRAndIBLNativeParity": {
+      "release": {
+        "captures": 135,
+        "failures": [],
+        "maxDepthError": 1.7881393432617188e-07,
+        "idDifferences": 0
+      },
+      "debug": {
+        "captures": 135,
+        "failures": [],
+        "maxDepthError": 1.7881393432617188e-07,
+        "idDifferences": 0
+      }
+    },
+    "NearFieldProbeReproductionRelease": {
+      "maxRGBp99": 5.960464477539063e-08,
+      "maxFrameIDDifferences": 0,
+      "matchedCases": 72
+    }
+  },
+  "timings": {
+    "warmupFrames": 4,
+    "samplesPerState": 15,
+    "data": {
+      "metal": {
+        "1280x720": {
+          "offFrameMS": {
+            "median": 10.604749957565218,
+            "p95": 10.881417023483664
+          },
+          "onFrameMS": {
+            "median": 10.613667021971196,
+            "p95": 11.15966698853299
+          },
+          "pairedFrameDeltaMS": {
+            "median": 0.27062493609264493,
+            "p95": 0.6404170417226851
+          },
+          "extractMS": {
+            "median": 0.202167,
+            "p95": 0.247542
+          },
+          "downMS": {
+            "median": 0.01975,
+            "p95": 0.0207917
+          },
+          "upMS": {
+            "median": 0.0224583,
+            "p95": 0.0234167
+          },
+          "presentMS": {
+            "median": 0.307167,
+            "p95": 0.390792
+          },
+          "scratchBytes": 5390336
+        },
+        "1920x1080": {
+          "offFrameMS": {
+            "median": 22.167624963913113,
+            "p95": 22.397957975044847
+          },
+          "onFrameMS": {
+            "median": 22.76604197686538,
+            "p95": 23.03854195633903
+          },
+          "pairedFrameDeltaMS": {
+            "median": 0.6202500080689788,
+            "p95": 1.1499589309096336
+          },
+          "extractMS": {
+            "median": 0.409292,
+            "p95": 0.483
+          },
+          "downMS": {
+            "median": 0.028875,
+            "p95": 0.0305417
+          },
+          "upMS": {
+            "median": 0.0378333,
+            "p95": 0.038125
+          },
+          "presentMS": {
+            "median": 0.664125,
+            "p95": 1.11733
+          },
+          "scratchBytes": 11616256
+        },
+        "3840x2160": {
+          "offFrameMS": {
+            "median": 61.796249996405095,
+            "p95": 64.39641700126231
+          },
+          "onFrameMS": {
+            "median": 64.46170795243233,
+            "p95": 68.46950005274266
+          },
+          "pairedFrameDeltaMS": {
+            "median": 2.72137502906844,
+            "p95": 7.39362504100427
+          },
+          "extractMS": {
+            "median": 1.57163,
+            "p95": 1.99946
+          },
+          "downMS": {
+            "median": 0.0859583,
+            "p95": 0.089375
+          },
+          "upMS": {
+            "median": 0.131833,
+            "p95": 0.136
+          },
+          "presentMS": {
+            "median": 2.65854,
+            "p95": 3.19313
+          },
+          "scratchBytes": 45301760
+        }
+      },
+      "opengl": {
+        "1280x720": {
+          "offFrameMS": {
+            "median": 33.079916,
+            "p95": 41.346375
+          },
+          "onFrameMS": {
+            "median": 33.435959,
+            "p95": 42.209125
+          },
+          "pairedFrameDeltaMS": {
+            "median": 0.38658399999999915,
+            "p95": 9.130499999999998
+          },
+          "extractMS": {
+            "median": 0.031749,
+            "p95": 0.0785
+          },
+          "downMS": {
+            "median": 0.298333,
+            "p95": 0.375791
+          },
+          "upMS": {
+            "median": 0.366624,
+            "p95": 0.438251
+          },
+          "presentMS": {
+            "median": 0.600416,
+            "p95": 0.658583
+          },
+          "scratchBytes": 4867200
+        },
+        "1920x1080": {
+          "offFrameMS": {
+            "median": 36.192084,
+            "p95": 36.735083
+          },
+          "onFrameMS": {
+            "median": 37.732875,
+            "p95": 45.092334
+          },
+          "pairedFrameDeltaMS": {
+            "median": 1.293959000000001,
+            "p95": 9.160834000000001
+          },
+          "extractMS": {
+            "median": 0.032459,
+            "p95": 0.0675
+          },
+          "downMS": {
+            "median": 0.325625,
+            "p95": 1.14025
+          },
+          "upMS": {
+            "median": 0.335625,
+            "p95": 0.526667
+          },
+          "presentMS": {
+            "median": 1.06425,
+            "p95": 1.16692
+          },
+          "scratchBytes": 10951680
+        },
+        "3840x2160": {
+          "offFrameMS": {
+            "median": 61.21,
+            "p95": 61.832584
+          },
+          "onFrameMS": {
+            "median": 63.918624,
+            "p95": 65.130209
+          },
+          "pairedFrameDeltaMS": {
+            "median": 3.2620429999999914,
+            "p95": 3.7551679999999905
+          },
+          "extractMS": {
+            "median": 0.058625,
+            "p95": 0.091166
+          },
+          "downMS": {
+            "median": 0.589291,
+            "p95": 1.25412
+          },
+          "upMS": {
+            "median": 0.8535,
+            "p95": 0.993125
+          },
+          "presentMS": {
+            "median": 3.7175,
+            "p95": 4.44246
+          },
+          "scratchBytes": 44129280
+        }
+      }
+    },
+    "notes": [
+      "3840x2160 TAA disabled because the unbloomed Metal all-effects FP32 readback exhausted the renderer budget.",
+      "Metal timings use MTL4 fragment completion intervals and command feedback. Reported texture bytes include alignment.",
+      "OpenGL phases are isolated elapsed queries. Whole-frame timings are separate elapsed samples. Reported texture bytes are nominal payload.",
+      "Metal uses AO at all extents, and TAA at 720p and 1080p. Both APIs include SSR, probes, and all shadow types."
+    ]
+  }
+}

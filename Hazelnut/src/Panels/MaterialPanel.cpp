@@ -134,6 +134,7 @@ void MaterialPanel::Properties()
         auto emissive = glm::vec4(value.Emissive, 1);
         if (PropertyUI::Color("emissive", "Emissive", glm::value_ptr(emissive), {}, false))
             value.Emissive = glm::vec3(emissive);
+        PropertyUI::DragFloat("emissive-strength", "Emissive strength", value.EmissiveStrength, .05f, 0, 1000);
         PropertyUI::DragFloat("normal", "Normal scale", value.NormalScale, .01f, -16, 16);
         PropertyUI::SliderFloat("occlusion", "Occlusion strength", value.OcclusionStrength, 0, 1);
     }

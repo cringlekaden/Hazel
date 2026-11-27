@@ -42,6 +42,7 @@ struct MaterialDefinition
     std::string Name = "New material";
     MaterialModel Model = MaterialModel::MetallicRoughness;
     glm::vec4 BaseColor{1}; // Linear RGB / straight alpha. Pickers display sRGB.
+    float EmissiveStrength = 1; // Linear radiance multiplier.
     glm::vec3 Emissive{};   // Linear nonnegative, no transfer on gains.
     float Metallic = 0, Roughness = .5f, NormalScale = 1, OcclusionStrength = 1, AlphaCutoff = .5f;
     MaterialAlpha Alpha = MaterialAlpha::Opaque;

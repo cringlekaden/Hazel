@@ -1,6 +1,7 @@
 #include "hzpch.h"
 // Adapted upstream framebuffer: binding-based 4.1 allocation, clearing and MSAA resolve.
 #include "Platform/OpenGL/OpenGLFramebuffer.h"
+#include "Hazel/Renderer/Scene/Bloom.h"
 #include "Hazel/Core/Resources.h"
 #include "Hazel/Renderer/RenderCommand.h"
 #include "Hazel/Renderer/Resources/Shader.h"
@@ -108,7 +109,13 @@ void OpenGLFramebuffer::Release()
     m_RendererID=m_ResolveRendererID=m_DepthAttachment=0;
     m_ColorAttachments.clear(); m_ResolveColorAttachments.clear();
 }
-OpenGLFramebuffer::~OpenGLFramebuffer() { Release(); glDeleteVertexArrays(1,&m_OutputVAO); }
+OpenGLFramebuffer::~OpenGLFramebuffer()
+{
+    if (m_BloomQueries.front())
+        glDeleteQueries(GLsizei(m_BloomQueries.size()), m_BloomQueries.data());
+    Release();
+    glDeleteVertexArrays(1, &m_OutputVAO);
+}
 
 void OpenGLFramebuffer::Invalidate()
 {
@@ -367,7 +374,69 @@ void OpenGLFramebuffer::ResolveReflectionsTo(const Ref<Framebuffer>& destination
     glBlitFramebuffer(0, 0, width, height, 0, 0, width, height,
                       GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
 }
-void OpenGLFramebuffer::CompositeWorldTo(const Ref<Framebuffer> &destination, float exposure)
+uint32_t OpenGLFramebuffer::FilterBloom(const BloomPyramid& bloom, bool timePasses)
+{
+    if (!m_BloomShader)
+        m_BloomShader = Shader::Create((Resources::Get().Root / "shaders/BloomFilter.glsl").generic_u8string());
+    if (!m_BloomParameters)
+        m_BloomParameters = UniformBuffer::Create(sizeof(glm::vec4), 5);
+    m_BloomShader->Bind();
+    m_BloomShader->SetInt("u_Source", 0);
+    m_BloomShader->SetInt("u_Fine", 1);
+    m_BloomParameters->Bind();
+    if (!m_OutputVAO)
+        glGenVertexArrays(1, &m_OutputVAO);
+    glBindVertexArray(m_OutputVAO);
+    auto draw = [&](const OpenGLFramebuffer& output, const OpenGLFramebuffer& source,
+                    const OpenGLFramebuffer& fine, float mode) {
+        const auto& extent = source.GetSpecification();
+        const auto& size = output.GetSpecification();
+        const auto parameters = bloom.FilterParameters(mode, extent.Width, extent.Height);
+        m_BloomParameters->SetData(&parameters, sizeof(parameters));
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, output.m_RendererID);
+        glViewport(0, 0, size.Width, size.Height);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, source.m_ColorAttachments[0]);
+        glBindSampler(0, 0);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, fine.m_ColorAttachments[0]);
+        glBindSampler(1, 0);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+    };
+    // Qualification separates Apple GL's batched passes with explicit
+    // completion boundaries. Ordinary rendering never enables this path.
+    if (timePasses) glBeginQuery(GL_TIME_ELAPSED, m_BloomQueries[0]);
+    const auto* source = static_cast<const OpenGLFramebuffer*>(bloom.Levels.front().Down.get());
+    draw(*source, *this, *this, 0.f);
+    if (timePasses) {
+        glFinish();
+        glEndQuery(GL_TIME_ELAPSED);
+        glBeginQuery(GL_TIME_ELAPSED, m_BloomQueries[1]);
+    }
+    for (size_t i = 1; i < bloom.Levels.size(); ++i) {
+        const auto& output = static_cast<const OpenGLFramebuffer&>(*bloom.Levels[i].Down);
+        draw(output, *source, *source, 1.f);
+        source = &output;
+    }
+    if (timePasses) {
+        glFinish();
+        glEndQuery(GL_TIME_ELAPSED);
+        glBeginQuery(GL_TIME_ELAPSED, m_BloomQueries[2]);
+    }
+    for (size_t i = bloom.Levels.size() - 1; i > 0; --i) {
+        const auto& fine = bloom.Levels[i - 1];
+        const auto& output = static_cast<const OpenGLFramebuffer&>(*fine.Up);
+        draw(output, *source, static_cast<const OpenGLFramebuffer&>(*fine.Down), 2.f);
+        source = &output;
+    }
+    if (timePasses) {
+        glFinish();
+        glEndQuery(GL_TIME_ELAPSED);
+    }
+    return source->m_ColorAttachments[0];
+}
+void OpenGLFramebuffer::CompositeWorldTo(const Ref<Framebuffer> &destination, float exposure,
+                                         const BloomPyramid* bloom)
 {
     auto target = std::dynamic_pointer_cast<OpenGLFramebuffer>(destination);
     if (!std::isfinite(exposure) || exposure < -16 || exposure > 16 || !target ||
@@ -398,6 +467,39 @@ void OpenGLFramebuffer::CompositeWorldTo(const Ref<Framebuffer> &destination, fl
     raster.PickingMask = glm::bvec4(true);
     raster.Viewport = {0, 0, m_Specification.Width, m_Specification.Height};
     RenderCommand::SetRasterState(raster);
+    bool timePasses = false;
+    if (bloom && bloom->Timing) {
+        GLint active = 0;
+        glGetQueryiv(GL_TIME_ELAPSED, GL_CURRENT_QUERY, &active);
+        if (!active) {
+            if (!m_BloomQueries.front()) {
+                GLint bits = 0;
+                glGetQueryiv(GL_TIME_ELAPSED, GL_QUERY_COUNTER_BITS, &bits);
+                if (bits)
+                    glGenQueries(GLsizei(m_BloomQueries.size()), m_BloomQueries.data());
+            }
+            if (m_BloomQueriesPending) {
+                GLint ready = 0;
+                glGetQueryObjectiv(m_BloomQueries.back(), GL_QUERY_RESULT_AVAILABLE, &ready);
+                if (ready) {
+                    BloomTiming result;
+                    result.WorkingBytes = bloom->TexturePayloadBytes();
+                    result.Valid = true;
+                    for (size_t i = 0; i < m_BloomQueries.size(); ++i) {
+                        GLuint64 ns = 0;
+                        glGetQueryObjectui64v(m_BloomQueries[i], GL_QUERY_RESULT, &ns);
+                        result.Milliseconds[i] = double(ns) / 1e6;
+                    }
+                    *bloom->Timing = result;
+                    m_BloomQueriesPending = false;
+                }
+            }
+            timePasses = m_BloomQueries.front() && !m_BloomQueriesPending;
+        }
+    }
+    const auto glow = bloom ? FilterBloom(*bloom, timePasses) : m_ColorAttachments[0];
+    if (bloom)
+        glViewport(0, 0, m_Specification.Width, m_Specification.Height);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target->m_RendererID);
     const GLenum outputs[]{GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
     glDrawBuffers(2, outputs);
@@ -406,12 +508,16 @@ void OpenGLFramebuffer::CompositeWorldTo(const Ref<Framebuffer> &destination, fl
             (Resources::Get().Root / "shaders/WorldPresentation.glsl").generic_u8string());
     if (!m_ToneParameters)
         m_ToneParameters = UniformBuffer::Create(16, 5);
-    glm::vec4 parameters(exposure, 0, 0, 0);
+    glm::vec4 parameters(exposure, bloom ? bloom->Intensity : 0.f, 0, 0);
     m_ToneParameters->Bind();
     m_ToneParameters->SetData(&parameters, 16);
     m_ToneShader->Bind();
     m_ToneShader->SetInt("u_World", 0);
     m_ToneShader->SetInt("u_Picking", 1);
+    m_ToneShader->SetInt("u_Bloom", 2);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, glow);
+    glBindSampler(2, 0);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, m_ColorAttachments[0]);
     glBindSampler(0, 0);
@@ -421,7 +527,13 @@ void OpenGLFramebuffer::CompositeWorldTo(const Ref<Framebuffer> &destination, fl
     if (!m_OutputVAO)
         glGenVertexArrays(1, &m_OutputVAO);
     glBindVertexArray(m_OutputVAO);
+    if (timePasses) glBeginQuery(GL_TIME_ELAPSED, m_BloomQueries[3]);
     glDrawArrays(GL_TRIANGLES, 0, 3);
+    if (timePasses) {
+        glFinish();
+        glEndQuery(GL_TIME_ELAPSED);
+        m_BloomQueriesPending = true;
+    }
     // IDs copy via integer texelFetch in the same pass, without filtering or conversion.
     // Native M4 rejects an otherwise matching R32I color blit. Copy the complete
     // D24S8 attachment: a masked depth-only blit can round through float on Mesa,

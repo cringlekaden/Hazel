@@ -38,7 +38,7 @@ Layout CPUContract(const std::string& name)
     if (name == "SpotShadows") return {sizeof(SpotShadowData), {offsetof(SpotShadowData, VP),
         offsetof(SpotShadowData, Tiles), offsetof(SpotShadowData, LightIndices)}};
     if (name == "LocalLights") return {sizeof(Renderer3DUniforms::LocalLightData), {0, 16}};
-    if (name == "Presentation") return {sizeof(glm::vec4), {0}};
+    if (name == "Presentation" || name == "Bloom") return {sizeof(glm::vec4), {0}};
     if (name == "Reflections") return {sizeof(ScreenReflectionResolve), {
         offsetof(ScreenReflectionResolve,Projection), offsetof(ScreenReflectionResolve,InverseProjection),
         offsetof(ScreenReflectionResolve,View), offsetof(ScreenReflectionResolve,Trace),

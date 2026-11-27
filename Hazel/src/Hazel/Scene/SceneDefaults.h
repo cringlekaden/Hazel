@@ -37,6 +37,14 @@ namespace Hazel {
         }
         void Validate() const;
     };
+    struct BloomSettings {
+        bool Enabled = false;
+        float Intensity = .08f, Radius = .5f;
+        bool operator==(const BloomSettings& b) const {
+            return Enabled == b.Enabled && Intensity == b.Intensity && Radius == b.Radius;
+        }
+        void Validate() const;
+    };
     // Authored linear Rec.709 RGB. Display-referred bypasses exposure/tone;
     // scene-referred applies fixed Neutral presentation before independent UI.
     struct ScenePresentation {
@@ -48,16 +56,12 @@ namespace Hazel {
         AmbientOcclusionSettings AmbientOcclusion;
         DirectionalShadowSettings Shadows;
         ScreenReflectionSettings ScreenReflections;
+        BloomSettings Bloom;
+        bool SameTemporalInputs(const ScenePresentation& b) const;
         bool operator==(const ScenePresentation &b) const
         {
-            if (SceneReferred != b.SceneReferred || TemporalAA != b.TemporalAA ||
-                std::memcmp(&Exposure, &b.Exposure, sizeof(float)))
-                return false;
-            for (int i = 0; i < 4; ++i)
-                if (std::memcmp(&Background[i], &b.Background[i], sizeof(float)))
-                    return false;
-            return Environment==b.Environment && AmbientOcclusion==b.AmbientOcclusion && Shadows==b.Shadows &&
-                ScreenReflections==b.ScreenReflections;
+            return SameTemporalInputs(b) && std::memcmp(&Exposure, &b.Exposure, sizeof(float)) == 0 &&
+                Bloom == b.Bloom;
         }
         bool operator!=(const ScenePresentation& b) const { return !(*this==b); }
         void Validate() const;

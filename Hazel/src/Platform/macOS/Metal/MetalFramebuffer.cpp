@@ -5,6 +5,7 @@
 #include "MetalShader.h"
 #include "MetalComputePipeline.h"
 #include "MetalAmbientOcclusion.h"
+#include "Hazel/Renderer/Scene/Bloom.h"
 #include "Hazel/Renderer/RenderCommand.h"
 #include <cmath>
 #include <algorithm>
@@ -25,11 +26,11 @@ void MetalFramebuffer::Validate(const FramebufferSpecification& specification)
         attachments[4].TextureFormat==FramebufferTextureFormat::RGBA16F &&
         attachments[5].TextureFormat==FramebufferTextureFormat::RGBA32F;
     Check(specification.Width && specification.Height && specification.Width <= 4096 && specification.Height <= 4096 && uint64_t(specification.Width) * specification.Height <= (depthOnly?16777216u:8388608u) &&
-        specification.Samples == 1 && !specification.SwapChainTarget && ((attachments.size() == 1 && (attachments[0].TextureFormat == FramebufferTextureFormat::RGBA8 || attachments[0].TextureFormat == FramebufferTextureFormat::DEPTH32F)) || ((attachments.size() == 3 || reflectionSurface) &&
+        specification.Samples == 1 && !specification.SwapChainTarget && ((attachments.size() == 1 && (attachments[0].TextureFormat == FramebufferTextureFormat::RGBA8 || attachments[0].TextureFormat == FramebufferTextureFormat::RGBA16F || attachments[0].TextureFormat == FramebufferTextureFormat::DEPTH32F)) || ((attachments.size() == 3 || reflectionSurface) &&
         attachments[0].TextureFormat == FramebufferTextureFormat::RGBA32F &&
         attachments[1].TextureFormat == FramebufferTextureFormat::RED_INTEGER &&
         attachments[2].TextureFormat == FramebufferTextureFormat::DEPTH32F)),
-        "Metal framebuffer requires 1..4096 extent / at most 8M color or 16M depth-only pixels, one sample, ordered RGBA32F/R32Sint/Depth32F, optional reflection surface data, depth-only preparation or RGBA8 output attachments and no swapchain target");
+        "Metal framebuffer requires 1..4096 extent / at most 8M color or 16M depth-only pixels, one sample, ordered RGBA32F/R32Sint/Depth32F, optional reflection surface data, depth-only preparation, RGBA16F bloom or RGBA8 output attachments and no swapchain target");
 }
 MetalFramebuffer::MetalFramebuffer(std::shared_ptr<MetalDevice> device, const FramebufferSpecification& specification)
     : m_Device(std::move(device)), m_Specification(specification)
@@ -53,7 +54,11 @@ std::shared_ptr<const MetalFramebufferAttachments> MetalFramebuffer::Allocate(ui
     for (size_t i = depthOnly?2u:0u; i < (depthOnly?3u:temporalHistory?2u:m_Specification.Attachments.Attachments.size()); ++i)
     {
         descriptor->setUsage(MTL::TextureUsageRenderTarget | MTL::TextureUsageShaderRead | ((i == 0 && m_Specification.Attachments.Attachments.size() == 3) || temporalHistory ? MTL::TextureUsageShaderWrite : 0));
-        descriptor->setPixelFormat(!depthOnly && m_Specification.Attachments.Attachments.size() == 1 ? MTL::PixelFormatBGRA8Unorm : formats[i]);
+        auto format = formats[i];
+        if (!depthOnly && m_Specification.Attachments.Attachments.size() == 1)
+            format = m_Specification.Attachments.Attachments[0].TextureFormat == FramebufferTextureFormat::RGBA16F
+                ? MTL::PixelFormatRGBA16Float : MTL::PixelFormatBGRA8Unorm;
+        descriptor->setPixelFormat(format);
         generation->Targets[i] = NS::TransferPtr(m_Device->NativeDevice()->newTexture(descriptor.get()));
         if (!generation->Targets[i]) throw std::runtime_error("Cannot allocate Metal framebuffer attachment generation");
     }
@@ -340,7 +345,8 @@ void MetalFramebuffer::ResolveReflectionsTo(const Ref<Framebuffer>& destination,
     target->m_Frame->World=std::move(m_Frame);
     m_SubmittedGeneration=true;
 }
-void MetalFramebuffer::CompositeWorldTo(const Ref<Framebuffer>& destination, float exposure)
+void MetalFramebuffer::CompositeWorldTo(const Ref<Framebuffer>& destination, float exposure,
+                                        const BloomPyramid* bloom)
 {
     auto target = std::dynamic_pointer_cast<MetalFramebuffer>(destination);
     Check(target && target.get() != this && target->m_Device == m_Device && std::isfinite(exposure) && exposure >= -16 && exposure <= 16, "Invalid Metal world destination/exposure");
@@ -349,6 +355,26 @@ void MetalFramebuffer::CompositeWorldTo(const Ref<Framebuffer>& destination, flo
         m_Frame->Width == target->m_Frame->Width && m_Frame->Height == target->m_Frame->Height,
         "World conversion requires an unbound world and a bound empty destination of equal extent");
     target->m_Frame->PresentationShader = std::static_pointer_cast<MetalShader>(Backend().LoadShader("WorldPresentation"));
+    if (bloom) {
+        auto& packet = *target->m_Frame;
+        packet.BloomShader = std::static_pointer_cast<MetalShader>(Backend().LoadShader("BloomFilter"));
+        packet.BloomIntensity = bloom->Intensity;
+        packet.BloomMetrics = bloom->Timing;
+        auto source = m_Frame->Attachments;
+        auto append = [&](const Ref<Framebuffer>& output,
+                          const std::shared_ptr<const MetalFramebufferAttachments>& fine, float mode) {
+            const auto& targetAttachments = static_cast<const MetalFramebuffer&>(*output).m_Attachments;
+            packet.BloomPasses.push_back({source, fine, targetAttachments,
+                bloom->FilterParameters(mode, source->Width, source->Height), {}});
+            source = targetAttachments;
+        };
+        for (const auto& level : bloom->Levels)
+            append(level.Down, source, source == m_Frame->Attachments ? 0.f : 1.f);
+        for (size_t i = bloom->Levels.size() - 1; i > 0; --i) {
+            const auto& fine = bloom->Levels[i - 1];
+            append(fine.Up, static_cast<const MetalFramebuffer&>(*fine.Down).m_Attachments, 2.f);
+        }
+    }
     m_Frame->Readback = false;
     target->m_Frame->Exposure = exposure;
     target->m_Frame->World = std::move(m_Frame);

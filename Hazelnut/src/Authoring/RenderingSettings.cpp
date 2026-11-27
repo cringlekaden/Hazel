@@ -82,13 +82,20 @@ namespace Hazel {
             if(!mode) {
                 m_ScenePresentationDraft.TemporalAA=false;
                 m_ScenePresentationDraft.ScreenReflections.Enabled=false;
+                m_ScenePresentationDraft.Bloom.Enabled = false;
             }
         }
         if (mode)
-            PropertyUI::SliderFloat("scene-exposure", "Exposure (stops)",
+            PropertyUI::SliderFloat("scene-exposure", "Exposure compensation (EV)",
                                     m_ScenePresentationDraft.Exposure, -16, 16);
         ImGui::SeparatorText("Temporal antialiasing");
         ImGui::BeginDisabled(!mode);
+        auto& bloom = m_ScenePresentationDraft.Bloom;
+        PropertyUI::Checkbox("bloom-enable", "HDR bloom", bloom.Enabled);
+        if (bloom.Enabled) {
+            PropertyUI::SliderFloat("bloom-intensity", "Bloom intensity", bloom.Intensity, 0, .25f);
+            PropertyUI::SliderFloat("bloom-radius", "Bloom radius", bloom.Radius, 0, 1);
+        }
         PropertyUI::Checkbox("taa-enable","HDR TAA (Metal 4)",m_ScenePresentationDraft.TemporalAA);
         ImGui::EndDisabled();
         ImGui::TextWrapped("Full-resolution rigid-mesh antialiasing. Requires scene-referred HDR. World 2D and screen UI stay unjittered. History rejects cuts and newly exposed geometry.");

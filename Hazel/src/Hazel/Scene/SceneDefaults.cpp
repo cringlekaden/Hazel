@@ -26,9 +26,28 @@ void ScreenReflectionSettings::Validate() const
         Thickness < .005f || Thickness > 1)
         throw std::runtime_error("Invalid screen-space reflection settings");
 }
+void BloomSettings::Validate() const
+{
+    if (!std::isfinite(Intensity) || Intensity < 0 || Intensity > .25f ||
+        !std::isfinite(Radius) || Radius < 0 || Radius > 1)
+        throw std::runtime_error("Bloom requires intensity 0..0.25 and radius 0..1");
+}
+bool ScenePresentation::SameTemporalInputs(const ScenePresentation& b) const
+{
+    if (SceneReferred != b.SceneReferred || TemporalAA != b.TemporalAA)
+        return false;
+    for (int i = 0; i < 4; ++i)
+        if (std::memcmp(&Background[i], &b.Background[i], sizeof(float)))
+            return false;
+    return Environment == b.Environment && AmbientOcclusion == b.AmbientOcclusion &&
+        Shadows == b.Shadows && ScreenReflections == b.ScreenReflections;
+}
 void ScenePresentation::Validate() const {
     AmbientOcclusion.Validate();
     ScreenReflections.Validate();
+    Bloom.Validate();
+    if (Bloom.Enabled && !SceneReferred)
+        throw std::runtime_error("Bloom requires scene-referred HDR presentation");
     if (ScreenReflections.Enabled && !SceneReferred)
         throw std::runtime_error("Screen-space reflections require scene-referred HDR presentation");
     Shadows.Validate();
@@ -80,6 +99,12 @@ YAML::Node Encode(const ScenePresentation& value) {
         nSSR["Enabled"]=ssr.Enabled; nSSR["Quality"]=ssr.Quality; nSSR["Steps"]=ssr.Steps;
         nSSR["Distance"]=ssr.Distance; nSSR["Thickness"]=ssr.Thickness;
     }
+    if (!(value.Bloom == BloomSettings{})) {
+        auto bloom = n["Bloom"];
+        bloom["Enabled"] = value.Bloom.Enabled;
+        bloom["Intensity"] = value.Bloom.Intensity;
+        bloom["Radius"] = value.Bloom.Radius;
+    }
     if (!(value.Shadows==DirectionalShadowSettings{})) {
         auto a=n["Shadows"];const auto& v=value.Shadows;
         a["Enabled"]=v.Enabled;a["Resolution"]=v.Resolution;a["Distance"]=v.Distance;
@@ -88,7 +113,7 @@ YAML::Node Encode(const ScenePresentation& value) {
     return n;
 }
 ScenePresentation ReadPresentation(const YAML::Node& n) {
-    DocumentSchema::Keys(n, {"Mode", "Background", "Exposure", "Environment", "AmbientOcclusion", "TemporalAA", "Shadows", "ScreenReflections"}, "Presentation");
+    DocumentSchema::Keys(n, {"Mode", "Background", "Exposure", "Environment", "AmbientOcclusion", "TemporalAA", "Shadows", "ScreenReflections", "Bloom"}, "Presentation");
     const auto mode = n["Mode"].as<std::string>();
     if (mode != "DisplayReferred" && mode != "SceneReferred")
         throw std::runtime_error("Unknown world presentation");
@@ -120,6 +145,12 @@ ScenePresentation ReadPresentation(const YAML::Node& n) {
         ssr.Enabled=a["Enabled"].as<bool>(); ssr.Quality=a["Quality"].as<unsigned>();
         ssr.Steps=a["Steps"].as<unsigned>(); ssr.Distance=a["Distance"].as<float>();
         ssr.Thickness=a["Thickness"].as<float>();
+    }
+    if (auto bloom = n["Bloom"]) {
+        DocumentSchema::Keys(bloom, {"Enabled", "Intensity", "Radius"}, "bloom");
+        result.Bloom.Enabled = bloom["Enabled"].as<bool>();
+        result.Bloom.Intensity = bloom["Intensity"].as<float>();
+        result.Bloom.Radius = bloom["Radius"].as<float>();
     }
     if(auto a=n["Shadows"]) {
         DocumentSchema::Keys(a,{"Enabled","Resolution","Distance","SplitLambda","NormalBias","DepthBias","Blend"},"directional shadows");

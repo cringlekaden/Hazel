@@ -228,7 +228,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
         const auto& extent=display->GetSpecification();auto& state=view.Temporal;
         historyValid=state.Submitted && state.Submitted->load() && state.Width==extent.Width && state.Height==extent.Height &&
             state.Previous.SceneIdentity==frame.SceneIdentity && state.Previous.Assets==frame.Assets &&
-            state.Previous.Presentation==frame.Presentation &&
+            state.Previous.Presentation.SameTemporalInputs(frame.Presentation) &&
             state.Previous.ReflectionProbes==frame.ReflectionProbes && !CameraCut(frame,state.Previous.Camera);
         if (historyValid) {
             // A different admission or map resolution is an abrupt lighting edit.
@@ -279,6 +279,24 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
     if (frame.LinearLightingInspection && (!display || display->GetSpecification().Attachments.Attachments.empty() ||
         display->GetSpecification().Attachments.Attachments[0].TextureFormat != FramebufferTextureFormat::RGBA32F))
         throw std::runtime_error("Linear lighting inspection requires an explicit FP32 color target");
+    const auto& bloom = frame.Presentation.Bloom;
+    const bool useBloom = bloom.Enabled && bloom.Intensity > 0 && frame.Presentation.SceneReferred &&
+        !frame.CaptureRadiance && frame.Debug == SurfaceView::Shaded && frame.AmbientOcclusionView == 0 &&
+        frame.LocalLightingView == 0 && frame.ShadowView == 0 && view.TemporalDebug == 0;
+    if (!useBloom) {
+        view.Bloom = {};
+        if (view.BloomMetrics)
+            *view.BloomMetrics = {};
+    }
+    auto presentWorld = [&] {
+        if (useBloom) {
+            bloom.Validate();
+            const auto& size = view.Radiance->GetSpecification();
+            view.Bloom.Timing = view.BloomMetrics;
+            view.Bloom.Prepare(size.Width, size.Height, bloom.Intensity, bloom.Radius);
+        }
+        view.Radiance->CompositeWorldTo(display, frame.Presentation.Exposure, useBloom ? &view.Bloom : nullptr);
+    };
     const bool reflections = frame.Presentation.ScreenReflections.Enabled && frame.Presentation.SceneReferred &&
         !frame.CaptureRadiance && frame.Debug==SurfaceView::Shaded && frame.AmbientOcclusionView==0 &&
         frame.ShadowView==0 && frame.LocalLightingView==0 && !frame.Meshes.empty();
@@ -407,7 +425,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
                 world2D();
                 view.Radiance->Unbind();
                 display->Bind();
-                view.Radiance->CompositeWorldTo(display, frame.Presentation.Exposure);
+                presentWorld();
             }
             else {
                 view.Radiance.reset();
@@ -529,7 +547,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
     {
         worldBinding.Finish();
         display->Bind();
-        view.Radiance->CompositeWorldTo(display, frame.Presentation.Exposure);
+        presentWorld();
     }
     screenUI();
 }

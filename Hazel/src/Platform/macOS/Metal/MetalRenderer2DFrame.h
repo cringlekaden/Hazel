@@ -21,6 +21,13 @@ struct MetalAOPass;
 struct MetalTemporalPass;
 struct MetalFramebufferAttachments;
 struct LocalLightingMetrics;
+struct BloomTiming;
+struct MetalBloomPass
+{
+    std::shared_ptr<const MetalFramebufferAttachments> Source, Fine, Output;
+    glm::vec4 Parameters;
+    NS::SharedPtr<MTL4::ArgumentTable> Arguments;
+};
 struct MetalLocalLightPass
 {
     std::shared_ptr<const std::vector<uint8_t>> Lights;
@@ -68,7 +75,13 @@ struct MetalRenderer2DFrame
     std::shared_ptr<MetalRenderer2DFrame> World;
     std::shared_ptr<MetalShader> PresentationShader;
     NS::SharedPtr<MTL4::ArgumentTable> PresentationArguments;
-    float Exposure = 0;
+    float Exposure = 0, BloomIntensity = 0;
+    std::shared_ptr<MetalShader> BloomShader;
+    std::vector<MetalBloomPass> BloomPasses;
+    NS::SharedPtr<MTL::SamplerState> BloomSampler;
+    std::shared_ptr<BloomTiming> BloomMetrics;
+    NS::SharedPtr<MTL4::CounterHeap> BloomCounters;
+    uint64_t BloomTimestampFrequency = 0;
     std::optional<ScreenReflectionResolve> Reflections;
     std::shared_ptr<MetalRenderer2DFrame> AOSource;
     std::shared_ptr<MetalRenderer2DFrame> ShadowSource, SpotShadowSource, PointShadowSource;

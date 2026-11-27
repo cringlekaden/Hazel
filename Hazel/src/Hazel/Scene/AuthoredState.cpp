@@ -102,6 +102,8 @@ std::string SceneSerializer::CaptureAuthoredState(Entity only, const std::type_i
         state.Value(m_Scene->Presentation().Background);
         state.Value(m_Scene->Presentation().SceneReferred);
         state.Value(m_Scene->Presentation().Exposure);
+        const auto& bloom = m_Scene->Presentation().Bloom;
+        state.Value(bloom.Enabled); state.Value(bloom.Intensity); state.Value(bloom.Radius);
         const auto &environment=m_Scene->Presentation().Environment;
         state.Value(environment.Asset);state.Value(environment.Yaw);state.Value(environment.Gain);
         state.Value(environment.Lighting);state.Value(environment.Background);

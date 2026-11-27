@@ -1,5 +1,6 @@
 #pragma once
 #include "SceneSubmission.h"
+#include "Bloom.h"
 #include "Hazel/Renderer/Resources/Framebuffer.h"
 #include <functional>
 #include <array>
@@ -51,11 +52,14 @@ class SceneRenderView
     ViewReflectionProbes ReflectionProbes;
     Ref<Framebuffer> ShadowDepth, SpotShadowDepth, PointShadowDepth;
     Ref<Framebuffer> AmbientDepth; // Per-view masked mesh depth preparation.
+    BloomPyramid Bloom;
+    std::shared_ptr<BloomTiming> BloomMetrics;
     Ref<Framebuffer> Radiance; // Optional per-view world target, never authored/history.
     void Reset()
     {
         LocalMetrics=std::make_shared<LocalLightingMetrics>();
         Radiance.reset();
+        Bloom = {};
         ReflectionSurface.reset();
         ReflectionProbes = {};
         Jittered.reset();Motion.reset();Temporal={};

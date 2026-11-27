@@ -269,7 +269,7 @@ void Renderer3D::Render(const SceneSubmission &frame, bool drawBackground, bool 
                     texture->Bind(role);
                 }
                 MaterialData values{material.BaseColor,
-                                    glm::vec4(material.Emissive, material.AlphaCutoff),
+                                    glm::vec4(material.Emissive * material.EmissiveStrength, material.AlphaCutoff),
                                     {material.Metallic, material.Roughness, material.NormalScale,
                                      material.OcclusionStrength},
                                     {float(material.Model == MaterialModel::Unlit),

@@ -1116,12 +1116,14 @@ void AuthoringPanel::ProjectSettings()
             if (!mode) {
                 m_SceneDefaultsDraft.Presentation.TemporalAA=false;
                 m_SceneDefaultsDraft.Presentation.ScreenReflections.Enabled=false;
+                m_SceneDefaultsDraft.Presentation.Bloom.Enabled = false;
             }
         }
         if (mode)
-            PropertyUI::SliderFloat("initial-exposure", "Exposure (stops)",
+            PropertyUI::SliderFloat("initial-exposure", "Exposure compensation (EV)",
                                     m_SceneDefaultsDraft.Presentation.Exposure, -16, 16);
         if(mode)PropertyUI::Checkbox("initial-taa","HDR TAA (Metal 4)",m_SceneDefaultsDraft.Presentation.TemporalAA);
+        if (mode) PropertyUI::Checkbox("initial-bloom", "HDR bloom", m_SceneDefaultsDraft.Presentation.Bloom.Enabled);
         if (mode) PropertyUI::Checkbox("initial-ssr","Screen-space reflections",m_SceneDefaultsDraft.Presentation.ScreenReflections.Enabled);
         if(mode){auto &environment=m_SceneDefaultsDraft.Presentation.Environment;auto prior=environment.Asset;
             AssetPicker("initial-environment","Initial environment",environment.Asset,".henv",Project::GetActive()->GetAssets(),m_DefaultEnvironmentPicker);
