@@ -1,0 +1,40 @@
+{
+  "debug-metal": {
+    "frozenCapturesExact": 36,
+    "study": [
+      "LENS_GLARE ghostPeak=0.296387 dirtFactor=1.5 occultation=exact fallback=exact",
+      "LENS_GEOMETRY warpedPixels=1690 idDepthMismatches=0 chromaticError=4.68803e-06 chromaticChanges=2",
+      "LENS_SENSOR vignetteError=3.5795e-08 grainMean=-1.69508e-05 grainRMS=0.00575176 reset=exact screenUI=exact",
+      "LENS_RUNTIME authoredCamera=pass dirtAsset=pass pickingDepth=exact",
+      "LENS_LIFETIME queue=3 reset=pass resize=pass sourceChange=exact"
+    ]
+  },
+  "debug-opengl": {
+    "frozenCapturesExact": 36,
+    "study": [
+      "LENS_GLARE ghostPeak=0.296387 dirtFactor=1.5 occultation=exact fallback=exact",
+      "LENS_GEOMETRY warpedPixels=1690 idDepthMismatches=0 chromaticError=4.68803e-06 chromaticChanges=2",
+      "LENS_SENSOR vignetteError=3.5795e-08 grainMean=-1.69508e-05 grainRMS=0.00575176 reset=exact screenUI=exact",
+      "LENS_RUNTIME authoredCamera=pass dirtAsset=pass pickingDepth=exact"
+    ]
+  },
+  "release-metal": {
+    "frozenCapturesExact": 36,
+    "study": [
+      "LENS_GLARE ghostPeak=0.296387 dirtFactor=1.5 occultation=exact fallback=exact",
+      "LENS_GEOMETRY warpedPixels=1690 idDepthMismatches=0 chromaticError=4.68803e-06 chromaticChanges=2",
+      "LENS_SENSOR vignetteError=3.5795e-08 grainMean=-1.69508e-05 grainRMS=0.00575176 reset=exact screenUI=exact",
+      "LENS_RUNTIME authoredCamera=pass dirtAsset=pass pickingDepth=exact",
+      "LENS_LIFETIME queue=3 reset=pass resize=pass sourceChange=exact"
+    ]
+  },
+  "release-opengl": {
+    "frozenCapturesExact": 36,
+    "study": [
+      "LENS_GLARE ghostPeak=0.296387 dirtFactor=1.5 occultation=exact fallback=exact",
+      "LENS_GEOMETRY warpedPixels=1690 idDepthMismatches=0 chromaticError=4.68803e-06 chromaticChanges=2",
+      "LENS_SENSOR vignetteError=3.5795e-08 grainMean=-1.69508e-05 grainRMS=0.00575176 reset=exact screenUI=exact",
+      "LENS_RUNTIME authoredCamera=pass dirtAsset=pass pickingDepth=exact"
+    ]
+  }
+}

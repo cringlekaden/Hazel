@@ -172,6 +172,12 @@ std::string SceneSerializer::CaptureAuthoredState(Entity only, const std::type_i
             state.Value(unsigned(c.MotionBlur.Shutter));
             state.Value(c.MotionBlur.ShutterAngleDegrees);
             state.Value(unsigned(c.MotionBlur.Quality));
+            const auto& optics = c.LensEffects;
+            state.Value(optics.FlareStrength); state.Value(optics.GhostCount); state.Value(optics.GhostSpacing);
+            state.Value(optics.HaloStrength); state.Value(optics.HaloRadius); state.Value(optics.Starburst);
+            state.Value(optics.AnamorphicStreak); state.Value(optics.DirtTexture);
+            state.Value(optics.DirtStrength); state.Value(optics.DirtScale); state.Value(optics.Vignette);
+            state.Value(optics.ChromaticPixels); state.Value(optics.Distortion); state.Value(optics.Grain);
             state.Value(c.Primary);
             state.Value(c.FixedAspectRatio);
         });

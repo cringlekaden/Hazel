@@ -8,6 +8,7 @@
 #include "Hazel/Project/RendererRequestsSerializer.h"
 #include "Hazel/Project/RuntimeStorage.h"
 #include "Hazel/Renderer/Cameras/CameraDefocus.h"
+#include "Hazel/Renderer/Cameras/CameraLensEffects.h"
 #include "Hazel/Renderer/Cameras/CameraShutter.h"
 #include "Hazel/Renderer/Scene/Lighting.h"
 #include "Hazel/Renderer/Scene/ReflectionProbe.h"
@@ -86,6 +87,56 @@ MotionBlurSettings ReadMotionBlur(const YAML::Node& node)
     settings.ShutterAngleDegrees = node["ShutterAngleDegrees"].as<float>();
     settings.Validate();
     return settings;
+}
+LensEffectsSettings ReadLensEffects(const YAML::Node& node)
+{
+    Keys(node, {"Version", "FlareStrength", "GhostCount", "GhostSpacing", "HaloStrength", "HaloRadius",
+        "Starburst", "AnamorphicStreak", "DirtTexture", "DirtStrength", "DirtScale", "Vignette",
+        "ChromaticPixels1080p", "Distortion", "Grain"}, "LensEffects");
+    if (node["Version"].as<unsigned>() != 1)
+        throw std::runtime_error("Unsupported LensEffects version");
+    LensEffectsSettings settings;
+    const auto optional = [&](const char* key, auto& value) {
+        if (const auto field = node[key]) value = field.as<std::decay_t<decltype(value)>>();
+    };
+    optional("FlareStrength", settings.FlareStrength);
+    optional("GhostCount", settings.GhostCount);
+    optional("GhostSpacing", settings.GhostSpacing);
+    optional("HaloStrength", settings.HaloStrength);
+    optional("HaloRadius", settings.HaloRadius);
+    optional("Starburst", settings.Starburst);
+    optional("AnamorphicStreak", settings.AnamorphicStreak);
+    if (const auto asset = node["DirtTexture"])
+        settings.DirtTexture = std::filesystem::u8path(asset.as<std::string>());
+    optional("DirtStrength", settings.DirtStrength);
+    optional("DirtScale", settings.DirtScale);
+    optional("Vignette", settings.Vignette);
+    optional("ChromaticPixels1080p", settings.ChromaticPixels);
+    optional("Distortion", settings.Distortion);
+    optional("Grain", settings.Grain);
+    settings.Validate();
+    return settings;
+}
+YAML::Node EncodeLensEffects(const LensEffectsSettings& settings)
+{
+    settings.Validate();
+    YAML::Node node;
+    node["Version"] = 1;
+    node["FlareStrength"] = settings.FlareStrength;
+    node["GhostCount"] = settings.GhostCount;
+    node["GhostSpacing"] = settings.GhostSpacing;
+    node["HaloStrength"] = settings.HaloStrength;
+    node["HaloRadius"] = settings.HaloRadius;
+    node["Starburst"] = settings.Starburst;
+    node["AnamorphicStreak"] = settings.AnamorphicStreak;
+    if (!settings.DirtTexture.empty()) node["DirtTexture"] = settings.DirtTexture.generic_u8string();
+    node["DirtStrength"] = settings.DirtStrength;
+    node["DirtScale"] = settings.DirtScale;
+    node["Vignette"] = settings.Vignette;
+    node["ChromaticPixels1080p"] = settings.ChromaticPixels;
+    node["Distortion"] = settings.Distortion;
+    node["Grain"] = settings.Grain;
+    return node;
 }
 bool Project(const YAML::Node& root)
 {
@@ -187,7 +238,9 @@ bool Scene(const YAML::Node& root, bool prefabDocument)
         else legacy = true; // documented identity transform
         if (auto n = entity["CameraComponent"])
         {
-            Keys(n, {"Camera", "Primary", "FixedAspectRatio", "CameraExposure", "DepthOfField", "MotionBlur"}, "CameraComponent");
+            Keys(n, {"Camera", "Primary", "FixedAspectRatio", "CameraExposure", "DepthOfField", "MotionBlur", "LensEffects"}, "CameraComponent");
+            if (const auto lens = n["LensEffects"])
+                ReadLensEffects(lens);
             if (const auto motion = n["MotionBlur"])
                 ReadMotionBlur(motion);
             if (const auto defocus = n["DepthOfField"])

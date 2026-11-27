@@ -69,8 +69,8 @@ def produce(configuration, destination, sources=None, force=False):
                 # second same-filesystem rename publishes the completed package.
                 (work / (variant + '.hzmetal')).replace(destination / (variant + '.hzmetal'))
             results[variant] = 'REBUILT'
-    if len(results) != 18:
-        raise RuntimeError('Expected seventeen raster shaders (eighteen variant packages)')
+    if len(results) != 19:
+        raise RuntimeError('Expected eighteen raster shaders (nineteen variant packages)')
     # Dear ImGui uses its upstream MSL directly; no shader source is compiled at runtime.
     source = hz.ROOT / 'Hazel/Resources/shaders/ImGui.metal'
     identity = hashlib.sha256(source.read_bytes() + producer.encode()).hexdigest()

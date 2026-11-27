@@ -95,6 +95,324 @@ inline void HDRBloomQualification(const std::filesystem::path& output,
         if (!file) throw std::runtime_error("Could not save HDR readback");
     };
 
+    if (!FileSystem::GetEnvironmentPath("HAZEL_CAMERA_LENS_TEST").empty()) {
+        constexpr unsigned width = 640, height = 360;
+        target->Resize(width, height);
+        SceneSubmission frame;
+        frame.Assets = assets;
+        frame.Presentation.SceneReferred = true;
+        frame.Presentation.Background = {0, 0, 0, 1};
+        frame.Camera.Orthographic = true;
+        frame.Camera.Position = {0, 0, 2};
+        frame.Camera.View = glm::lookAt(frame.Camera.Position, glm::vec3(0), glm::vec3(0, 1, 0));
+        frame.Camera.Projection = glm::ortho(-1.f, 1.f, -1.f, 1.f, .1f, 20.f);
+        frame.Camera.ViewProjection = frame.Camera.Projection * frame.Camera.View;
+        auto cube = assets->Mesh("Native/Direct_v1/UnitCube.hmesh");
+        if (!cube.Accepted) throw std::runtime_error(cube.Error);
+        auto bright = CreateRef<MaterialDefinition>();
+        bright->BaseColor = {0,0,0,1};
+        bright->Emissive = {1,0,0};
+        bright->EmissiveStrength = 12;
+        SubmittedMesh source;
+        source.Geometry = cube.Accepted;
+        source.Identity = source.Picking = 7;
+        source.Materials = {bright};
+        source.SetWorld(glm::translate(glm::mat4(1), glm::vec3(.5f, 0, 0)) *
+            glm::scale(glm::mat4(1), glm::vec3(.18f, .18f, .05f)));
+        frame.Meshes = {source};
+        SceneRenderView view;
+        const auto sharp = render(frame, view);
+        if (view.Lens.Pass.Flare || view.Bloom.TexturePayloadBytes())
+            throw std::runtime_error("Disabled lens effects allocated glare targets");
+        auto& lens = frame.Camera.LensEffects;
+        lens.FlareStrength = .3f;
+        lens.GhostCount = 1;
+        const auto ghost = render(frame, view);
+        coverage(sharp, ghost);
+        if (view.Bloom.BuildBloom || view.Bloom.Levels.size() > 3)
+            throw std::runtime_error("Flare-only view performed unused bloom reconstruction");
+        size_t ghostIndex = 0;
+        float maximum = 0;
+        const int expected = int((.5 - .55 * .25) * width);
+        for (int y = int(height / 2) - 10; y <= int(height / 2) + 10; ++y)
+            for (int x = expected - 16; x <= expected + 16; ++x) {
+                const auto i = size_t(y) * width + x;
+                if (ghost->Color[i].r > maximum) {
+                    maximum = ghost->Color[i].r;
+                    ghostIndex = i;
+                }
+            }
+        if (!(maximum > .01f && maximum < .46f))
+            throw std::runtime_error("Visible HDR emitter did not produce a bounded reflected ghost");
+        save("lens-flare", ghost);
+        lens.DirtStrength = .5f;
+        lens.DirtTexture = "CameraStudy/Missing.png";
+        if (render(frame, view)->Color != ghost->Color)
+            throw std::runtime_error("Missing dirt texture changed glare");
+        lens.DirtTexture = "CameraStudy/Dirt.png";
+        const auto dirt = render(frame, view);
+        if (std::abs(dirt->Color[ghostIndex].r - 1.5f * maximum) > 3e-5f)
+            throw std::runtime_error("White dirt did not modulate linear glare by its authored factor");
+        save("lens-dirt", dirt);
+        auto dark = CreateRef<MaterialDefinition>(*bright);
+        dark->Emissive = glm::vec3(0);
+        auto occluder = source;
+        occluder.Identity = occluder.Picking = 8;
+        occluder.Materials = {dark};
+        occluder.SetWorld(glm::translate(glm::mat4(1), glm::vec3(.5f, 0, .2f)) *
+            glm::scale(glm::mat4(1), glm::vec3(.26f, .26f, .05f)));
+        frame.Meshes.push_back(occluder);
+        lens.HaloStrength = lens.Starburst = lens.AnamorphicStreak = .5f;
+        const auto hidden = render(frame, view);
+        lens = {};
+        if (render(frame, view)->Color != hidden->Color)
+            throw std::runtime_error("Occluded source or lens dirt created glare without visible radiance");
+        std::cout << "LENS_GLARE ghostPeak=" << maximum << " dirtFactor="
+                  << dirt->Color[ghostIndex].r / maximum << " occultation=exact fallback=exact\n";
+
+        frame.Meshes = {source};
+        lens.Distortion = .20f;
+        const auto warped = render(frame, view);
+        size_t mismatches = 0, changed = 0;
+        for (unsigned y = 0; y < height; ++y) for (unsigned x = 0; x < width; ++x) {
+            const double px = double(x) + .5 - width * .5, py = double(y) + .5 - height * .5;
+            const double r2 = 4 * (px*px + py*py) / (width*width + height*height);
+            const double stretch = (1 + double(lens.Distortion) * r2) / (1 + double(lens.Distortion));
+            const auto sx = unsigned(px * stretch + width * .5), sy = unsigned(py * stretch + height * .5);
+            const size_t i = y * width + x, j = sy * width + sx;
+            changed += warped->Entity[i] != sharp->Entity[i];
+            mismatches += warped->Entity[i] != sharp->Entity[j] ||
+                std::abs(warped->Depth[i] - sharp->Depth[j]) > 1e-7f;
+        }
+        if (mismatches || !changed)
+            throw std::runtime_error("Lens distortion and picking/depth disagree with the independent radial map");
+        save("lens-distortion", warped);
+        lens = {};
+        bright->EmissiveStrength = .24f;
+        const auto lowEdge = render(frame, view);
+        lens.ChromaticPixels = .6f;
+        const auto chromatic = render(frame, view);
+        coverage(lowEdge, chromatic);
+        double chromaticError = 0;
+        unsigned chromaticChanges = 0;
+        const size_t row = width * (height / 2);
+        for (unsigned x = 1; x < width - 1; ++x) {
+            // The middle row of the low-emission stripe lies in Neutral's
+            // uncompressed red range. Compute the fractional horizontal ray in FP64.
+            const double offset = (x + .5 - width * .5) * (2 * .6 * height / (1080. * width));
+            const double sourceX = x + offset;
+            const auto left = size_t(std::floor(sourceX));
+            const double fraction = sourceX - left;
+            const double expected = (1 - fraction) * lowEdge->Color[row + left].r +
+                fraction * lowEdge->Color[row + left + 1].r;
+            const auto actual = chromatic->Color[row + x].r;
+            chromaticError = std::max(chromaticError, std::abs(expected - actual));
+            chromaticChanges += std::abs(actual - lowEdge->Color[row + x].r) > .001f;
+        }
+        std::cout << "LENS_GEOMETRY warpedPixels=" << changed << " idDepthMismatches=" << mismatches
+                  << " chromaticError=" << chromaticError << " chromaticChanges=" << chromaticChanges << std::endl;
+        if (chromaticError > 8e-5 || chromaticChanges < 2)
+            throw std::runtime_error("Chromatic separation differs from the FP64 fractional red rays");
+
+        frame.Meshes.clear();
+        frame.Camera.Orthographic = false;
+        frame.Camera.Projection = glm::perspective(glm::radians(65.f), float(width) / height, .1f, 20.f);
+        frame.Camera.ViewProjection = frame.Camera.Projection * frame.Camera.View;
+        frame.Presentation.Background = {.5f, .5f, .5f, 1};
+        lens = {};
+        lens.Vignette = .75f;
+        const auto vignetted = render(frame, view);
+        double maxError = 0;
+        for (unsigned y : {0u, 31u, 180u, 359u}) for (unsigned x : {0u, 77u, 320u, 639u}) {
+            const double halfTangent = std::tan(glm::radians(65.) / 2);
+            const double tX = (2 * (x + .5) / width - 1) * halfTangent * width / height;
+            const double tY = (2 * (y + .5) / height - 1) * halfTangent;
+            const double expected = .5 * (.25 + .75 / std::pow(1 + tX*tX + tY*tY, 2)) - .04;
+            maxError = std::max(maxError, std::abs(vignetted->Color[y * width + x].r - expected));
+        }
+        if (maxError > 4e-6) throw std::runtime_error("Vignette differs from the FP64 cosine-fourth reference");
+        lens.Vignette = 0;
+        lens.Grain = .04f;
+        frame.CameraDiscontinuity = true;
+        const auto grain = render(frame, view);
+        if (render(frame, view)->Color != grain->Color)
+            throw std::runtime_error("Grain failed to reset deterministically at a cut");
+        double mean = 0, power = 0;
+        for (const auto& c : grain->Color) {
+            mean += c.r - .46;
+            power += std::pow(c.r - .46, 2);
+        }
+        mean /= grain->Color.size();
+        power = std::sqrt(power / grain->Color.size());
+        if (std::abs(mean) > .0001 || power < .004 || power > .007)
+            throw std::runtime_error("Grain bias or strength differs from its noise reference");
+        auto gallery = study(.4f, {width, height});
+        gallery.Presentation.Exposure.Mode = ExposureMode::Automatic;
+        gallery.FrameSeconds = 1.f / 60;
+        gallery.Camera.LensEffects = {.20f, 3, .38f, .65f, .19f, .4f, .55f,
+            "CameraStudy/Dirt.png", .25f, 1, .20f, .8f, .035f, .015f};
+        const auto combined = render(gallery, view);
+        save("lens-gallery", combined);
+        const auto ui = [] {
+            Renderer2D::BeginScene(glm::mat4(1));
+            Renderer2D::DrawQuad({0, 0, -.99f}, {.12f, .12f}, glm::vec4(1));
+            Renderer2D::EndScene();
+        };
+        gallery.CameraDiscontinuity = true;
+        const auto withUI = render(gallery, view, 0, ui);
+        gallery.Camera.LensEffects = {};
+        const auto withoutLens = render(gallery, view, 0, ui);
+        const auto midpoint = (height / 2) * width + width / 2;
+        if (withUI->Color[midpoint] != withoutLens->Color[midpoint] ||
+            withUI->Color[midpoint] == combined->Color[midpoint])
+            throw std::runtime_error("World lens effects changed the screen UI");
+        std::cout << "LENS_SENSOR vignetteError=" << maxError << " grainMean=" << mean
+                  << " grainRMS=" << power << " reset=exact screenUI=exact\n";
+        auto primary = scene->GetPrimaryCameraEntity();
+        if (!primary) throw std::runtime_error("Lens study has no runtime camera");
+        auto& authored = primary.GetComponent<CameraComponent>().LensEffects;
+        if (authored.FlareStrength <= 0 || authored.DirtTexture.empty())
+            throw std::runtime_error("Prepare the project with --lens-camera for authored lens validation");
+        const auto runtime = [&] {
+            SceneRenderView runtimeView;
+            target->Bind();
+            scene->OnUpdateRuntime(Timestep(1.f / 60), &runtimeView, target);
+            auto result = capture(target);
+            if (!result || !result->Completed || !result->Error.empty())
+                throw std::runtime_error("Lens runtime capture failed");
+            return result;
+        };
+        scene->OnViewportResize(width, height);
+        scene->OnRuntimeStart();
+        const auto runtimeOptics = runtime();
+        const auto savedOptics = authored;
+        authored = {};
+        const auto runtimeBase = runtime();
+        authored = savedOptics;
+        scene->OnRuntimeStop();
+        coverage(runtimeOptics, runtimeBase);
+        if (runtimeOptics->Color == runtimeBase->Color)
+            throw std::runtime_error("Runtime camera ignored its authored lens effects");
+        std::cout << "LENS_RUNTIME authoredCamera=pass dirtAsset=pass pickingDepth=exact\n";
+
+
+#if defined(HZ_PLATFORM_MACOS) && __has_include(<Metal/Metal.hpp>)
+        if (metal) {
+            auto& backend = static_cast<MetalRendererAPI&>(RenderCommand::Backend());
+            constexpr glm::uvec2 queueExtent(257, 149);
+            target->Resize(queueExtent.x, queueExtent.y);
+            std::array<Ref<const FramebufferReadback>, 3> queued, serial;
+            auto shot = [&](unsigned step) {
+                auto value = study(.04f * step, queueExtent);
+                value.FrameSeconds = 1.f / 60;
+                value.Camera.LensEffects = {.2f, 2, .42f, .15f, .24f, .1f, .2f,
+                    step == 1 ? "CameraStudy/Missing.png" : "CameraStudy/Dirt.png", .4f, 1, .1f, .4f, .02f, .03f};
+                return value;
+            };
+            SceneRenderView queueView;
+            for (unsigned i = 0; i < serial.size(); ++i)
+                serial[i] = render(shot(i), queueView);
+            queueView.Reset();
+            auto unblock = backend.GateQueueForTesting();
+            try {
+                for (unsigned i = 0; i < queued.size(); ++i) {
+                    draw(shot(i), queueView);
+                    target->Unbind();
+                    queued[i] = target->Submit();
+                    if (!queued[i] || queued[i]->Completed)
+                        throw std::runtime_error("Lens test did not hold all three submissions");
+                }
+                queueView.Reset();
+                target->Resize(1, 1);
+                if (backend.Observe()->Snapshot().InFlight != queued.size())
+                    throw std::runtime_error("Lens lifetime did not use the full queue");
+            } catch (...) {
+                unblock();
+                throw;
+            }
+            unblock();
+            for (unsigned i = 0; i < queued.size(); ++i) {
+                for (unsigned tries = 0; !queued[i]->Completed && tries < 2500; ++tries) {
+                    target->Poll();
+                    if (!queued[i]->Completed) std::this_thread::sleep_for(std::chrono::milliseconds(2));
+                }
+                if (!queued[i]->Completed || !queued[i]->Error.empty() || queued[i]->Color != serial[i]->Color)
+                    throw std::runtime_error("Queued lens effects differed from the serial reference");
+                coverage(queued[i], serial[i]);
+            }
+            std::cout << "LENS_LIFETIME queue=3 reset=pass resize=pass sourceChange=exact\n";
+        }
+#endif
+        return;
+    }
+
+    if (!FileSystem::GetEnvironmentPath("HAZEL_CAMERA_LENS_BENCHMARK").empty()) {
+        const bool full = FileSystem::GetEnvironmentPath("HAZEL_CAMERA_LENS_BENCHMARK") == "full";
+        constexpr int samples = 31;
+        struct FrameQuery {
+            GLuint ID = 0;
+            ~FrameQuery() { if (ID) glDeleteQueries(1, &ID); }
+        } query;
+        if (!metal) glGenQueries(1, &query.ID);
+        for (const auto extent : {glm::uvec2(1280, 720), glm::uvec2(1920, 1080), glm::uvec2(3840, 2160)}) {
+            target->Resize(extent.x, extent.y);
+            const auto shot = [&](int i, bool enabled) {
+                auto frame = study((i + 4) * .04f, extent);
+                if (enabled) {
+                    auto& lens = frame.Camera.LensEffects;
+                    lens.FlareStrength = .2f;
+                    lens.HaloStrength = .2f;
+                    lens.DirtTexture = "CameraStudy/Dirt.png";
+                    lens.DirtStrength = .25f;
+                    lens.Vignette = .2f;
+                    if (full) {
+                        lens.GhostCount = 4;
+                        lens.Starburst = .6f;
+                        lens.AnamorphicStreak = .6f;
+                        lens.ChromaticPixels = .8f;
+                        lens.Distortion = .035f;
+                        lens.Grain = .015f;
+                    }
+                }
+                return frame;
+            };
+            {
+                SceneRenderView view;
+                view.LensTiming = std::make_shared<LensEffectsTiming>();
+                for (int i = -4; i < samples; ++i) {
+                    auto frame = shot(i, true);
+                    frame.Presentation.TemporalAA = false;
+                    frame.Presentation.AmbientOcclusion.Enabled = false;
+                    frame.Presentation.ScreenReflections.Enabled = false;
+                    frame.Presentation.Shadows.Enabled = false;
+                    frame.LocalLights.clear();
+                    frame.ReflectionProbes.clear();
+                    *view.LensTiming = {};
+                    render(frame, view);
+                    if (i >= 0) {
+                        const auto& t = *view.LensTiming;
+                        if (t.Milliseconds <= 0 || !t.WorkingBytes || t.WorkingBytes > 32 * 1024 * 1024)
+                            throw std::runtime_error("Lens timing or scratch outside the measurement contract");
+                        std::cout << "LENS_PASS_TIMING " << extent.x << ' ' << extent.y << ' ' << i << ' '
+                                  << t.Milliseconds << ' ' << t.WorkingBytes << '\n';
+                    }
+                }
+            }
+            std::array<SceneRenderView, 2> views;
+            for (int i = -4; i < samples; ++i) {
+                for (bool enabled : {i % 2 != 0, i % 2 == 0}) {
+                    const auto result = render(shot(i, enabled), views[enabled], query.ID);
+                    GLuint64 ns = 0;
+                    if (query.ID) glGetQueryObjectui64v(query.ID, GL_QUERY_RESULT, &ns);
+                    if (i >= 0)
+                        std::cout << "LENS_FRAME_TIMING " << extent.x << ' ' << extent.y << ' ' << enabled << ' '
+                                  << i << ' ' << result->Serial << ' ' << ns << '\n';
+                }
+            }
+        }
+        return;
+    }
+
     if (!FileSystem::GetEnvironmentPath("HAZEL_CAMERA_SHUTTER_BENCHMARK").empty()) {
         constexpr int samples = 31;
         struct FrameQuery {

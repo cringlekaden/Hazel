@@ -4,6 +4,7 @@
 #include "CameraMotion.h"
 #include "DepthOfField.h"
 #include "ExposureMeter.h"
+#include "LensEffects.h"
 #include "Hazel/Renderer/Resources/Framebuffer.h"
 #include <functional>
 #include <array>
@@ -54,6 +55,14 @@ struct ShutterViewState {
     glm::uvec2 Extent{0};
     Ref<Framebuffer> SpatialVectors;
 };
+struct LensViewState {
+    LensEffectsPass Pass;
+    std::filesystem::path DirtPath;
+    std::weak_ptr<ProjectAssets> DirtAssets;
+    uint64_t DirtEpoch = 0, Camera = 0, Scene = 0;
+    glm::uvec2 Extent{0};
+    unsigned Noise = 0;
+};
 class SceneRenderView
 {
   public:
@@ -82,6 +91,8 @@ class SceneRenderView
     ExposureViewState Exposure;
     FocusViewState Focus;
     ShutterViewState Shutter;
+    LensViewState Lens;
+    std::shared_ptr<LensEffectsTiming> LensTiming; // Explicit qualification instrumentation.
     std::shared_ptr<CameraMotionTiming> ShutterTiming; // Explicit qualification instrumentation.
     std::shared_ptr<DepthOfFieldTiming> DefocusTiming; // Explicit qualification instrumentation.
     std::shared_ptr<ExposureMeterTiming> ExposureTiming; // Explicit qualification instrumentation.
@@ -95,6 +106,7 @@ class SceneRenderView
         Exposure = {};
         Focus = {};
         Shutter = {};
+        Lens = {};
         ReflectionSurface.reset();
         ReflectionProbes = {};
         Jittered.reset();Motion.reset();Temporal={};

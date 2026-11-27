@@ -88,6 +88,7 @@ template <class A, class B, class C, class F> void Fields(A &a, B &b, C &c, F f)
         FIELD(Camera,Size);FIELD(Camera,OrthoNear);FIELD(Camera,OrthoFar);FIELD(Camera,Primary);
         FIELD(Camera,FixedAspect);FIELD(Camera,Physical);FIELD(Camera,ExposureOverride);
         FIELD(Camera,DepthOfField);FIELD(Camera,MotionBlur);
+        FIELD(Camera,LensEffects);
     }
     COMPONENT(Canvas)
     {
@@ -267,6 +268,7 @@ void Validate(Scene &scene, const UIEditValues &v, const UIEditValues &old)
     if (v.Camera) {
         v.Camera->DepthOfField.Validate();
         v.Camera->MotionBlur.Validate();
+        v.Camera->LensEffects.Validate();
     }
     if(v.Appearance){v.Appearance->Selection.Validate();if(v.Appearance->Overrides&~UIStyleAll)throw std::invalid_argument("Invalid override mask");}
     if (v.Canvas){
@@ -402,12 +404,14 @@ FIELD(Light, Enabled);
 #define CAMERA(field) change(value.field,old.Camera->field,next.Camera->field)
         CAMERA(Projection);CAMERA(FOV);CAMERA(Near);CAMERA(Far);CAMERA(Size);CAMERA(OrthoNear);CAMERA(OrthoFar);CAMERA(Primary);CAMERA(FixedAspect);CAMERA(Physical);CAMERA(ExposureOverride);CAMERA(DepthOfField);
         CAMERA(MotionBlur);
+        CAMERA(LensEffects);
 #undef CAMERA
         live.Camera.SetPerspective(value.FOV,value.Near,value.Far);live.Camera.SetOrthographic(value.Size,value.OrthoNear,value.OrthoFar);live.Camera.SetProjectionType(SceneCamera::ProjectionType(value.Projection));live.Primary=value.Primary;live.FixedAspectRatio=value.FixedAspect;
         live.Camera.SetPhysicalCamera(value.Physical);
         live.ExposureOverride = value.ExposureOverride;
         live.DepthOfField = value.DepthOfField;
         live.MotionBlur = value.MotionBlur;
+        live.LensEffects = value.LensEffects;
     }
     COMPONENT(Canvas, UICanvasComponent) FIELD(Canvas, ReferenceSize);
     FIELD(Canvas, SafeInsets);

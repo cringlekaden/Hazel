@@ -8,6 +8,7 @@
 #include "Hazel/Renderer/Resources/Framebuffer.h"
 #include "Hazel/Renderer/Scene/DepthOfField.h"
 #include "Hazel/Renderer/Scene/CameraMotion.h"
+#include "Hazel/Renderer/Scene/LensEffects.h"
 #include <Metal/Metal.hpp>
 #include <memory>
 #include <optional>
@@ -32,6 +33,18 @@ struct MetalShutter
     ShutterParameters Parameters;
     std::array<NS::SharedPtr<MTL4::ArgumentTable>, 3> Arguments;
     std::shared_ptr<CameraMotionTiming> Timing;
+    NS::SharedPtr<MTL4::CounterHeap> Counters;
+    uint64_t TimestampFrequency = 0;
+};
+struct MetalLensEffects
+{
+    std::shared_ptr<const MetalFramebufferAttachments> HighlightSource, Flare;
+    std::shared_ptr<MetalShader> Shader;
+    std::shared_ptr<const MetalTextureVersion> Dirt;
+    NS::SharedPtr<MTL4::ArgumentTable> Arguments;
+    LensPresentation Presentation;
+    FlareParameters Parameters;
+    std::shared_ptr<LensEffectsTiming> Timing;
     NS::SharedPtr<MTL4::CounterHeap> Counters;
     uint64_t TimestampFrequency = 0;
 };
@@ -102,6 +115,7 @@ struct MetalRenderer2DFrame
     std::shared_ptr<MetalExposureMeter> ExposureMeter;
     std::optional<MetalDefocus> Defocus;
     std::optional<MetalShutter> Shutter;
+    std::optional<MetalLensEffects> Lens;
     std::shared_ptr<std::atomic<bool>> ShutterSubmitted;
     std::shared_ptr<MetalShader> BloomShader;
     std::vector<MetalBloomPass> BloomPasses;

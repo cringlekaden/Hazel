@@ -293,6 +293,8 @@ namespace Hazel {
 				out << YAML::EndMap;
 			}
 			out << YAML::Key << "Primary" << YAML::Value << cameraComponent.Primary;
+			if (!(cameraComponent.LensEffects == LensEffectsSettings{}))
+				out << YAML::Key << "LensEffects" << YAML::Value << DocumentSchema::EncodeLensEffects(cameraComponent.LensEffects);
 			out << YAML::Key << "FixedAspectRatio" << YAML::Value << cameraComponent.FixedAspectRatio;
 
 			out << YAML::EndMap; // CameraComponent
@@ -651,6 +653,8 @@ namespace Hazel {
 						cc.DepthOfField = DocumentSchema::ReadDepthOfField(defocus);
 					if (const auto motion = cameraComponent["MotionBlur"])
 						cc.MotionBlur = DocumentSchema::ReadMotionBlur(motion);
+					if (const auto lens = cameraComponent["LensEffects"])
+						cc.LensEffects = DocumentSchema::ReadLensEffects(lens);
 					cc.Primary = cameraComponent["Primary"].as<bool>();
 					cc.FixedAspectRatio = cameraComponent["FixedAspectRatio"].as<bool>();
 				}

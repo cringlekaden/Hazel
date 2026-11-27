@@ -26,6 +26,7 @@ struct CameraEditValue {
     std::optional<CameraExposure> ExposureOverride;
     DepthOfFieldSettings DepthOfField;
     MotionBlurSettings MotionBlur;
+    LensEffectsSettings LensEffects;
 };
 struct UIEditValues
 {
@@ -73,7 +74,7 @@ struct UIEditValues
         else if constexpr (std::is_same_v<T,MeshRendererComponent>)Mesh=static_cast<const MeshBinding&>(value);
         else if constexpr (std::is_same_v<T,CircleRendererComponent>)Circle=value;
         else if constexpr (std::is_same_v<T,CameraComponent>) {
-            const auto& c=value.Camera;Camera=CameraEditValue{int(c.GetProjectionType()),c.GetPerspectiveVerticalFOV(),c.GetPerspectiveNearClip(),c.GetPerspectiveFarClip(),c.GetOrthographicSize(),c.GetOrthographicNearClip(),c.GetOrthographicFarClip(),value.Primary,value.FixedAspectRatio,c.GetPhysicalCamera(),value.ExposureOverride,value.DepthOfField,value.MotionBlur};
+            const auto& c=value.Camera;Camera=CameraEditValue{int(c.GetProjectionType()),c.GetPerspectiveVerticalFOV(),c.GetPerspectiveNearClip(),c.GetPerspectiveFarClip(),c.GetOrthographicSize(),c.GetOrthographicNearClip(),c.GetOrthographicFarClip(),value.Primary,value.FixedAspectRatio,c.GetPhysicalCamera(),value.ExposureOverride,value.DepthOfField,value.MotionBlur,value.LensEffects};
         }
         else if constexpr (std::is_same_v<T, UICanvasComponent>)
             Canvas = value;

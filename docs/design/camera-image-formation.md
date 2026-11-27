@@ -174,6 +174,7 @@ quantization error within its range.
    world radiance when toggling dirt. Use
    [Filament's post-process implementation](https://github.com/google/filament/blob/main/filament/src/PostProcessManager.cpp)
    for reduced-resolution flare and dirt/presentation integration.
+   [Phase 5 implementation and native evidence](camera-lens-effects.md)
 6. **Presentation.** Apply optical geometry and vignette to the world image
    and associated optics before display transform. Add scene-linear bloom
    and flare, apply gain and linear white balance, use Neutral, then apply

@@ -5,6 +5,7 @@
 #include "Hazel/Renderer/Scene/CameraMotion.h"
 #include "Hazel/Renderer/Scene/DepthOfField.h"
 #include "Hazel/Renderer/Scene/ExposureMeter.h"
+#include "Hazel/Renderer/Scene/LensEffects.h"
 #include "Hazel/Core/Resources.h"
 #include "Hazel/Renderer/RenderCommand.h"
 #include "Hazel/Renderer/Resources/Shader.h"
@@ -380,24 +381,27 @@ void OpenGLFramebuffer::ResolveReflectionsTo(const Ref<Framebuffer>& destination
 void OpenGLFramebuffer::BindDefocusLayers(Shader& shader, const DepthOfFieldPass* defocus) const
 {
     shader.SetInt("u_DefocusDepth", 4);
-    shader.SetInt("u_DefocusNear", 5);
-    shader.SetInt("u_DefocusFar", 6);
-    shader.SetInt("u_DefocusBounds", 7);
+    shader.SetInt("u_DefocusNear", defocus ? 5 : 0);
+    shader.SetInt("u_DefocusFar", defocus ? 6 : 0);
+    shader.SetInt("u_DefocusBounds", defocus ? 7 : 0);
+    glActiveTexture(GL_TEXTURE4);
+    glBindTexture(GL_TEXTURE_2D, m_DepthAttachment);
+    glBindSampler(4, 0);
     if (!defocus) return;
     const auto& layers = static_cast<const OpenGLFramebuffer&>(*defocus->Gathered);
     const auto& bounds = static_cast<const OpenGLFramebuffer&>(*defocus->DilatedTiles);
-    const GLuint inputs[]{m_DepthAttachment, layers.m_ColorAttachments[0], layers.m_ColorAttachments[1],
-        bounds.m_ColorAttachments[0]};
-    for (unsigned i = 0; i < 4; ++i) {
-        glActiveTexture(GL_TEXTURE4 + i);
+    const GLuint inputs[]{layers.m_ColorAttachments[0], layers.m_ColorAttachments[1], bounds.m_ColorAttachments[0]};
+    for (unsigned i = 0; i < 3; ++i) {
+        glActiveTexture(GL_TEXTURE5 + i);
         glBindTexture(GL_TEXTURE_2D, inputs[i]);
-        glBindSampler(4 + i, 0);
+        glBindSampler(5 + i, 0);
     }
 }
 void OpenGLFramebuffer::BindShutterLayer(Shader& shader, const CameraMotionPass* shutter) const
 {
-    shader.SetInt("u_ShutterLayer", 8);
-    if (!shutter || !shutter->Valid) return;
+    const bool active = shutter && shutter->Valid;
+    shader.SetInt("u_ShutterLayer", active ? 8 : 0);
+    if (!active) return;
     const auto& layer = static_cast<const OpenGLFramebuffer&>(*shutter->Filtered);
     glActiveTexture(GL_TEXTURE8);
     glBindTexture(GL_TEXTURE_2D, layer.m_ColorAttachments[0]);
@@ -591,17 +595,51 @@ uint32_t OpenGLFramebuffer::FilterBloom(const BloomPyramid& bloom, bool timePass
         glEndQuery(GL_TIME_ELAPSED);
         glBeginQuery(GL_TIME_ELAPSED, m_BloomQueries[2]);
     }
-    for (size_t i = bloom.Levels.size() - 1; i > 0; --i) {
-        const auto& fine = bloom.Levels[i - 1];
-        const auto& output = static_cast<const OpenGLFramebuffer&>(*fine.Up);
-        draw(output, *source, static_cast<const OpenGLFramebuffer&>(*fine.Down), 2.f);
-        source = &output;
-    }
+    if (bloom.BuildBloom)
+        for (size_t i = bloom.Levels.size() - 1; i > 0; --i) {
+            const auto& fine = bloom.Levels[i - 1];
+            const auto& output = static_cast<const OpenGLFramebuffer&>(*fine.Up);
+            draw(output, *source, static_cast<const OpenGLFramebuffer&>(*fine.Down), 2.f);
+            source = &output;
+        }
     if (timePasses) {
         glFinish();
         glEndQuery(GL_TIME_ELAPSED);
     }
     return source->m_ColorAttachments[0];
+}
+uint32_t OpenGLFramebuffer::FilterFlare(const LensEffectsPass& optics, const BloomPyramid& pyramid)
+{
+    if (!m_FlareShader) {
+        m_FlareParameters = UniformBuffer::Create(sizeof(FlareParameters), 5);
+        m_FlareShader = Shader::Create((Resources::Get().Root / "shaders/LensFlare.glsl").generic_u8string());
+    }
+    const auto& input = static_cast<const OpenGLFramebuffer&>(*pyramid.Levels[std::min<size_t>(2, pyramid.Levels.size() - 1)].Down);
+    const auto& output = static_cast<const OpenGLFramebuffer&>(*optics.Flare);
+    m_FlareShader->Bind();
+    m_FlareShader->SetInt("u_Highlights", 0);
+    m_FlareParameters->Bind();
+    m_FlareParameters->SetData(&optics.Parameters, sizeof(optics.Parameters));
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, input.m_ColorAttachments[0]);
+    glBindSampler(0, 0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, output.m_RendererID);
+    glViewport(0, 0, output.m_Specification.Width, output.m_Specification.Height);
+    GLuint query = 0;
+    if (optics.Timing) {
+        glGenQueries(1, &query);
+        glBeginQuery(GL_TIME_ELAPSED, query);
+    }
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+    if (query) {
+        glFinish(); // Isolated native benchmark only.
+        glEndQuery(GL_TIME_ELAPSED);
+        GLuint64 ns = 0;
+        glGetQueryObjectui64v(query, GL_QUERY_RESULT, &ns);
+        glDeleteQueries(1, &query);
+        *optics.Timing = {double(ns) / 1e6, uint64_t(output.m_Specification.Width) * output.m_Specification.Height * 8};
+    }
+    return output.m_ColorAttachments[0];
 }
 uint32_t OpenGLFramebuffer::MeterExposure(const ExposureMeterPass& meter)
 {
@@ -673,7 +711,8 @@ uint32_t OpenGLFramebuffer::MeterExposure(const ExposureMeterPass& meter)
 }
 void OpenGLFramebuffer::CompositeWorldTo(const Ref<Framebuffer> &destination, float exposure,
                                          const BloomPyramid* bloom, const ExposureMeterPass* meter,
-                                         const DepthOfFieldPass* defocus, const CameraMotionPass* shutter)
+                                         const DepthOfFieldPass* defocus, const CameraMotionPass* shutter,
+                                         const LensEffectsPass* optics)
 {
     auto target = std::dynamic_pointer_cast<OpenGLFramebuffer>(destination);
     if (!std::isfinite(exposure) || exposure < -16 || exposure > 16 || !target ||
@@ -742,6 +781,7 @@ void OpenGLFramebuffer::CompositeWorldTo(const Ref<Framebuffer> &destination, fl
         }
     }
     const auto glow = bloom ? FilterBloom(*bloom, timePasses, defocus, shutter) : m_ColorAttachments[0];
+    const auto flare = optics && optics->Flare ? FilterFlare(*optics, *bloom) : m_ColorAttachments[0];
     if (bloom || defocus || motion)
         glViewport(0, 0, m_Specification.Width, m_Specification.Height);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target->m_RendererID);
@@ -751,9 +791,10 @@ void OpenGLFramebuffer::CompositeWorldTo(const Ref<Framebuffer> &destination, fl
         m_ToneShader = Shader::Create(
             (Resources::Get().Root / "shaders/WorldPresentation.glsl").generic_u8string());
     if (!m_ToneParameters)
-        m_ToneParameters = UniformBuffer::Create(sizeof(glm::vec4) * 2, 5);
+        m_ToneParameters = UniformBuffer::Create(sizeof(glm::vec4) * 5, 5);
+    const auto lens = optics ? optics->Presentation : LensPresentation{};
     const glm::vec4 parameters[]{glm::vec4(exposure, bloom ? bloom->Intensity : 0.f, meter ? 1.f : 0.f, motion ? 1.f : 0.f),
-        defocus ? defocus->Parameters.Lens : glm::vec4(0)};
+        defocus ? defocus->Parameters.Lens : glm::vec4(0), lens.Sensor, lens.Gate, lens.Dirt};
     m_ToneParameters->Bind();
     m_ToneParameters->SetData(parameters, sizeof(parameters));
     m_ToneShader->Bind();
@@ -761,6 +802,14 @@ void OpenGLFramebuffer::CompositeWorldTo(const Ref<Framebuffer> &destination, fl
     m_ToneShader->SetInt("u_Picking", 1);
     m_ToneShader->SetInt("u_Bloom", 2);
     m_ToneShader->SetInt("u_AdaptedGain", 3);
+    m_ToneShader->SetInt("u_Flare", optics && optics->Flare ? 9 : 0);
+    m_ToneShader->SetInt("u_Dirt", optics && optics->DirtTexture ? 10 : 0);
+    if (optics && optics->Flare) {
+        glActiveTexture(GL_TEXTURE9);
+        glBindTexture(GL_TEXTURE_2D, flare);
+        glBindSampler(9, 0);
+    }
+    if (optics && optics->DirtTexture) optics->DirtTexture->Bind(10);
     BindDefocusLayers(*m_ToneShader, defocus);
     BindShutterLayer(*m_ToneShader, shutter);
     glActiveTexture(GL_TEXTURE3);
@@ -776,6 +825,12 @@ void OpenGLFramebuffer::CompositeWorldTo(const Ref<Framebuffer> &destination, fl
     glBindTexture(GL_TEXTURE_2D, m_ColorAttachments[1]);
     glBindSampler(1, 0);
     glBindVertexArray(m_OutputVAO);
+    const bool warp = lens.Sensor.z != 0.f;
+    if (warp) {
+        glEnable(GL_DEPTH_TEST);
+        glDepthMask(GL_TRUE);
+        glDepthFunc(GL_ALWAYS);
+    }
     if (timePasses) glBeginQuery(GL_TIME_ELAPSED, m_BloomQueries[3]);
     glDrawArrays(GL_TRIANGLES, 0, 3);
     if (timePasses) {
@@ -790,7 +845,7 @@ void OpenGLFramebuffer::CompositeWorldTo(const Ref<Framebuffer> &destination, fl
     glBindFramebuffer(GL_READ_FRAMEBUFFER, m_RendererID);
     glBlitFramebuffer(0, 0, m_Specification.Width, m_Specification.Height, 0, 0,
                       m_Specification.Width, m_Specification.Height,
-                      GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
+                      (warp ? 0 : GL_DEPTH_BUFFER_BIT) | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
     if (shutter) shutter->Submitted->store(true);
 }
 

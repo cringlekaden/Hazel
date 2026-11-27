@@ -212,6 +212,30 @@ static void CameraShutterContracts()
           "Camera shutter settings did not round-trip");
     std::cout << "PASS: motion shutter duration, angle, invalid elapsed time and persistence\n";
 }
+static void CameraLensContracts()
+{
+    using namespace Hazel;
+    auto scene = CreateRef<Scene>();
+    auto camera = scene->CreateEntity("Lens effects");
+    auto& lens = camera.AddComponent<CameraComponent>().LensEffects;
+    lens.FlareStrength = .3f;
+    lens.AnamorphicStreak = .2f;
+    lens.DirtTexture = "CameraStudy/Glass.png";
+    lens.DirtStrength = .4f;
+    lens.Distortion = -.12f;
+    lens.Grain = .01f;
+    const auto text = SceneSerializer(scene).SerializeText();
+    auto copy = CreateRef<Scene>();
+    SceneSerializer reader(copy);
+    Check(reader.DeserializeText(text) &&
+          copy->GetEntityByUUID(camera.GetUUID()).GetComponent<CameraComponent>().LensEffects == lens,
+          "Camera lens settings did not round-trip");
+    auto invalid = YAML::Load(text);
+    invalid["Entities"][0]["CameraComponent"]["LensEffects"]["DirtTexture"] = "../Outside.png";
+    Check(!reader.DeserializeText(YAML::Dump(invalid)) && reader.SerializeText() == text,
+          "Escaping lens dirt path mutated the camera");
+    std::cout << "PASS: lens optics scene round-trip and transactional asset-path rejection\n";
+}
 static void CameraExposureMigration()
 {
     using namespace Hazel;
@@ -532,7 +556,7 @@ int main()
         StorageChecks();
         AssetCookingChecks();ImportCookingChecks();
         Hazel::Log::Init();
-        PhysicalCameraContracts();CameraDefocusContracts();CameraShutterContracts();CameraExposureMigration();LocalLightContracts();AuthoredComparisonContracts();ImportPublicationChecks();
+        PhysicalCameraContracts();CameraDefocusContracts();CameraShutterContracts();CameraLensContracts();CameraExposureMigration();LocalLightContracts();AuthoredComparisonContracts();ImportPublicationChecks();
         CPUFontFamilyDocument();
         Hazel::EditorDocumentChecks();
         Hazel::EditorStateChecks();

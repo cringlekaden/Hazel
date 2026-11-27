@@ -173,7 +173,7 @@ MetalShader::MetalShader(std::shared_ptr<MetalDevice> deviceOwner, const std::st
         descriptor->setOptions(pipelineOptions.get());
         Check(!drawableOutput || (shaderName == "DisplayOutput" || shaderName == "EntityOutline"), "Only DisplayOutput supports BGRA8 drawable format");
         if(shaderName!="DepthPBR")descriptor->colorAttachments()->object(0)->setPixelFormat(drawableOutput ? MTL::PixelFormatBGRA8Unorm :
-            shaderName == "BloomFilter" ? MTL::PixelFormatRGBA16Float : MTL::PixelFormatRGBA32Float);
+            (shaderName == "BloomFilter" || shaderName == "LensFlare") ? MTL::PixelFormatRGBA16Float : MTL::PixelFormatRGBA32Float);
         spirv_cross::Compiler reflection(m_Artifact.Stages[1].Spirv);
         for (const auto& resource : reflection.get_shader_resources().stage_outputs)
             if (reflection.get_decoration(resource.id, spv::DecorationLocation) == 1)

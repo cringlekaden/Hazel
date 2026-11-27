@@ -25,7 +25,7 @@ POSES = 17
 
 
 def authored_study(source, root, runtime_only=False, physical_camera=False, automatic_camera=False,
-                   defocus_camera=False, shutter_camera=False):
+                   defocus_camera=False, shutter_camera=False, lens_camera=False):
     def producer_inputs(directory, names):
         return [name for name in names if name.endswith(".hdr") or
                 (Path(directory).name == "CapturedReflections" and name.endswith(".hlight"))]
@@ -35,6 +35,9 @@ def authored_study(source, root, runtime_only=False, physical_camera=False, auto
     project = source.read_text()
     source_scene = re.search(r"(?m)^  StartScene: (.+)$", project)[1]
     assets = root / "Assets"
+    if lens_camera:
+        (assets / "CameraStudy").mkdir(exist_ok=True)
+        png(assets / "CameraStudy/Dirt.png", 2, 2, [(1, 1, 1)] * 4)
     scene = (assets / source_scene).read_text().replace("Scene: SSR Gallery", "Scene: HDR Bloom Study", 1)
     if physical_camera or defocus_camera:
         lens = r"""\1
@@ -72,6 +75,19 @@ def authored_study(source, root, runtime_only=False, physical_camera=False, auto
         Shutter: Angle
         ShutterAngleDegrees: 180
         Quality: Balanced
+""" + marker)
+    if lens_camera:
+        marker = "      Primary: true"
+        if scene.count(marker) != 1:
+            raise RuntimeError("The lens study needs one primary camera")
+        scene = scene.replace(marker, """      LensEffects:
+        Version: 1
+        FlareStrength: 0.18
+        GhostCount: 3
+        HaloStrength: 0.3
+        DirtTexture: CameraStudy/Dirt.png
+        DirtStrength: 0.12
+        Vignette: 0.15
 """ + marker)
     scene, count = re.subn(r"(?m)^  (?:Exposure: .*$|CameraExposure:(?:\n    [^\n]+)*)", """  CameraExposure:
     Version: 1
@@ -338,6 +354,7 @@ def main():
                         help="Author the study's runtime camera with a physical lens")
     parser.add_argument("--defocus-camera", action="store_true", help="Author the study's runtime camera with depth of field")
     parser.add_argument("--shutter-camera", action="store_true", help="Author the study's runtime camera with motion blur")
+    parser.add_argument("--lens-camera", action="store_true", help="Author camera flare and a private dirt fixture")
     parser.add_argument("--runtime-only", action="store_true",
                         help="Omit producer inputs from the generated study for archive qualification")
     benchmark = parser.add_mutually_exclusive_group()
@@ -347,15 +364,20 @@ def main():
     benchmark.add_argument("--defocus-benchmark", action="store_true", help="Time the depth-of-field passes and complete frames")
     benchmark.add_argument("--shutter-study", action="store_true", help="Run the motion shutter reference")
     benchmark.add_argument("--shutter-benchmark", action="store_true", help="Time the shutter passes and complete frames")
+    benchmark.add_argument("--lens-benchmark", action="store_true", help="Time flare and the full lens-enabled frame")
+    benchmark.add_argument("--lens-study", action="store_true", help="Run the physical lens effect references")
+    parser.add_argument("--lens-benchmark-full", action="store_true", help="Include optical warp, grain and the maximum flare tap count")
     parser.add_argument("--motion", action="store_true")
     args = parser.parse_args()
+    if args.lens_benchmark_full and not args.lens_benchmark:
+        parser.error("--lens-benchmark-full requires --lens-benchmark")
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
     if args.archive:
         report = {"status": "INCOMPLETE"}
         try:
             qualify_archive(args.archive.resolve(), output, report, args.offscreen_only, hdr_bloom=PROJECT,
-                            defocus_study=args.defocus_study, shutter_study=args.shutter_study)
+                            defocus_study=args.defocus_study, shutter_study=args.shutter_study, lens_study=args.lens_study)
             report["status"] = "PASS native offscreen archive relocation" if args.offscreen_only else "PASS native archive relocation"
         finally:
             (output / "results.json").write_text(json.dumps(report, indent=2) + "\n")
@@ -372,9 +394,11 @@ def main():
         parser.error("--defocus-camera requires --from-gallery")
     if args.shutter_camera and not args.from_gallery:
         parser.error("--shutter-camera requires --from-gallery")
+    if args.lens_camera and not args.from_gallery:
+        parser.error("--lens-camera requires --from-gallery")
     project = args.project.resolve() if args.project else authored_study(
         args.from_gallery.resolve(), output / "HDR Bloom Study", args.runtime_only, args.physical_camera,
-        args.automatic_camera, args.defocus_camera, args.shutter_camera)
+        args.automatic_camera, args.defocus_camera, args.shutter_camera, args.lens_camera)
     print(project, flush=True)
     if args.prepare_only:
         return
@@ -387,13 +411,17 @@ def main():
         env.update(HAZEL_CAMERA_DEFOCUS_TEST="1")
     if args.shutter_study:
         env.update(HAZEL_CAMERA_SHUTTER_TEST="1")
+    if args.lens_study:
+        env.update(HAZEL_CAMERA_LENS_TEST="1")
+    if args.lens_benchmark:
+        env.update(HAZEL_CAMERA_LENS_BENCHMARK="full" if args.lens_benchmark_full else "1", HAZEL_METAL_TRACE="1")
     if args.shutter_benchmark:
         env.update(HAZEL_CAMERA_SHUTTER_BENCHMARK="1", HAZEL_METAL_TRACE="1")
     if args.defocus_benchmark:
         env.update(HAZEL_CAMERA_DEFOCUS_BENCHMARK="1", HAZEL_METAL_TRACE="1")
     if args.benchmark:
         env.update(HAZEL_BLOOM_BENCHMARK="1", HAZEL_METAL_TRACE="1")
-    elif not args.exposure_benchmark and not args.defocus_benchmark and not args.shutter_benchmark:
+    elif not args.exposure_benchmark and not args.defocus_benchmark and not args.shutter_benchmark and not args.lens_benchmark:
         env.update(MTL_DEBUG_LAYER="1", MTL_SHADER_VALIDATION="1")
     report = {"config": args.config, "project": str(project), "status": "INCOMPLETE", "backends": {}}
     try:
@@ -409,9 +437,10 @@ def main():
             if run.returncode:
                 raise RuntimeError(f"{backend} failed. See {log_path}")
             record = {"command": list(map(str, cmd)), "checks": [line for line in log.splitlines()
-                      if line.startswith(("BLOOM_", "CAMERA_", "DEFOCUS_", "SHUTTER_")) and not line.startswith(
+                      if line.startswith(("BLOOM_", "CAMERA_", "DEFOCUS_", "SHUTTER_", "LENS_")) and not line.startswith(
                           ("BLOOM_TIMING", "BLOOM_PHASES", "CAMERA_METER_TIMING", "CAMERA_FRAME_TIMING",
-                           "DEFOCUS_PASS_TIMING", "DEFOCUS_FRAME_TIMING", "SHUTTER_PASS_TIMING", "SHUTTER_FRAME_TIMING"))]}
+                           "DEFOCUS_PASS_TIMING", "DEFOCUS_FRAME_TIMING", "SHUTTER_PASS_TIMING", "SHUTTER_FRAME_TIMING",
+                           "LENS_PASS_TIMING", "LENS_FRAME_TIMING"))]}
             report["backends"][backend] = record
             if args.exposure_benchmark:
                 record["timing"] = exposure_timings(log, folder, backend)
@@ -439,6 +468,13 @@ def main():
                 record["timing"] = optical_timings(log, folder, backend, "shutter",
                                                   ("classifyMS", "neighborMS", "gatherMS"), samples=31)
                 continue
+            if args.lens_benchmark:
+                record["timing"] = optical_timings(log, folder, backend, "lens", ("flareMS",), samples=31)
+                continue
+            if args.lens_study:
+                for state in ("flare", "dirt", "distortion", "gallery"):
+                    png(folder / f"lens-{state}.png", *SIZE, pixels(folder / f"lens-{state}.bin"))
+                continue
             for state in ("off", "on", "auto"):
                 png(folder / (state + ".png"), *SIZE, pixels(folder / f"{state}-{POSES // 2}.bin"))
             for state in ("reference", "physical", "compensated"):
@@ -449,7 +485,7 @@ def main():
                 reflection_diagnostic.write_motion(folder / "matched-motion.png", folder, pixels,
                                                    modes=("off", "on"), poses=POSES)
         if not any((args.benchmark, args.exposure_benchmark, args.defocus_study, args.defocus_benchmark,
-                    args.shutter_study, args.shutter_benchmark)) and args.backend == "both":
+                    args.shutter_study, args.shutter_benchmark, args.lens_study, args.lens_benchmark)) and args.backend == "both":
             report["aaOffParity"] = compare(output)
         if args.defocus_study:
             report["status"] = "PASS defocus disc study"
@@ -459,6 +495,10 @@ def main():
             report["status"] = "PASS motion shutter study"
         elif args.shutter_benchmark:
             report["status"] = "MEASURED motion shutter timing"
+        elif args.lens_benchmark:
+            report["status"] = "MEASURED lens effects timing"
+        elif args.lens_study:
+            report["status"] = "PASS lens effects study"
         else:
             report["status"] = "PASS exposure timings" if args.exposure_benchmark else "PASS focused HDR bloom and camera study"
     finally:

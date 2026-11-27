@@ -378,7 +378,8 @@ void MetalFramebuffer::ResolveReflectionsTo(const Ref<Framebuffer>& destination,
 }
 void MetalFramebuffer::CompositeWorldTo(const Ref<Framebuffer>& destination, float exposure,
                                         const BloomPyramid* bloom, const ExposureMeterPass* meter,
-                                        const DepthOfFieldPass* defocus, const CameraMotionPass* shutter)
+                                        const DepthOfFieldPass* defocus, const CameraMotionPass* shutter,
+                                        const LensEffectsPass* optics)
 {
     auto target = std::dynamic_pointer_cast<MetalFramebuffer>(destination);
     Check(target && target.get() != this && target->m_Device == m_Device && std::isfinite(exposure) && exposure >= -16 && exposure <= 16, "Invalid Metal world destination/exposure");
@@ -387,6 +388,22 @@ void MetalFramebuffer::CompositeWorldTo(const Ref<Framebuffer>& destination, flo
         m_Frame->Width == target->m_Frame->Width && m_Frame->Height == target->m_Frame->Height,
         "World conversion requires an unbound world and a bound empty destination of equal extent");
     target->m_Frame->PresentationShader = std::static_pointer_cast<MetalShader>(Backend().LoadShader("WorldPresentation"));
+    if (optics) {
+        MetalLensEffects pass;
+        pass.Presentation = optics->Presentation;
+        pass.Parameters = optics->Parameters;
+        if (optics->DirtTexture)
+            pass.Dirt = static_cast<const MetalTexture2D&>(*optics->DirtTexture).Snapshot();
+        if (optics->Flare) {
+            Check(bloom && !bloom->Levels.empty(), "Lens flare requires an HDR highlight source");
+            const auto& highlights = bloom->Levels[std::min<size_t>(2, bloom->Levels.size() - 1)].Down;
+            pass.HighlightSource = static_cast<const MetalFramebuffer&>(*highlights).m_Attachments;
+            pass.Flare = static_cast<const MetalFramebuffer&>(*optics->Flare).m_Attachments;
+            pass.Shader = std::static_pointer_cast<MetalShader>(Backend().LoadShader("LensFlare"));
+            pass.Timing = optics->Timing;
+        }
+        target->m_Frame->Lens = std::move(pass);
+    }
     if (shutter) {
         target->m_Frame->ShutterSubmitted = shutter->Submitted;
         if (shutter->Valid) {
@@ -446,10 +463,11 @@ void MetalFramebuffer::CompositeWorldTo(const Ref<Framebuffer>& destination, flo
         };
         for (const auto& level : bloom->Levels)
             append(level.Down, source, source == m_Frame->Attachments ? 0.f : 1.f);
-        for (size_t i = bloom->Levels.size() - 1; i > 0; --i) {
-            const auto& fine = bloom->Levels[i - 1];
-            append(fine.Up, static_cast<const MetalFramebuffer&>(*fine.Down).m_Attachments, 2.f);
-        }
+        if (bloom->BuildBloom)
+            for (size_t i = bloom->Levels.size() - 1; i > 0; --i) {
+                const auto& fine = bloom->Levels[i - 1];
+                append(fine.Up, static_cast<const MetalFramebuffer&>(*fine.Down).m_Attachments, 2.f);
+            }
     }
     m_Frame->Readback = false;
     target->m_Frame->Exposure = exposure;

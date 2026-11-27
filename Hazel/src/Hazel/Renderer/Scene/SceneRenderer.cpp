@@ -285,18 +285,22 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
         display->GetSpecification().Attachments.Attachments[0].TextureFormat != FramebufferTextureFormat::RGBA32F))
         throw std::runtime_error("Linear lighting inspection requires an explicit FP32 color target");
     const auto& bloom = frame.Presentation.Bloom;
+    const auto& optics = frame.Camera.LensEffects;
     const bool useBloom = bloom.Enabled && bloom.Intensity > 0 && frame.Presentation.SceneReferred &&
         !frame.CaptureRadiance && frame.Debug == SurfaceView::Shaded && frame.AmbientOcclusionView == 0 &&
         frame.LocalLightingView == 0 && frame.ShadowView == 0 && view.TemporalDebug == 0;
-    if (!useBloom) {
-        view.Bloom = {};
-        if (view.BloomMetrics)
-            *view.BloomMetrics = {};
-    }
     const auto& exposure = frame.Camera.ExposureOverride ? *frame.Camera.ExposureOverride : frame.Presentation.Exposure;
     const bool photographic = frame.Presentation.SceneReferred &&
         !frame.CaptureRadiance && frame.Debug == SurfaceView::Shaded && frame.AmbientOcclusionView == 0 &&
         frame.LocalLightingView == 0 && frame.ShadowView == 0 && view.TemporalDebug == 0;
+    const bool flare = photographic && optics.FlareStrength > 0 && (optics.GhostCount ||
+        optics.HaloStrength > 0 || optics.Starburst > 0 || optics.AnamorphicStreak > 0);
+    const bool dirt = photographic && (useBloom || flare) && optics.DirtStrength > 0 && !optics.DirtTexture.empty();
+    const bool lensEffects = photographic && (flare || dirt || optics.Vignette > 0 ||
+        optics.ChromaticPixels > 0 || optics.Distortion != 0 || optics.Grain > 0);
+    if (!useBloom && !flare) view.Bloom = {};
+    if (!useBloom && view.BloomMetrics) *view.BloomMetrics = {};
+    if (!lensEffects) view.Lens = {};
     const bool automatic = exposure.Mode == ExposureMode::Automatic && photographic;
     const bool defocus = frame.Camera.DepthOfField.Enabled && photographic && !frame.Camera.Orthographic;
     const bool shutter = frame.Camera.MotionBlur.Enabled && photographic && display;
@@ -401,10 +405,62 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
         const auto& spec = view.Radiance->GetSpecification();
         const glm::uvec2 extent(spec.Width, spec.Height);
         const float seconds = std::isfinite(frame.FrameSeconds) ? std::max(frame.FrameSeconds, 0.f) : 0.f;
-        if (useBloom) {
+        if (useBloom || flare) {
             bloom.Validate();
-            view.Bloom.Timing = view.BloomMetrics;
-            view.Bloom.Prepare(extent.x, extent.y, bloom.Intensity, bloom.Radius);
+            view.Bloom.Timing = useBloom ? view.BloomMetrics : nullptr;
+            view.Bloom.Prepare(extent.x, extent.y, useBloom ? bloom.Intensity : 0.f, bloom.Radius, useBloom);
+        }
+        if (lensEffects) {
+            optics.Validate();
+            auto& state = view.Lens;
+            auto& pass = state.Pass;
+            const float aspect = float(extent.x) / extent.y;
+            if (flare) {
+                const auto& source = view.Bloom.Levels[std::min<size_t>(2, view.Bloom.Levels.size() - 1)].Down;
+                pass.PrepareFlare(source->GetSpecification());
+                pass.Timing = view.LensTiming;
+                pass.Parameters = {{optics.FlareStrength, float(optics.GhostCount), optics.GhostSpacing, optics.HaloStrength},
+                                   {optics.HaloRadius, optics.Starburst, optics.AnamorphicStreak, aspect}};
+            } else pass.Flare.reset();
+            if (dirt && frame.Assets) {
+                if (state.DirtPath != optics.DirtTexture || state.DirtAssets.lock() != frame.Assets ||
+                    state.DirtEpoch != frame.Assets->Epoch()) {
+                    state.DirtPath = optics.DirtTexture;
+                    state.DirtAssets = frame.Assets;
+                    state.DirtEpoch = frame.Assets->Epoch();
+                    pass.DirtTexture.reset();
+                    auto sampling = TextureSpecification::FileDefaults();
+                    sampling.GenerateMips = false;
+                    sampling.MinFilter = sampling.MagFilter = TextureFilter::Linear;
+                    sampling.WrapS = sampling.WrapT = TextureWrap::ClampToEdge;
+                    try {
+                        pass.DirtTexture = frame.Assets->Texture(optics.DirtTexture, sampling);
+                        if (pass.DirtTexture && !pass.DirtTexture->IsLoaded())
+                            pass.DirtTexture.reset();
+                    } catch (const std::exception& error) {
+                        HZ_CORE_WARN("Lens dirt '{}' unavailable: {}", optics.DirtTexture.generic_u8string(), error.what());
+                    }
+                }
+            } else {
+                pass.DirtTexture.reset();
+                state.DirtPath.clear();
+                state.DirtAssets.reset();
+            }
+            const auto chiefTangent = [&](int axis) {
+                const auto value = frame.Camera.Projection[axis][axis];
+                return !frame.Camera.Orthographic && std::isfinite(value) && std::abs(value) > 1e-6f ? 1.f / value : 0.f;
+            };
+            if (state.Camera != frame.Camera.Identity || state.Scene != frame.SceneIdentity ||
+                state.Extent != extent || frame.CameraDiscontinuity)
+                state.Noise = 0;
+            state.Camera = frame.Camera.Identity;
+            state.Scene = frame.SceneIdentity;
+            state.Extent = extent;
+            pass.Presentation = {{optics.Vignette, optics.ChromaticPixels * extent.y / 1080.f, optics.Distortion, optics.Grain},
+                {chiefTangent(0), chiefTangent(1), float(state.Noise++ % 1024), flare ? 1.f : 0.f},
+                {optics.DirtStrength, optics.DirtScale,
+                 pass.DirtTexture ? float(pass.DirtTexture->GetWidth()) / pass.DirtTexture->GetHeight() : 1.f,
+                 pass.DirtTexture ? 1.f : 0.f}};
         }
         if (defocus) {
             const auto& settings = frame.Camera.DepthOfField;
@@ -448,15 +504,16 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
             focus.Scene = frame.SceneIdentity;
             focus.Extent = extent;
         }
-        const auto* bloomPass = useBloom ? &view.Bloom : nullptr;
+        const auto* bloomPass = useBloom || flare ? &view.Bloom : nullptr;
         const auto* defocusPass = defocus ? &view.Focus.Pass : nullptr;
         const auto* shutterPass = shutter ? &view.Shutter.Pass : nullptr;
+        const auto* lensPass = lensEffects ? &view.Lens.Pass : nullptr;
         if (shutter) {
             view.Shutter.Previous = frame;
             view.Shutter.Extent = extent;
         }
         if (!automatic) {
-            view.Radiance->CompositeWorldTo(display, gain, bloomPass, nullptr, defocusPass, shutterPass);
+            view.Radiance->CompositeWorldTo(display, gain, bloomPass, nullptr, defocusPass, shutterPass, lensPass);
             return;
         }
 
@@ -481,7 +538,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
              {exposure.SpotCenter, exposure.SpotRadius, float(exposure.Metering)},
              {step(exposure.BrighteningRate), step(exposure.DarkeningRate), valid ? 1.f : 0.f, exposure.IncludeSky ? 1.f : 0.f}},
             std::make_shared<std::atomic<bool>>(false), view.ExposureTiming};
-        view.Radiance->CompositeWorldTo(display, gain, bloomPass, &meter, defocusPass, shutterPass);
+        view.Radiance->CompositeWorldTo(display, gain, bloomPass, &meter, defocusPass, shutterPass, lensPass);
         state.Latest = 1 - state.Latest;
         state.Submitted = std::move(meter.Submitted);
         state.Camera = frame.Camera;

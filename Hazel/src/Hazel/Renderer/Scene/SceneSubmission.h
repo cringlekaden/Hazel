@@ -2,6 +2,7 @@
 #include "Hazel/Assets/ImportedAsset.h"
 #include "Hazel/Assets/Environment.h"
 #include "Hazel/Renderer/Cameras/CameraDefocus.h"
+#include "Hazel/Renderer/Cameras/CameraLensEffects.h"
 #include "Hazel/Renderer/Cameras/CameraShutter.h"
 #include "Hazel/Scene/SceneDefaults.h"
 #include "SpotShadows.h"
@@ -49,6 +50,7 @@ struct SceneCameraView
     DepthOfFieldSettings DepthOfField{};
     std::optional<float> FocusSubjectDepth{};
     MotionBlurSettings MotionBlur{};
+    LensEffectsSettings LensEffects{};
 };
 struct SubmittedMesh
 {

@@ -22,6 +22,7 @@ struct BloomPyramid
     };
     std::vector<Level> Levels;
     float Intensity = 0, Radius = 0;
+    bool BuildBloom = true;
     std::shared_ptr<BloomTiming> Timing; // Optional instrumentation.
 
     glm::vec4 FilterParameters(float mode, uint32_t sourceWidth, uint32_t sourceHeight) const
@@ -38,7 +39,7 @@ struct BloomPyramid
         return bytes;
     }
 
-    void Prepare(uint32_t width, uint32_t height, float intensity, float radius)
+    void Prepare(uint32_t width, uint32_t height, float intensity, float radius, bool buildBloom = true)
     {
         Intensity = intensity;
         Radius = radius;
@@ -46,13 +47,13 @@ struct BloomPyramid
         height = height / 2 + height % 2;
         if (!Levels.empty()) {
             const auto& size = Levels.front().Down->GetSpecification();
-            if (size.Width == width && size.Height == height)
+            if (size.Width == width && size.Height == height && BuildBloom == buildBloom)
                 return;
         }
         // Additional octaves keep the largest blur approximately proportional to
         // the shorter view dimension, up to the supported Retina view size.
         std::vector<Level> levels;
-        const auto limit = (width > 720 && height > 720) ? 5u : 4u;
+        const auto limit = !buildBloom ? 3u : (width > 720 && height > 720) ? 5u : 4u;
         for (unsigned i = 0; i < limit; ++i) {
             FramebufferSpecification size;
             size.Width = width;
@@ -64,9 +65,11 @@ struct BloomPyramid
             width = width / 2 + width % 2;
             height = height / 2 + height % 2;
         }
-        for (size_t i = 0; i + 1 < levels.size(); ++i)
-            levels[i].Up = Framebuffer::Create(levels[i].Down->GetSpecification());
+        if (buildBloom)
+            for (size_t i = 0; i + 1 < levels.size(); ++i)
+                levels[i].Up = Framebuffer::Create(levels[i].Down->GetSpecification());
         Levels = std::move(levels);
+        BuildBloom = buildBloom;
     }
 };
 }

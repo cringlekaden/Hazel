@@ -66,6 +66,10 @@ void MetalRenderer2DFrame::CollectAllocations(std::set<const MTL::Allocation*>& 
     if (Shutter)
         for (const auto& target : {Shutter->TileMax, Shutter->NeighborMax, Shutter->Filtered})
             allocations.insert(target->Targets[0].get());
+    if (Lens) {
+        if (Lens->Flare) allocations.insert(Lens->Flare->Targets[0].get());
+        if (Lens->Dirt) allocations.insert(Lens->Dirt->Texture.get());
+    }
     if (World) World->CollectAllocations(allocations);
     if (DisplaySource) DisplaySource->CollectAllocations(allocations);
 }
@@ -153,6 +157,17 @@ void MetalRenderer2DFrame::ResolveAmbientOcclusionTimings()
             if (valid) *Shutter->Timing = result;
         }
         Shutter->Counters.reset();
+    }
+    if (Lens && Lens->Counters && Lens->TimestampFrequency) {
+        MTL4::TimestampHeapEntry entries[2]{};
+        const auto values = NS::RetainPtr(Lens->Counters->resolveCounterRange(NS::Range::Make(0, 2)));
+        if (values && values->length() == sizeof(entries)) {
+            std::memcpy(entries, values->bytes(), sizeof(entries));
+            if (entries[0].timestamp && entries[1].timestamp > entries[0].timestamp)
+                *Lens->Timing = {double(entries[1].timestamp - entries[0].timestamp) * 1000. / Lens->TimestampFrequency,
+                    Lens->Flare->Targets[0]->allocatedSize()};
+        }
+        Lens->Counters.reset();
     }
     if(AO)AO->ResolveTimings();
     if(ShadowSource)ShadowSource->ResolveAmbientOcclusionTimings();
@@ -650,7 +665,9 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
         quad->OutputArguments->setTexture((quad->DisplaySource ? quad->DisplaySource : quad)->Attachments->Targets[0]->gpuResourceID(), 0);
         quad->OutputArguments->setSamplerState(quad->OutputSampler->gpuResourceID(), 0);
     }
-    if (!quad->BloomPasses.empty() || quad->Defocus || quad->Shutter) {
+    const bool warpColor = quad->Lens && quad->Lens->Presentation.Sensor.z != 0.f;
+    const bool explicitWorldFilter = warpColor && !m_Device->supports32BitFloatFiltering();
+    if (!quad->BloomPasses.empty() || quad->Defocus || quad->Shutter || (warpColor && !explicitWorldFilter)) {
         auto sampler = NS::TransferPtr(MTL::SamplerDescriptor::alloc()->init());
         sampler->setMinFilter(MTL::SamplerMinMagFilterLinear);
         sampler->setMagFilter(MTL::SamplerMinMagFilterLinear);
@@ -722,21 +739,24 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
     }
     if (quad->World) {
         auto table = NS::TransferPtr(MTL4::ArgumentTableDescriptor::alloc()->init());
-        table->setInitializeBindings(true); table->setMaxBufferBindCount(6); table->setMaxTextureBindCount(quad->Reflections ? 6 : 9); table->setMaxSamplerStateBindCount(quad->Reflections ? 1 : 9);
+        table->setInitializeBindings(true); table->setMaxBufferBindCount(6); table->setMaxTextureBindCount(quad->Reflections ? 6 : 11); table->setMaxSamplerStateBindCount(quad->Reflections ? 1 : 11);
         quad->PresentationArguments = NS::TransferPtr(m_Device->newArgumentTable(table.get(), &error));
         auto sampler = NS::TransferPtr(MTL::SamplerDescriptor::alloc()->init());
         sampler->setMinFilter(MTL::SamplerMinMagFilterNearest); sampler->setMagFilter(MTL::SamplerMinMagFilterNearest);
         sampler->setSAddressMode(MTL::SamplerAddressModeClampToEdge); sampler->setTAddressMode(MTL::SamplerAddressModeClampToEdge);
         if (!quad->OutputSampler) quad->OutputSampler = NS::TransferPtr(m_Device->newSamplerState(sampler.get()));
+        auto optics = quad->Lens ? quad->Lens->Presentation : LensPresentation{};
+        if (explicitWorldFilter) optics.Gate.w += 2.f;
         const glm::vec4 presentation[]{glm::vec4(quad->Exposure, quad->BloomIntensity, quad->ExposureMeter ? 1.f : 0.f, shutterMode),
-            defocusLens};
+            defocusLens, optics.Sensor, optics.Gate, optics.Dirt};
         auto uniform = quad->Reflections ? AcquireRenderer2DBuffer(sizeof(*quad->Reflections), &*quad->Reflections) :
             AcquireRenderer2DBuffer(sizeof(presentation), presentation);
         Check(bool(quad->PresentationArguments) && bool(quad->OutputSampler) && bool(uniform), "Cannot allocate world presentation bindings");
         quad->PresentationArguments->setAddress(uniform->gpuAddress(), 5);
         for (unsigned slot=0; slot<(quad->Reflections ? 6u : 2u); ++slot)
             quad->PresentationArguments->setTexture(quad->World->Attachments->Targets[slot]->gpuResourceID(), slot);
-        quad->PresentationArguments->setSamplerState(quad->OutputSampler->gpuResourceID(), 0);
+        const auto& worldSampler = warpColor && !explicitWorldFilter ? quad->LinearClampSampler : quad->OutputSampler;
+        quad->PresentationArguments->setSamplerState(worldSampler->gpuResourceID(), 0);
         if (!quad->Reflections) {
             auto glow = quad->BloomPasses.empty() ? quad->World->Attachments : quad->BloomPasses.back().Output;
             const auto& sampler = quad->LinearClampSampler ? quad->LinearClampSampler : quad->OutputSampler;
@@ -745,8 +765,43 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
             const auto gain = quad->ExposureMeter ? quad->ExposureMeter->Current : quad->World->Attachments;
             quad->PresentationArguments->setTexture(gain->Targets[0]->gpuResourceID(), 3);
             bindDefocusLayers(*quad->PresentationArguments.get(), quad->Defocus.has_value(), *sampler.get());
+            const auto& fallback = quad->World->Attachments->Targets[0];
+            const auto& flare = quad->Lens && quad->Lens->Flare ? quad->Lens->Flare->Targets[0] : fallback;
+            const auto dirt = quad->Lens ? quad->Lens->Dirt : nullptr;
+            quad->PresentationArguments->setTexture(flare->gpuResourceID(), 9);
+            quad->PresentationArguments->setSamplerState(sampler->gpuResourceID(), 9);
+            quad->PresentationArguments->setTexture((dirt ? dirt->Texture : fallback)->gpuResourceID(), 10);
+            quad->PresentationArguments->setSamplerState((dirt ? dirt->Sampler : sampler)->gpuResourceID(), 10);
+            if (dirt) quad->Residency->addAllocation(dirt->Texture.get());
         }
         quad->Residency->addAllocation(uniform.get()); quad->Buffers.push_back(std::move(uniform));
+    }
+    if (quad->Lens && quad->Lens->Flare) {
+        auto& lens = *quad->Lens;
+        if (lens.Timing) {
+            auto counters = NS::TransferPtr(MTL4::CounterHeapDescriptor::alloc()->init());
+            counters->setType(MTL4::CounterHeapTypeTimestamp);
+            counters->setCount(2);
+            lens.Counters = NS::TransferPtr(m_Device->newCounterHeap(counters.get(), &error));
+            if (lens.Counters) {
+                lens.Counters->invalidateCounterRange(NS::Range::Make(0, 2));
+                lens.TimestampFrequency = m_Device->queryTimestampFrequency();
+            }
+        }
+        auto table = NS::TransferPtr(MTL4::ArgumentTableDescriptor::alloc()->init());
+        table->setInitializeBindings(true);
+        table->setMaxBufferBindCount(6);
+        table->setMaxTextureBindCount(1);
+        table->setMaxSamplerStateBindCount(1);
+        lens.Arguments = NS::TransferPtr(m_Device->newArgumentTable(table.get(), &error));
+        Check(bool(lens.Arguments) && bool(quad->LinearClampSampler), "Cannot allocate flare bindings");
+        auto uniform = AcquireRenderer2DBuffer(sizeof(lens.Parameters), &lens.Parameters);
+        lens.Arguments->setAddress(uniform->gpuAddress(), 5);
+        lens.Arguments->setTexture(lens.HighlightSource->Targets[0]->gpuResourceID(), 0);
+        lens.Arguments->setSamplerState(quad->LinearClampSampler->gpuResourceID(), 0);
+        quad->Residency->addAllocation(lens.Flare->Targets[0].get());
+        quad->Residency->addAllocation(uniform.get());
+        quad->Buffers.push_back(std::move(uniform));
     }
     if (quad->OutlineShader) {
         auto table = NS::TransferPtr(MTL4::ArgumentTableDescriptor::alloc()->init());
@@ -781,6 +836,7 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
 }
 void MetalDevice::EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFrame>& quad)
 {
+    const bool lensWarp = quad->Lens && quad->Lens->Presentation.Sensor.z != 0.f;
     if(quad->ShadowSource) {
         for(const auto& pass:quad->LocalLights)if(pass->Counters)m_Commands->writeTimestampIntoHeap(pass->Counters.get(),4);
         m_Commands->useResidencySet(quad->ShadowSource->Residency.get());
@@ -874,12 +930,34 @@ void MetalDevice::EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFra
             if (counters) render->writeTimestamp(MTL4::TimestampGranularityPrecise, MTL::RenderStageFragment, counters, timestamp++);
             render->endEncoding();
         }
-        auto* copy = m_Commands->computeCommandEncoder();
-        if (!copy) { m_Commands->endCommandBuffer(); throw std::runtime_error("Cannot encode world depth transfer"); }
-        copy->barrierAfterQueueStages(MTL::StageAll, MTL::StageBlit, MTL4::VisibilityOptionDevice);
-        copy->copyFromTexture(quad->World->Attachments->Targets[2].get(), quad->Attachments->Targets[2].get());
-        copy->barrierAfterStages(MTL::StageBlit, MTL::StageAll, MTL4::VisibilityOptionDevice);
-        copy->endEncoding();
+        if (quad->Lens && quad->Lens->Flare) {
+            const auto& lens = *quad->Lens;
+            auto spec = NS::TransferPtr(MTL4::RenderPassDescriptor::alloc()->init());
+            spec->setRenderTargetWidth(lens.Flare->Width);
+            spec->setRenderTargetHeight(lens.Flare->Height);
+            auto* color = spec->colorAttachments()->object(0);
+            color->setTexture(lens.Flare->Targets[0].get());
+            color->setLoadAction(MTL::LoadActionDontCare);
+            color->setStoreAction(MTL::StoreActionStore);
+            auto* render = m_Commands->renderCommandEncoder(spec.get());
+            Check(render != nullptr, "Cannot encode lens flare");
+            render->barrierAfterQueueStages(MTL::StageAll, MTL::StageAll, MTL4::VisibilityOptionDevice);
+            render->setRenderPipelineState(lens.Shader->Pipeline());
+            render->setArgumentTable(lens.Arguments.get(), MTL::RenderStageFragment);
+            auto* counters = lens.Counters.get();
+            if (counters) render->writeTimestamp(MTL4::TimestampGranularityPrecise, MTL::RenderStageFragment, counters, 0);
+            render->drawPrimitives(MTL::PrimitiveTypeTriangle, NS::UInteger(0), NS::UInteger(3));
+            if (counters) render->writeTimestamp(MTL4::TimestampGranularityPrecise, MTL::RenderStageFragment, counters, 1);
+            render->endEncoding();
+        }
+        if (!lensWarp) {
+            auto* copy = m_Commands->computeCommandEncoder();
+            if (!copy) { m_Commands->endCommandBuffer(); throw std::runtime_error("Cannot encode world depth transfer"); }
+            copy->barrierAfterQueueStages(MTL::StageAll, MTL::StageBlit, MTL4::VisibilityOptionDevice);
+            copy->copyFromTexture(quad->World->Attachments->Targets[2].get(), quad->Attachments->Targets[2].get());
+            copy->barrierAfterStages(MTL::StageBlit, MTL::StageAll, MTL4::VisibilityOptionDevice);
+            copy->endEncoding();
+        }
     }
     if (!quad->ComputeSource) {
     std::set<MTL::Texture*> mipmaps;
@@ -900,7 +978,7 @@ void MetalDevice::EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFra
         attachment->setStoreAction(MTL::StoreActionStore);
         attachment->setClearColor(i == 0 ? MTL::ClearColor{quad->Clear.r, quad->Clear.g, quad->Clear.b, quad->Clear.a} : (i == 1 ? MTL::ClearColor{double(quad->ClearEntity), 0, 0, 0} : MTL::ClearColor{0, 0, 0, 0}));
     }
-    pass->depthAttachment()->setTexture(quad->Attachments->Targets[2].get()); pass->depthAttachment()->setLoadAction((quad->World || quad->Temporal) ? MTL::LoadActionLoad : MTL::LoadActionClear);
+    pass->depthAttachment()->setTexture(quad->Attachments->Targets[2].get()); pass->depthAttachment()->setLoadAction(((quad->World && !lensWarp) || quad->Temporal) ? MTL::LoadActionLoad : MTL::LoadActionClear);
     pass->depthAttachment()->setStoreAction(MTL::StoreActionStore); pass->depthAttachment()->setClearDepth(1);
     for(const auto &local:quad->LocalLights)if(local->Counters)m_Commands->writeTimestampIntoHeap(local->Counters.get(),2);
     auto* render = m_Commands->renderCommandEncoder(pass.get());
@@ -917,6 +995,12 @@ void MetalDevice::EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFra
     auto boundDepth=MTL::CompareFunctionAlways;
     bool boundDepthWrite=false;
     if (quad->World) {
+        if (lensWarp) {
+            RasterState raster;
+            raster.Compare = DepthCompare::Always;
+            render->setDepthStencilState(GetDepthState(raster).get());
+            boundDepthWrite = true;
+        }
         render->setArgumentTable(quad->PresentationArguments.get(), MTL::RenderStageFragment);
         auto* counters = quad->BloomCounters.get();
         const auto timestamp = 2 * quad->BloomPasses.size();

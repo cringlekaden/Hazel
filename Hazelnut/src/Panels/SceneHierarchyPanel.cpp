@@ -1109,6 +1109,49 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
                     motion.Quality = MotionBlurQuality(quality);
                 ImGui::TreePop();
             }
+            if (ImGui::TreeNode("Lens effects"))
+            {
+                auto& optics = component.LensEffects;
+                PropertyUI::DragFloat("flare-strength", "Flare strength", optics.FlareStrength, .01f, 0, 1);
+                if (optics.FlareStrength > 0 && ImGui::TreeNode("Flare shape"))
+                {
+                    int ghosts = int(optics.GhostCount);
+                    if (PropertyUI::DragInt("flare-ghosts", "Ghosts", ghosts, 1, 0, 4))
+                        optics.GhostCount = unsigned(ghosts);
+                    PropertyUI::DragFloat("ghost-spacing", "Ghost spacing", optics.GhostSpacing, .01f, .12f, .8f);
+                    PropertyUI::DragFloat("halo-strength", "Halo strength", optics.HaloStrength, .01f, 0, 1);
+                    PropertyUI::DragFloat("halo-radius", "Halo radius", optics.HaloRadius, .01f, .05f, .5f);
+                    PropertyUI::DragFloat("flare-starburst", "Starburst", optics.Starburst, .01f, 0, 1);
+                    PropertyUI::DragFloat("flare-streak", "Anamorphic streak", optics.AnamorphicStreak, .01f, 0, 1);
+                    ImGui::TreePop();
+                }
+                const auto dirt = optics.DirtTexture.empty() ? std::string("Drop an image asset") : optics.DirtTexture.generic_u8string();
+                PropertyUI::ReadOnly("lens-dirt", "Lens dirt", dirt.c_str());
+                if (ImGui::BeginDragDropTarget()) {
+                    if (auto payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
+                        try {
+                            const auto assets = m_Context->GetAssets();
+                            if (!assets) throw std::runtime_error("Open a project before assigning lens dirt");
+                            auto candidate = optics;
+                            candidate.DirtTexture = Project::MakeAssetReference(assets->Root(),
+                                ContentBrowserPath(payload->Data, payload->DataSize));
+                            candidate.Validate();
+                            optics = std::move(candidate);
+                        } catch (const std::exception& error) { m_HierarchyError = error.what(); }
+                    }
+                    ImGui::EndDragDropTarget();
+                }
+                if (!optics.DirtTexture.empty()) {
+                    if (ImGui::Button("Clear lens dirt")) optics.DirtTexture.clear();
+                    PropertyUI::DragFloat("dirt-strength", "Dirt strength", optics.DirtStrength, .01f, 0, 4);
+                    PropertyUI::DragFloat("dirt-scale", "Dirt scale", optics.DirtScale, .01f, .25f, 4);
+                }
+                PropertyUI::DragFloat("vignette", "Vignette", optics.Vignette, .01f, 0, 1);
+                PropertyUI::DragFloat("chromatic", "Chromatic edge offset (1080p px)", optics.ChromaticPixels, .01f, 0, 3);
+                PropertyUI::DragFloat("distortion", "Radial distortion", optics.Distortion, .005f, -.25f, .25f);
+                PropertyUI::DragFloat("sensor-grain", "Grain", optics.Grain, .001f, 0, .08f);
+                ImGui::TreePop();
+            }
             bool usePhysical = camera.GetPhysicalCamera().has_value();
             if (PropertyUI::Checkbox("physical-camera", "Physical camera", usePhysical))
             {

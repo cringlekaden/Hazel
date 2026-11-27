@@ -85,6 +85,13 @@ Balanced and Cinematic bound the shutter gather and its maximum spread.
 Motion blur resets on camera cuts and precedes depth of field and bloom.
 [Camera motion blur](design/camera-motion-blur.md)
 
+**Lens effects** offers visible-highlight ghosts, halos, starbursts and
+anamorphic streaks. An optional image from the project’s Assets folder
+modulates only glare, including bloom. Vignette, chromatic separation,
+radial distortion and grain start at zero. Lens effects apply to the
+camera’s world image before screen UI.
+[Lens effects and qualification](design/camera-lens-effects.md)
+
 A final pass applies the piecewise sRGB transfer into RGBA8, or into Nutella's
 window with `GL_FRAMEBUFFER_SRGB` disabled. Alpha is copied. The editor's output
 texture has RGBA8 storage, so ImGui samples the encoded values unchanged. Prefab,

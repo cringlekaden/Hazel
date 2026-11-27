@@ -217,7 +217,7 @@ def timing_summary(path, count=3):
 
 
 def qualify_archive(archive, out, report, offscreen_only, diagnostic=False, ssr_gallery=None, hdr_bloom=None,
-                    defocus_study=False, shutter_study=False):
+                    defocus_study=False, shutter_study=False, lens_study=False):
     from internal.package_tests import extract_verified
     from macos.packaging import relocate_executable, sign
     from macos.qualification import isolation_command, product_acceptance
@@ -241,7 +241,7 @@ def qualify_archive(archive, out, report, offscreen_only, diagnostic=False, ssr_
         if hdr_bloom:
             for name in ("BloomFilter.hzmetal", "WorldPresentation.hzmetal", "ExposureMeter.metallib",
                          "DefocusTile.hzmetal", "DefocusPrefilter.hzmetal", "DefocusGather.hzmetal",
-                         "ShutterFilter.hzmetal"):
+                         "ShutterFilter.hzmetal", "LensFlare.hzmetal"):
                 shader = resources / "shaders/metal" / name
                 if hashlib.sha256(shader.read_bytes()).hexdigest() != meta["metal_shaders"][name]:
                     raise RuntimeError(f"Packaged {name} differs from its manifest")
@@ -284,6 +284,8 @@ def qualify_archive(archive, out, report, offscreen_only, diagnostic=False, ssr_
                 variables["HAZEL_CAMERA_DEFOCUS_TEST"] = "1"
             if shutter_study:
                 variables["HAZEL_CAMERA_SHUTTER_TEST"] = "1"
+            if lens_study:
+                variables["HAZEL_CAMERA_LENS_TEST"] = "1"
             log = out / f"{backend}-source-free.log"
             captures = working / f"{backend}-source-free-captures"
             command = [exe, resource_root, captures, "--reflection-probes"] if backend == "metal" else [
@@ -293,7 +295,7 @@ def qualify_archive(archive, out, report, offscreen_only, diagnostic=False, ssr_
                                         env=variables, stdout=stream, stderr=subprocess.STDOUT, timeout=120)
             report["relocation"][backend + "SourceFree"] = {"exitCode": result.returncode,
                 "results": [line for line in log.read_text().splitlines()
-                            if line.startswith(("REFLECTION_", "SSR_", "BLOOM_", "CAMERA_", "DEFOCUS_", "SHUTTER_"))]}
+                            if line.startswith(("REFLECTION_", "SSR_", "BLOOM_", "CAMERA_", "DEFOCUS_", "SHUTTER_", "LENS_"))]}
             if result.returncode:
                 raise RuntimeError(f"Source-free {backend} reflection failed. See {log}")
         if offscreen_only:

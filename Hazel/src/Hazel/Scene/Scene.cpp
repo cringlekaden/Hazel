@@ -658,6 +658,7 @@ namespace Hazel {
             cameraView.ExposureOverride = entity.GetComponent<CameraComponent>().ExposureOverride;
             cameraView.DepthOfField = entity.GetComponent<CameraComponent>().DepthOfField;
             cameraView.MotionBlur = entity.GetComponent<CameraComponent>().MotionBlur;
+            cameraView.LensEffects = entity.GetComponent<CameraComponent>().LensEffects;
             if (inspection)
             {
                 auto inspected = *inspection;
@@ -665,6 +666,7 @@ namespace Hazel {
                 inspected.ExposureOverride = cameraView.ExposureOverride;
                 inspected.DepthOfField = cameraView.DepthOfField;
                 inspected.MotionBlur = cameraView.MotionBlur;
+                inspected.LensEffects = cameraView.LensEffects;
                 if (inspected.Physical && inspected.Physical->LensProjection && !cameraView.Orthographic)
                 {
                     inspected.Projection = cameraView.Projection;
