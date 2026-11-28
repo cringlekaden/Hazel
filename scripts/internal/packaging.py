@@ -31,6 +31,10 @@ def load_project(path):
     if not assets.is_dir(): raise RuntimeError('Missing asset root: ' + str(assets))
     for key in ('StartScene', 'ScriptModulePath'):
         resolve_owned(assets, config[key], exists=key!='ScriptModulePath')
+    if 'CameraTour' in config:
+        if not isinstance(config['CameraTour'], str) or Path(config['CameraTour']).suffix != '.hcam':
+            raise RuntimeError('CameraTour must be a project-owned .hcam track')
+        resolve_owned(assets, config['CameraTour'])
     if Path(config['StartScene']).suffix != '.hazel': raise RuntimeError('StartScene must be a .hazel scene')
     if Path(config['ScriptModulePath']).suffix != '.dll': raise RuntimeError('ScriptModulePath must select a compiled managed DLL')
     return descriptor, config, assets
@@ -55,7 +59,10 @@ def validate_project(descriptor, config, assets):
     module_present = module.is_file()
     if required_scripts and not module_present:
         raise RuntimeError('Assigned scripts require a compiled module at '+str(module)+': '+', '.join(sorted(required_scripts)))
-    for key in (('StartScene','ScriptModulePath') if module_present else ('StartScene',)):
+    references = ['StartScene']
+    if module_present: references.append('ScriptModulePath')
+    if 'CameraTour' in config: references.append('CameraTour')
+    for key in references:
         if resolve_owned(assets,config[key]) not in included:
             raise RuntimeError(key+' selects excluded compiler output. Move/stage this dependency into project assets before packaging.')
     scenes = [file for file in files if file.suffix in ('.hazel','.hprefab')]

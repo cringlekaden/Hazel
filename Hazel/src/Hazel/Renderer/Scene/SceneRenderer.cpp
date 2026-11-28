@@ -30,18 +30,26 @@ bool CameraCut(const SceneSubmission& frame,const SceneCameraView& previous) {
     // with a small near clip or a long orthographic depth range. Compare rays
     // at submitted mesh depth instead; disocclusion remains a per-pixel test.
     const auto forward=-glm::normalize(current.ToCamera);
-    float referenceDepth=std::numeric_limits<float>::max(),fallbackDepth=referenceDepth;
-    for(const auto& draw:frame.Meshes)if(draw.Geometry) {
-        const auto& bounds=draw.Geometry->Geometry.Bounds;
-        auto centre=glm::vec3(draw.World*glm::vec4(bounds.Min*.5f+bounds.Max*.5f,1));
-        float depth=glm::dot(centre-current.Position,forward);
-        if(std::isfinite(depth)&&depth>0)referenceDepth=std::min(referenceDepth,depth);
-        else {
-            float radius=glm::length(glm::vec3(draw.World*glm::vec4(bounds.Max*.5f-bounds.Min*.5f,0)));
-            if(std::isfinite(radius)&&radius>0)fallbackDepth=std::min(fallbackDepth,radius);
-        }
+    float referenceDepth = std::numeric_limits<float>::max();
+    for (const auto& draw : frame.Meshes) {
+        if (!draw.Geometry) continue;
+        const auto& bounds = draw.Geometry->Geometry.Bounds;
+        const auto centre = glm::vec3(draw.World * glm::vec4(bounds.Min*.5f + bounds.Max*.5f, 1));
+        const auto half = bounds.Max*.5f - bounds.Min*.5f;
+        const float depth = glm::dot(centre - current.Position, forward);
+        float radius = 0;
+        for (unsigned axis = 0; axis < 3; ++axis)
+            radius += std::abs(glm::dot(glm::vec3(draw.World[axis]), forward)) * half[axis];
+        const float far = depth + radius;
+        if (!std::isfinite(far) || far <= 0) continue;
+        // A batched room may surround the eye. Its bounds centre can cross the
+        // eye plane while all visible surfaces remain at ordinary scene depth.
+        // Use the midpoint of the positive part of the axial depth interval.
+        const float representative = .5f * std::max(depth - radius, 0.f) + .5f * far;
+        referenceDepth = std::min(referenceDepth, representative);
     }
-    if(referenceDepth==std::numeric_limits<float>::max())referenceDepth=fallbackDepth==referenceDepth?1.f:fallbackDepth;
+    if (referenceDepth == std::numeric_limits<float>::max())
+        referenceDepth = 1.f;
     const auto inverse=glm::inverse(current.ViewProjection);
     auto nearPoint=inverse*glm::vec4(0,0,-1,1);
     if(!std::isfinite(nearPoint.w)||nearPoint.w==0)return true;

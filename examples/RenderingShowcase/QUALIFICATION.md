@@ -1,5 +1,8 @@
 # The Pavilion qualification
 
+This is the 1.0 checkpoint. See [Pavilion 2.0](PAVILION-2.md) for the runtime
+loop, temporal history repair, optical comparisons and updated timings.
+
 Tested on Apple M4 with 16 GiB RAM, macOS 27.3, on the development tree based
 on `224a779`. The Pavilion acceptance gates below passed on this host. The Pavilion uses native scene, mesh, material and environment
 formats. It requires no application-specific rendering code or managed module.

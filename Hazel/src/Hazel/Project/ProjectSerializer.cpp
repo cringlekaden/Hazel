@@ -2,6 +2,7 @@
 #include "hzpch.h"
 #include "RendererRequestsSerializer.h"
 #include "ProjectSerializer.h"
+#include "Hazel/Assets/AssetData.h"
 #include "Hazel/Core/FileSystem.h"
 #include "Hazel/Core/DocumentSchema.h"
 #include "Hazel/Core/FileDocument.h"
@@ -36,6 +37,8 @@ namespace Hazel {
                 if(!config.SaveNamespace.empty())out<<YAML::Key<<"SaveNamespace"<<YAML::Value<<config.SaveNamespace;
                 if(config.AuthoringVersion)out<<YAML::Key<<"AuthoringVersion"<<YAML::Value<<config.AuthoringVersion;
                 out << YAML::Key << "Name" << YAML::Value << config.Name;
+                if (!config.CameraTour.empty())
+                    out << YAML::Key << "CameraTour" << YAML::Value << config.CameraTour.generic_u8string();
 				out << YAML::Key << "StartScene" << YAML::Value << config.StartScene.generic_u8string();
 				out << YAML::Key << "AssetDirectory" << YAML::Value << config.AssetDirectory.generic_u8string();
 				out << YAML::Key << "ScriptModulePath" << YAML::Value << config.ScriptModulePath.generic_u8string();
@@ -79,6 +82,10 @@ namespace Hazel {
             if(projectNode["AuthoringVersion"])config.AuthoringVersion=projectNode["AuthoringVersion"].as<int>();
             config.ScriptProject = projectNode["ScriptProject"] ? projectNode["ScriptProject"].as<std::string>() : config.Name;
 			config.StartScene = Project::NormalizeAssetPath(std::filesystem::u8path(projectNode["StartScene"].as<std::string>()));
+            if (auto track = projectNode["CameraTour"]) {
+                config.CameraTour = std::filesystem::u8path(track.as<std::string>());
+                AssetPath(config.CameraTour, ".hcam");
+            }
 			config.AssetDirectory = Project::NormalizeAssetPath(std::filesystem::u8path(projectNode["AssetDirectory"].as<std::string>()));
 			config.ScriptModulePath = Project::NormalizeAssetPath(std::filesystem::u8path(projectNode["ScriptModulePath"].as<std::string>()));
 			m_Project->GetConfig() = std::move(config);

@@ -1078,7 +1078,7 @@ Entities:
   TagComponent:
     Tag: Title architecture
   TransformComponent:
-    Translation: [0, 0, 0]
+    Translation: [0, 0, 0.035]
     Rotation: [0, 0, 0]
     Scale: [1, 1, 1]
   MeshRendererComponent:
@@ -1140,14 +1140,30 @@ Entities:
     Parent: 0
     Order: 58
   TagComponent:
+    Tag: Title sign backing
+  TransformComponent:
+    Translation: [0, 4.93, 7.927]
+    Rotation: [0, 0, 0]
+    Scale: [4.74, 0.46, 0.038]
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Native/Direct_v1/UnitCube.hmesh
+    Materials:
+    - Slot: '0000000000000007'
+      Material: Pavilion/Surfaces/Black.hmat
+- Entity: 60
+  Relationship:
+    Parent: 0
+    Order: 59
+  TagComponent:
     Tag: "A\u201311 flight helmet"
   TransformComponent:
     Translation: [-1.25, 1.159, -2.56]
     Rotation: [0, 0.31, 0]
     Scale: [1, 1, 1]
-- Entity: 60
+- Entity: 61
   Relationship:
-    Parent: 59
+    Parent: 60
     Order: 0
   TagComponent:
     Tag: Hose_low
@@ -1159,9 +1175,9 @@ Entities:
     Version: 1
     Mesh: Pavilion/FlightHelmet/meshes/cc79f240df72b5f1.hmesh
     Materials: []
-- Entity: 61
+- Entity: 62
   Relationship:
-    Parent: 59
+    Parent: 60
     Order: 1
   TagComponent:
     Tag: RubberWood_low
@@ -1173,9 +1189,9 @@ Entities:
     Version: 1
     Mesh: Pavilion/FlightHelmet/meshes/2ad93c7fc139ec86.hmesh
     Materials: []
-- Entity: 62
+- Entity: 63
   Relationship:
-    Parent: 59
+    Parent: 60
     Order: 2
   TagComponent:
     Tag: GlassPlastic_low
@@ -1187,9 +1203,9 @@ Entities:
     Version: 1
     Mesh: Pavilion/FlightHelmet/meshes/557773c533397782.hmesh
     Materials: []
-- Entity: 63
+- Entity: 64
   Relationship:
-    Parent: 59
+    Parent: 60
     Order: 3
   TagComponent:
     Tag: MetalParts_low
@@ -1201,9 +1217,9 @@ Entities:
     Version: 1
     Mesh: Pavilion/FlightHelmet/meshes/8ae5b0fb10db431d.hmesh
     Materials: []
-- Entity: 64
+- Entity: 65
   Relationship:
-    Parent: 59
+    Parent: 60
     Order: 4
   TagComponent:
     Tag: LeatherParts_low
@@ -1215,9 +1231,9 @@ Entities:
     Version: 1
     Mesh: Pavilion/FlightHelmet/meshes/1beef80d933774d0.hmesh
     Materials: []
-- Entity: 65
+- Entity: 66
   Relationship:
-    Parent: 59
+    Parent: 60
     Order: 5
   TagComponent:
     Tag: Lenses_low
@@ -1229,30 +1245,30 @@ Entities:
     Version: 1
     Mesh: Pavilion/FlightHelmet/meshes/860a697022b0ea4e.hmesh
     Materials: []
-- Entity: 66
+- Entity: 67
   Relationship:
     Parent: 0
-    Order: 59
+    Order: 60
   TagComponent:
     Tag: "A\u201311 focus pivot"
   TransformComponent:
     Translation: [-1.21, 1.71, -2.46]
     Rotation: [0, 0, 0]
     Scale: [1, 1, 1]
-- Entity: 67
+- Entity: 68
   Relationship:
     Parent: 0
-    Order: 60
+    Order: 61
   TagComponent:
     Tag: Archive focus mark
   TransformComponent:
     Translation: [-1.75, 2.82, -6.81]
     Rotation: [0, 0, 0]
     Scale: [1, 1, 1]
-- Entity: 68
+- Entity: 69
   Relationship:
     Parent: 0
-    Order: 61
+    Order: 62
   TagComponent:
     Tag: Foreground focus mark
   TransformComponent:

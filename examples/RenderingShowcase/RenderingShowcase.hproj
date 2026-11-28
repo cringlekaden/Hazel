@@ -18,5 +18,6 @@ Project:
   AuthoringVersion: 1
   Name: The Pavilion / Ultra
   StartScene: Scenes/Pavilion.hazel
+  CameraTour: Pavilion/NightFlight.hcam
   AssetDirectory: Assets
   ScriptModulePath: Scripts/Binaries/RenderingShowcase.dll

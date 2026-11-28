@@ -1,25 +1,25 @@
 Version: 2
 PreparationRecipe: Hazel.EnvPrepare_v2.SolidAngleBalancedMIS.BilinearSource.Tail4
 Recipe: Hazel.IBL_v1.GGX-correlated-single.r045.E-pi.AB-NoV-r.cube-top
-Identity: b9820be945b51a791adbf40dfc934fb955715eccda1fb4f743ee140283b2445c
-Generation: 4dcc342ca1df3f89
+Identity: b91e18912d6fdb2f3ace6fbfca405425b83d8d7da8ae15ff4f4cdff262348ba6
+Generation: fca1b067cd407403
 IntentHash: 22d28ff74fc64bb8d5a11adb7fb6c0eefb7c5fae38e8f9e0ec1eb7fad04ed7de
-SourceHash: 039d8a538d60328007360405426a02c338b2e3db15ca459527ed9f972dc613cd
+SourceHash: 61b4ef26441244fe5090ecdb32bc706d6cad22df0a925554a4340978097ea252
 Evaluation: Hazel.SceneCapture.FP32Cube.BilinearLatLong1
 Producer: macos/arm64/Release/Apple LLVM 21.0.0 (clang-2100.4.1.1)/IEEE754-precise-FP64-v1
 LUTIdentity: 8916c405c4da491ac3abaccd5f4da974be8b228135e47a81ac41ff1856d5ce94
 Outputs:
   Background:
-    Path: Pavilion/Reflections/Hall.henv.prepared/4dcc342ca1df3f89/Background.hlight
+    Path: Pavilion/Reflections/Hall.henv.prepared/fca1b067cd407403/Background.hlight
     Hash: 18c16c50f7979768326c14f228740b42ea4b59d7ddc51a11b2cc36a93203e3bf
   Irradiance:
-    Path: Pavilion/Reflections/Hall.henv.prepared/4dcc342ca1df3f89/Irradiance.hlight
-    Hash: 15dfad863ffa4c580ab2dacf1ec7d7bd91620b43316bf44ae0c9aa27e5fcc919
+    Path: Pavilion/Reflections/Hall.henv.prepared/fca1b067cd407403/Irradiance.hlight
+    Hash: b5cd23cb393161ca3b4207f9e2472c407744c6325cc5f3b00a03f8c8ce3902db
   Specular:
-    Path: Pavilion/Reflections/Hall.henv.prepared/4dcc342ca1df3f89/Specular.hlight
-    Hash: 3be4af1b7c9233417db07ed0078be733f36cce344761b18976fd9265119333ba
+    Path: Pavilion/Reflections/Hall.henv.prepared/fca1b067cd407403/Specular.hlight
+    Hash: 29e7a8912ec15d2ed788b19a1d9aea2f240c41a2a14143987973ffe63ae4030a
   BRDF:
     Path: Prepared/BRDF/8916c405c4da491ac3abaccd5f4da974be8b228135e47a81ac41ff1856d5ce94/c6cfc8287e00df0e.hlight
     Hash: e992f5f8905d6d607e391bcfba71ac8e08abc83530322cf48988a1b254de0242
-Seconds: 7.8748660829999997
-PeakBytes: 47579136
+Seconds: 8.5503190409999998
+PeakBytes: 46776320

@@ -1,7 +1,7 @@
 Environment:
   Version: 1
   Name: Pavilion Hall / baked
-  Notice: See Pavilion ASSET_CREDITS.md for the source asset licenses.
+  Notice: See NOTICE-Pavilion.md for the source asset licenses.
   Source:
     Kind: SceneCapture
     Image: Pavilion/Reflections/Hall.hlight

@@ -43,6 +43,7 @@ namespace Hazel {
         bool IsCameraInspectionEnabled() const {return bool(m_Inspection);}
         NavigationCamera* GetInspectionCamera(){return m_Inspection?&*m_Inspection:nullptr;}
         void ResetCameraInspection();
+        void ResetCameraHistory() { CheckThread(); m_View.Reset(); }
         void CancelCameraInspectionGesture();
         void UpdateCameraInspection(Timestep timestep,bool focused,bool overImage);
         bool CameraInspectionGestureActive()const{return m_InspectionGesture!=InspectionGesture::Idle;}

@@ -181,7 +181,7 @@ bool Project(const YAML::Node& root)
     Structure(root);
     Keys(root, {"Project"}, "root");
     auto project = root["Project"];
-    Keys(project, {"NewSceneDefaults", "Version", "Name", "ScriptProject", "StartScene", "AssetDirectory", "ScriptModulePath", "AuthoringVersion", "Rendering", "SaveNamespace", "UIBindings"}, "Project");
+    Keys(project, {"NewSceneDefaults", "Version", "Name", "ScriptProject", "StartScene", "AssetDirectory", "ScriptModulePath", "AuthoringVersion", "Rendering", "SaveNamespace", "UIBindings", "CameraTour"}, "Project");
     if(project["SaveNamespace"] && !project["SaveNamespace"].as<std::string>().empty() && !RuntimeStorage::ValidName(project["SaveNamespace"].as<std::string>()))throw std::runtime_error("Invalid project SaveNamespace");
     if(project["UIBindings"])GameUI::ParseBindings(YAML::Dump(project["UIBindings"]));
     if(project["NewSceneDefaults"])SceneDefaults::Read(project["NewSceneDefaults"]);

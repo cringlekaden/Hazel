@@ -19,11 +19,13 @@ python3 scripts/hazel.py build --config Release --target Hazelnut --target Nutel
 project=examples/RenderingShowcase/RenderingShowcase.hproj
 python3 scripts/hazel.py run Hazelnut --config Release --metal --project "$project"
 python3 scripts/hazel.py run Hazelnut --config Release --opengl --project "$project"
-python3 scripts/hazel.py run Nutella --config Release --metal --project "$project" --inspect-camera
-python3 scripts/hazel.py run Nutella --config Release --opengl --project "$project" --inspect-camera
+python3 scripts/hazel.py run Nutella --config Release --metal --project "$project"
+python3 scripts/hazel.py run Nutella --config Release --opengl --project "$project"
 ```
 
-Launch one application at a time. In Hazelnut, **Play** starts at the courtyard.
+Nutella starts the eighty-second loop in Ultra and High. Diagnostic starts
+from its fixed reflection camera. Hazelnut **Play** keeps the authored entrance
+camera for editing and fixed-pose studies.
 In Edit, select an object and press **F** to frame it. For one of the nine fixed
 cameras, stop Play, clear **Primary** on the current camera, and set it on the
 desired camera before playing again. Close without saving if the change was for
@@ -31,18 +33,39 @@ inspection only.
 
 ### Inspect in motion
 
-In Hazelnut Play, check **Inspect camera** in the viewport. In Nutella, use
-`--inspect-camera` as shown above. Hold the right mouse button and use WASD
+In Hazelnut Play, check **Inspect camera** in the viewport. In Nutella, press
+**I** during the tour to suspend its movement and fly from the current pose.
+Press **I** again to resume. Add `--inspect-camera` to enter inspection at launch. Hold the right mouse button and use WASD
 and Q/E to fly. Hold Shift for speed or Ctrl for precision. Use Option/Alt or
 Space with left drag to orbit, Shift with left drag to pan, and the wheel to
 dolly. Press **Home** to restore the authored view and **Escape** to release
-the pointer. Omit `--inspect-camera` for an uncluttered fixed Nutella view.
+the pointer.
+
+### Nutella tour controls
+
+| Key | Action |
+| --- | --- |
+| Space | Play or pause |
+| R | Restart at the courtyard and reset camera history |
+| [ or ] | Slow down or speed up, from 0.25× to 2× |
+| I | Suspend the tour and enter inspection, or return to the tour |
+| T / Y | Toggle TAA / SSR, including during inspection |
+| D / M | Toggle physical DOF / shutter blur |
+| F / G | Toggle lens flare / source-driven dirt |
+| E / C | Compare manual gain 1 against auto exposure / neutral against Night Flight grading |
+
+Around 24 seconds, the camera approaches the helmet at f/1.3. Focus moves
+from the helmet to the wall and back. Near 40 seconds, the archive lightbox
+and ceiling bars resolve into warm and cool ghosts and streaks. Dirt modulates
+the light-spread response in that passage. Pause and press D, F, or G at the
+corresponding pose for an A/B. Shutter differences need a moving view, such
+as the low sweep or the return turn.
 
 ### Quality
 
 | Configuration | Launch descriptor | Settings |
 | --- | --- | --- |
-| Ultra / Cinematic | `RenderingShowcase.hproj` | 2048 per CSM cascade, four 1024 spot maps and one 512 point cube. SSR quality 2 with 56 steps, XeGTAO quality 3 and TAA on Metal. Cinematic focus and shutter use only the designated cameras. |
+| Ultra / Cinematic | `RenderingShowcase.hproj` | 2048 per CSM cascade, four 1024 spot maps and one 512 point cube. SSR quality 2 with 56 steps, XeGTAO quality 3 and TAA on Metal. The tour varies aperture and optical strength across zones, with Cinematic reconstruction. |
 | High / Interactive | `RenderingShowcase-High.hproj` | 1024 cascades, 512 spot maps, 256 point cube, SSR quality 1 with 36 steps, XeGTAO quality 2, Balanced optics and the same authored lighting and grading. |
 | Diagnostic / Comparison | `RenderingShowcase-Diagnostic.hproj` | Starts at the reflection sweep with manual gain 1 at f/4, 1/64 s and ISO 100. TAA, bloom, grading and dedicated camera effects are disabled. Spatial reflections, probes, shadows and Metal AO remain available. |
 
@@ -58,6 +81,20 @@ The previous Studio scene and its fixed material studies are available through
 [views.yaml](Assets/views.yaml).
 
 ## Camera study
+
+[Continuous Nutella track render](evidence/pavilion2/loop.mp4) uses the same
+periodic sampler as the player. The native test samples it at 20 Hz to make
+paired captures and validate the loop seam.
+
+```sh
+python3 examples/RenderingShowcase/tools/study.py loop --width 640 --output build/pavilion-loop
+python3 examples/RenderingShowcase/tools/study.py loop-pairs --output build/pavilion-optics
+```
+
+See the [2.0 stabilization record](PAVILION-2.md) and the
+[glTF capability audit and roadmap](GLTF-AUDIT.md).
+
+### Fixed-camera reference study
 
 [Watch the rendered tour](evidence/tour.mp4). The native study plays the same nine
 authored cameras at 30 Hz. It eases camera moves within each shot, tracks the

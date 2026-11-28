@@ -1,0 +1,26 @@
+{
+  "focus": {
+    "maxCodeDifference": 185,
+    "fractionOfPixelsAtLeast3Codes": 0.45514
+  },
+  "flare": {
+    "maxCodeDifference": 181,
+    "fractionOfPixelsAtLeast3Codes": 0.15783
+  },
+  "dirt": {
+    "maxCodeDifference": 28,
+    "fractionOfPixelsAtLeast3Codes": 0.01087
+  },
+  "shutter": {
+    "maxCodeDifference": 163,
+    "fractionOfPixelsAtLeast3Codes": 0.0699
+  },
+  "exposure": {
+    "maxCodeDifference": 123,
+    "fractionOfPixelsAtLeast3Codes": 1.0
+  },
+  "grade": {
+    "maxCodeDifference": 23,
+    "fractionOfPixelsAtLeast3Codes": 0.99332
+  }
+}

@@ -3,6 +3,8 @@
 #include <Hazel/Core/FileSystem.h>
 #include <Hazel/Core/InstallationLayout.h>
 #include <Hazel/Scene/RuntimeSession.h>
+#include <Hazel/Scene/RuntimeCameraTour.h>
+#include <Hazel/Events/KeyEvent.h>
 #include <Hazel/Scripting/ScriptEngine.h>
 #include <iostream>
 #include <Hazel/Renderer/Resources/Framebuffer.h>
@@ -25,10 +27,33 @@ namespace Hazel {
             m_Session.Resize(window.GetWidth(), window.GetHeight());
             m_Session.SetPersistentStorage(true);
             m_Session.Start(m_Project, scene);
+            const auto& track = m_Project->GetConfig().CameraTour;
+            if (!track.empty()) {
+                auto camera = m_Session.GetScene()->GetPrimaryCameraEntity();
+                if (!camera || uint64_t(m_Session.GetScene()->GetRelationship(camera).Parent) != 0 ||
+                    camera.GetComponent<CameraComponent>().Camera.GetProjectionType() != SceneCamera::ProjectionType::Perspective)
+                    throw std::runtime_error("Camera tour requires a root primary perspective camera");
+                m_Tour.emplace(Project::ResolveOwnedAsset(m_Project->GetAssetRoot(), track));
+                m_TourCamera = camera.GetUUID();
+                m_TourScene = m_Session.GetScene()->GetIdentity();
+                m_Original = camera.GetComponent<CameraComponent>();
+                m_Tour->Apply(camera, m_Original, 0);
+                HZ_CORE_INFO("Camera tour ready: {:.1f}s loop; Space pause, R restart, I inspect, [/] speed", m_Tour->Duration());
+            }
             if(m_Inspect)m_Session.SetCameraInspection(true);
             HZ_CORE_INFO("Nutella ready: {}", m_Project->GetConfig().Name);
         }
-        void OnEvent(Event& e) override {m_Session.SubmitUIEvent(e,Input::GetMousePosition(),Application::Get().GetWindow().IsFocused());}
+        void OnEvent(Event& e) override {
+            const bool focused = Application::Get().GetWindow().IsFocused();
+            if (focused && TourActive() && e.GetEventType() == EventType::KeyPressed) {
+                const auto& key = static_cast<const KeyPressedEvent&>(e);
+                if (!key.IsRepeat() && TourKey(key.GetKeyCode())) {
+                    e.Handled = true;
+                    return;
+                }
+            }
+            m_Session.SubmitUIEvent(e, Input::GetMousePosition(), focused);
+        }
         void OnDetach() override { m_Session.Stop(); m_Composite.reset(); Project::SetActive(nullptr); }
         void OnUpdate(Timestep timestep) override try {
             auto& window = Application::Get().GetWindow();
@@ -45,6 +70,28 @@ namespace Hazel {
                                     metal ? FramebufferTextureFormat::DEPTH32F : FramebufferTextureFormat::Depth};
                 m_Composite = Framebuffer::Create(spec);
             } else if(m_Composite->GetSpecification().Width!=framebuffer.first || m_Composite->GetSpecification().Height!=framebuffer.second)m_Composite->Resize(framebuffer.first,framebuffer.second);
+            if (TourActive() && !m_Session.IsCameraInspectionEnabled()) {
+                auto camera = m_Session.GetScene()->GetEntityByUUID(m_TourCamera);
+                if (camera && camera.HasComponent<CameraComponent>()) {
+                    m_Tour->Apply(camera, m_Original, m_TourTime);
+                    auto& state = camera.GetComponent<CameraComponent>();
+                    state.DepthOfField.Enabled = m_Original.DepthOfField.Enabled && m_Defocus;
+                    state.MotionBlur.Enabled = m_Original.MotionBlur.Enabled && m_Shutter;
+                    if (!m_Flare) state.LensEffects.FlareStrength = 0;
+                    if (!m_Dirt) state.LensEffects.DirtStrength = 0;
+                    state.ColorGrade = m_Grade ? m_Original.ColorGrade : ColorGradeSettings{};
+                    state.ExposureOverride = m_Original.ExposureOverride;
+                    if (m_Manual) {
+                        CameraExposure exposure;
+                        const auto& lens = *state.Camera.GetPhysicalCamera();
+                        exposure.CompensationStops = float(std::clamp(lens.EV100() - PhysicalCamera::ReferenceEV100, -16., 16.));
+                        state.ExposureOverride = exposure;
+                    }
+                }
+                if (!m_Paused)
+                    m_TourTime = std::fmod(m_TourTime + std::clamp(double(timestep.GetSeconds()), 0., .1) * m_TourSpeed,
+                                          m_Tour->Duration());
+            }
             m_Composite->Bind();
             if (Renderer::GetAPI() == RendererAPI::API::Metal) m_Composite->Clear(m_Session.GetScene()->Presentation().Background);
             else { RenderCommand::SetClearColor(m_Session.GetScene()->Presentation().Background); RenderCommand::Clear(); }
@@ -69,7 +116,40 @@ namespace Hazel {
             m_MemoryError = error.what();
         }
     private:
+        bool TourActive() const {
+            return m_Tour && m_Session.GetScene() && m_Session.GetScene()->GetIdentity() == m_TourScene;
+        }
+        bool TourKey(KeyCode key) {
+            if (key == Key::I) {
+                m_Session.SetCameraInspection(!m_Session.IsCameraInspectionEnabled());
+                return true;
+            }
+            auto& settings = m_Session.GetScene()->Presentation();
+            if (key == Key::T) { settings.TemporalAA = !settings.TemporalAA; return true; }
+            if (key == Key::Y) { settings.ScreenReflections.Enabled = !settings.ScreenReflections.Enabled; return true; }
+            if (m_Session.IsCameraInspectionEnabled()) return false;
+            switch (key) {
+                case Key::Space: m_Paused = !m_Paused; break;
+                case Key::R: m_TourTime = 0; m_Session.ResetCameraHistory(); break;
+                case Key::LeftBracket: m_TourSpeed = std::max(.25, m_TourSpeed / 1.25); break;
+                case Key::RightBracket: m_TourSpeed = std::min(2., m_TourSpeed * 1.25); break;
+                case Key::D: m_Defocus = !m_Defocus; break;
+                case Key::F: m_Flare = !m_Flare; break;
+                case Key::G: m_Dirt = !m_Dirt; break;
+                case Key::M: m_Shutter = !m_Shutter; break;
+                case Key::E: m_Manual = !m_Manual; break;
+                case Key::C: m_Grade = !m_Grade; break;
+                default: return false;
+            }
+            return true;
+        }
         bool m_Inspect=false;
+        std::optional<RuntimeCameraTour> m_Tour;
+        uint64_t m_TourCamera = 0, m_TourScene = 0;
+        CameraComponent m_Original;
+        double m_TourTime = 0, m_TourSpeed = 1;
+        bool m_Paused = false, m_Defocus = true, m_Shutter = true, m_Flare = true, m_Dirt = true;
+        bool m_Grade = true, m_Manual = false;
         Ref<Project> m_Project;
         RuntimeSession m_Session;
         Ref<Framebuffer> m_Composite;

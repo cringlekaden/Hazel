@@ -1,25 +1,25 @@
 Version: 2
 PreparationRecipe: Hazel.EnvPrepare_v2.SolidAngleBalancedMIS.BilinearSource.Tail4
 Recipe: Hazel.IBL_v1.GGX-correlated-single.r045.E-pi.AB-NoV-r.cube-top
-Identity: ce3f3a02c7398971f2895de6cb1224fecadbd45bdd35cf068d62dc072fc8aca3
-Generation: 598784ee39ed1904
+Identity: 8dd30aa5d98ca7c9b975cda8b1eea2c2fb3f2192b2eef760625d53f02cca9fa7
+Generation: fe6828485d598257
 IntentHash: 2d8418628b61f45fd1a126f6b748cde659750bb845a4015ffdc033b18b360413
-SourceHash: bba097cd29cd4555589a65272cbb2145058406169dab6bbd3386ad9234487ae1
+SourceHash: b9b0a48f1926a837f66a5610382ea47db7460297d5ab0ea956a0ec8498411655
 Evaluation: Hazel.SceneCapture.FP32Cube.BilinearLatLong1
 Producer: macos/arm64/Release/Apple LLVM 21.0.0 (clang-2100.4.1.1)/IEEE754-precise-FP64-v1
 LUTIdentity: 8916c405c4da491ac3abaccd5f4da974be8b228135e47a81ac41ff1856d5ce94
 Outputs:
   Background:
-    Path: Pavilion/Reflections/Archive.henv.prepared/598784ee39ed1904/Background.hlight
+    Path: Pavilion/Reflections/Archive.henv.prepared/fe6828485d598257/Background.hlight
     Hash: df6cdd33d283c192bb3e4f0490a1a8d7fb37e8475468471c2b7597ef70a70534
   Irradiance:
-    Path: Pavilion/Reflections/Archive.henv.prepared/598784ee39ed1904/Irradiance.hlight
-    Hash: ef5cf15acb8d36189336aae381dc8e2945f1b7d9912e64f6d3f872023cda889a
+    Path: Pavilion/Reflections/Archive.henv.prepared/fe6828485d598257/Irradiance.hlight
+    Hash: b5bc4373a3d02408b7837aabd02ebe530bb3e5a7933a2ba67faf76f173286fca
   Specular:
-    Path: Pavilion/Reflections/Archive.henv.prepared/598784ee39ed1904/Specular.hlight
-    Hash: c7be0cc57943c82502375f2c911cfe5e93b276fa9e854fef48e3e9c75ca6110e
+    Path: Pavilion/Reflections/Archive.henv.prepared/fe6828485d598257/Specular.hlight
+    Hash: cf00bf96291b8bff3fb1b07f9e0be36bf72d2a529e6715bcefea39f16e365334
   BRDF:
     Path: Prepared/BRDF/8916c405c4da491ac3abaccd5f4da974be8b228135e47a81ac41ff1856d5ce94/c6cfc8287e00df0e.hlight
     Hash: e992f5f8905d6d607e391bcfba71ac8e08abc83530322cf48988a1b254de0242
-Seconds: 8.3768123750000001
+Seconds: 8.3130055840000008
 PeakBytes: 47595520

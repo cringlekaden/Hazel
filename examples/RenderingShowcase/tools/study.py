@@ -87,7 +87,7 @@ def stage(descriptor, output):
     output.mkdir(parents=True, exist_ok=True)
     for name in (descriptor.name, 'NOTICE-Pavilion.md'):
         shutil.copy2(descriptor.parent/name, output/name)
-    for subtree in ('Pavilion', 'Prepared', 'Materials/wood_table_001'):
+    for subtree in ('Pavilion', 'Prepared', 'Materials/wood_table_001', 'Native/Direct_v1'):
         shutil.copytree(descriptor.parent/'Assets'/subtree, output/'Assets'/subtree,
                         ignore=shutil.ignore_patterns('*.glb', '*.hdr', '*.prepare.lock',
                                                       'Hall.hlight', 'Archive.hlight'))
@@ -98,7 +98,7 @@ def stage(descriptor, output):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('mode',choices=('bake','stage','stills','pairs','tour','benchmark','present','editor-resize',*(f'{i:02}' for i in range(1,10))))
+    parser.add_argument('mode',choices=('bake','stage','stills','pairs','tour','loop','loop-check','loop-pairs','shimmer','benchmark','present','editor-resize',*(f'{i:02}' for i in range(1,10))))
     parser.add_argument('--backend',choices=('metal','opengl'),default='metal')
     parser.add_argument('--config',choices=('Debug','Release'),default='Release')
     parser.add_argument('--project', type=Path, default=PROJECT/'RenderingShowcase.hproj')

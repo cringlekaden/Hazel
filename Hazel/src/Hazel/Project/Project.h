@@ -28,6 +28,7 @@ namespace Hazel {
         int AuthoringVersion=0; // Existing projects remain unstamped; no template rewrite.
 
 		std::filesystem::path StartScene;
+        std::filesystem::path CameraTour; // Optional asset-relative player camera track.
 
 		std::filesystem::path AssetDirectory;
 		std::filesystem::path ScriptModulePath;

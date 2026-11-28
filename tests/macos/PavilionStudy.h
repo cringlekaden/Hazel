@@ -6,6 +6,7 @@
 #include "Hazel/Renderer/Scene/ReflectionProbeCapture.h"
 #include "Hazel/Renderer/Scene/SceneRenderer.h"
 #include "Hazel/Scene/Entity.h"
+#include "Hazel/Scene/RuntimeCameraTour.h"
 #include "Hazel/Scene/SceneSerializer.h"
 #include <algorithm>
 #include <array>
@@ -93,7 +94,7 @@ inline void PavilionStudy(const std::filesystem::path& output, const Hazel::Ref<
     scene->OnViewportResize(spec.Width, spec.Height);
 
     const auto originalPresentation = scene->Presentation();
-    auto draw = [&](SceneRenderView& view, GLuint query = 0) {
+    auto draw = [&](SceneRenderView& view, GLuint query = 0, float dt = 1.f / 30) {
         target->Bind();
         if (metal) target->Clear(scene->Presentation().Background);
         else {
@@ -102,7 +103,7 @@ inline void PavilionStudy(const std::filesystem::path& output, const Hazel::Ref<
         }
         target->ClearAttachment(1, -1);
         if (query) glBeginQuery(GL_TIME_ELAPSED, query);
-        scene->OnUpdateRuntime(1.0f / 30, &view, target);
+        scene->OnUpdateRuntime(dt, &view, target);
         if (query) glEndQuery(GL_TIME_ELAPSED);
         if (!scene->RenderError().empty())
             throw std::runtime_error(scene->RenderError());
@@ -128,6 +129,104 @@ inline void PavilionStudy(const std::filesystem::path& output, const Hazel::Ref<
         if (!file) throw std::runtime_error("Failed writing Pavilion capture");
     };
 
+    if (selection == "loop" || selection == "loop-check" || selection == "loop-pairs") {
+        auto camera = scene->GetPrimaryCameraEntity();
+        const auto baseline = camera.GetComponent<CameraComponent>();
+        const RuntimeCameraTour track(Project::ResolveOwnedAsset(assets->Root(), project->GetConfig().CameraTour));
+        auto world = [&](double t) {
+            track.Apply(camera, baseline, t);
+            return scene->GetWorldTransform(camera);
+        };
+        const auto atStart = world(0);
+        const auto atEnd = world(track.Duration());
+        if (atStart != atEnd)
+            throw std::runtime_error("Periodic camera track changed pose across the seam");
+        const auto before = world(track.Duration() - .01);
+        const auto after = world(.01);
+        float seam = 0;
+        for (unsigned column = 0; column < 4; ++column)
+            seam = std::max(seam, glm::length((after[column] + before[column] - 2.f*atStart[column]) / .01f));
+        if (seam > .035f)
+            throw std::runtime_error("Camera velocity discontinuity at the loop seam");
+        if (selection == "loop-pairs") {
+            for (const auto* effect : {"focus", "flare", "dirt", "shutter", "exposure", "grade"}) {
+                const auto kind = std::string_view(effect);
+                const double end = kind == "focus" ? 24.4 : kind == "shutter" ? 17.0 : 42.0;
+                for (bool enabled : {false,true}) {
+                    auto& settings = camera.GetComponent<CameraComponent>();
+                    settings = baseline;
+                    SceneRenderView view;
+                    for (unsigned n = 0; n < 24; ++n) {
+                        track.Apply(camera, baseline, end - (23 - n) / 30.);
+                        if (!enabled) {
+                            if (kind == "focus") settings.DepthOfField.Enabled = false;
+                            if (kind == "shutter") settings.MotionBlur.Enabled = false;
+                            if (kind == "flare") settings.LensEffects.FlareStrength = 0;
+                            if (kind == "dirt") settings.LensEffects.DirtStrength = 0;
+                            if (kind == "grade") settings.ColorGrade = {};
+                            if (kind == "exposure") {
+                                auto exposure = CameraExposure{};
+                                const auto lens = *settings.Camera.GetPhysicalCamera();
+                                exposure.CompensationStops = float(lens.EV100() - PhysicalCamera::ReferenceEV100);
+                                settings.ExposureOverride = exposure;
+                            }
+                        }
+                        const auto image = draw(view);
+                        if (n == 23) save(std::string(effect) + (enabled ? "-on" : "-off"), image);
+                    }
+                }
+            }
+            return;
+        }
+        SceneRenderView view;
+        unsigned resets = 0;
+        bool crossedSeam = false;
+        for (unsigned n = 0; n <= unsigned(track.Duration() * 20) + 8; ++n) {
+            track.Apply(camera, baseline, n / 20.);
+            const auto image = draw(view, 0, .05f);
+            if (n > 0 && view.Temporal.Phase == 1) {
+                ++resets;
+                std::cout << "PAVILION_HISTORY_RESET time=" << n / 20. << '\n';
+            }
+            if (n == unsigned(track.Duration() * 20) && view.Temporal.Phase > 1)
+                crossedSeam = true;
+            if (selection == "loop") {
+                std::ostringstream name;
+                name << std::setfill('0') << std::setw(4) << n;
+                save(name.str(), image);
+            }
+        }
+        std::cout << "PAVILION_LOOP seconds=" << track.Duration() << " seamVelocityDelta=" << seam
+                  << " temporalPhase=" << view.Temporal.Phase << " historyResets=" << resets
+                  << " seamHistory=" << crossedSeam << '\n';
+        if (metal && scene->Presentation().TemporalAA && !crossedSeam)
+            throw std::runtime_error("Metal camera tour lost temporal history across its loop seam");
+        return;
+    }
+    if (selection == "shimmer") {
+        auto camera = scene->GetEntityByUUID(4);
+        scene->GetPrimaryCameraEntity().GetComponent<CameraComponent>().Primary = false;
+        auto& component = camera.GetComponent<CameraComponent>();
+        component.Primary = true;
+        component.DepthOfField.Enabled = false;
+        component.MotionBlur.Enabled = false;
+        component.ColorGrade = {};
+        scene->Presentation().Bloom.Enabled = false;
+        scene->Presentation().Exposure.Mode = ExposureMode::ManualPhysical;
+        const auto lens = *component.Camera.GetPhysicalCamera();
+        scene->Presentation().Exposure.CompensationStops = float(lens.EV100() - PhysicalCamera::ReferenceEV100);
+        auto& transform = camera.GetComponent<TransformComponent>();
+        const auto rest = transform.Translation;
+        SceneRenderView view;
+        for (unsigned n = 0; n < 48; ++n) {
+            transform.Translation = rest + glm::vec3(.0022f * std::sin(n * .43f), 0, 0);
+            const auto image = draw(view);
+            if (n < 16) continue;
+            save("sample-" + std::to_string(n), image);
+        }
+        std::cout << "PAVILION_SHIMMER temporalPhase=" << view.Temporal.Phase << '\n';
+        return;
+    }
     std::vector<uint64_t> cameras;
     for (auto handle : scene->GetAllEntitiesWith<CameraComponent>()) {
         Entity camera(handle, scene.get());

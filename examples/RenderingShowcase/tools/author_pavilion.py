@@ -342,6 +342,12 @@ def surfaces(source):
         x,y,r = rng.randrange(256),rng.randrange(256),rng.uniform(.3,3.4)
         draw.ellipse((x-r,y-r,x+r,y+r),fill=rng.randrange(20,132))
     dirt.filter(ImageFilter.GaussianBlur(1)).convert('RGB').save(folder/'OpticalDust.png',optimize=True)
+    # A denser optical plate is used only for the passage demonstration.
+    for _ in range(42):
+        x,y,r = rng.randrange(256),rng.randrange(256),rng.uniform(3,11)
+        draw.ellipse((x-r,y-r,x+r,y+r),fill=rng.randrange(42,168))
+    dirt.filter(ImageFilter.GaussianBlur(2.0)).convert('RGB').save(folder/'TourDust.png',optimize=True)
+
 
     with (folder/'NightFlight.cube').open('w') as lut:
         lut.write('TITLE "Night Flight"\nLUT_3D_SIZE 17\n')
@@ -406,6 +412,16 @@ def compose():
         if no==6:
             settings['CameraExposure']=dict(Version=1, Mode='Automatic', CompensationStops=-.61,
                                             MinGainStops=-2, MaxGainStops=1.35, HighPercentile=.91)
+        if no == 1:
+            # Player tour inherits the camera's physical and post settings.
+            settings['LensEffects'] = dict(optics, FlareStrength=.19, DirtStrength=1.35,
+                                           DirtTexture='Pavilion/Surfaces/TourDust.png',
+                                           AnamorphicStreak=.24, Starburst=.18)
+            settings['DepthOfField'] = dict(Version=1, Enabled=True, Quality='Cinematic',
+                                           ApertureBlades=8, ApertureRotationRadians=.18,
+                                           FocusHalfLifeSeconds=.12)
+            settings['MotionBlur'] = dict(Version=1, Enabled=True, Shutter='Angle',
+                                           ShutterAngleDegrees=125, Quality='Cinematic')
         entity(tag,eye,orient(eye,at),CameraComponent=settings)
 
     entity('Late sunlight',rot=orient((0,0,0),(1,-.55,-.66)),
@@ -457,8 +473,15 @@ def compose():
                      'Kinetic exhibit':(1.60,1.151,-3.5),
                      'Archive lens housing':(2.24,1.104,-3.48),
                      'Archive lens rim':(2.24,1.102,-3.42)}
+        # The original title plane was exactly on the fascia's +Z surface
+        # at 7.915 m. Mount it 35 mm forward on a shallow sign backing.
+        if surface == "Title":
+            positions[group] = (0,0,.035)
         entity(surface + " architecture" if group == "Architecture" else group,
                positions.get(group,(0,0,0)), MeshRendererComponent=mesh)
+    entity('Title sign backing', (0,4.93,7.927), scale=(4.74,.46,.038),
+           MeshRendererComponent=dict(Version=1, Mesh='Native/Direct_v1/UnitCube.hmesh',
+               Materials=[dict(Slot='0000000000000007', Material='Pavilion/Surfaces/Black.hmat')]))
 
     hero = entity('A–11 flight helmet',(-1.25,1.159,-2.56),(0,.31,0))
     for part in yaml.safe_load((PAVILION/'FlightHelmet/Model.hprefab').read_text())['Entities']:
