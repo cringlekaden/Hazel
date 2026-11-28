@@ -80,14 +80,14 @@ TextureSpecification TextureSpecification::FileDefaults() {
 }
 void TextureSpecification::Validate(bool file) const {
     if(Encoding!=TextureEncoding::Linear && Encoding!=TextureEncoding::SRGB)throw std::invalid_argument("Unknown texture encoding");
-    if(Encoding==TextureEncoding::SRGB && (Format==ImageFormat::R8 || (Format==ImageFormat::RGBA32F || Format==ImageFormat::RG32F)))throw std::invalid_argument("sRGB requires RGB8/RGBA8 color pixels; data and float pixels are linear");
+    if(Encoding==TextureEncoding::SRGB && (Format==ImageFormat::R8 || (Format==ImageFormat::RGBA32F || Format==ImageFormat::RG32F || Format==ImageFormat::RGBA16F)))throw std::invalid_argument("sRGB requires RGB8/RGBA8 color pixels; data and float pixels are linear");
     TextureFilterName(MinFilter); TextureFilterName(MagFilter); TextureWrapName(WrapS); TextureWrapName(WrapT);
     if(MagFilter!=TextureFilter::Nearest && MagFilter!=TextureFilter::Linear) throw std::invalid_argument("Magnification cannot use mipmap filters");
     if(!GenerateMips && static_cast<unsigned>(MinFilter)>=2) throw std::invalid_argument("Mipmap minification requires GenerateMips");
     if(!file && (!Width || !Height || Format==ImageFormat::None)) throw std::invalid_argument("Generated textures require positive dimensions and a format");
-    if(Format!=ImageFormat::None && Format!=ImageFormat::R8 && Format!=ImageFormat::RGB8 && Format!=ImageFormat::RGBA8 && Format!=ImageFormat::RGBA32F && Format!=ImageFormat::RG32F)
+    if(Format!=ImageFormat::None && Format!=ImageFormat::R8 && Format!=ImageFormat::RGB8 && Format!=ImageFormat::RGBA8 && Format!=ImageFormat::RGBA32F && Format!=ImageFormat::RG32F && Format!=ImageFormat::RGBA16F)
         throw std::invalid_argument("Unsupported texture format");
-    if(file && (Format==ImageFormat::RGBA32F || Format==ImageFormat::RG32F)) throw std::invalid_argument("RGBA32F requires explicit generated float data, not an 8-bit file");
+    if(file && (Format==ImageFormat::RGBA32F || Format==ImageFormat::RG32F || Format==ImageFormat::RGBA16F)) throw std::invalid_argument("Floating-point textures require explicit generated data");
 }
 TextureImage Texture2D::ReadImage(const std::filesystem::path& path, ImageFormat format) {
     TextureSpecification spec=TextureSpecification::FileDefaults(); spec.Format=format; spec.Encoding=TextureEncoding::Linear; spec.Validate(true);

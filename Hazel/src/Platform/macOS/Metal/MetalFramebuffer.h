@@ -51,6 +51,7 @@ public:
     void ClearEditor(glm::vec4 color) override { Clear(color); }
     void Clear(glm::vec4 color) override;
     Ref<const FramebufferReadback> Submit() override;
+    Ref<const FramebufferReadback> SubmitForTiming(); // Offscreen benchmarks only. Retain completion metadata.
     void Poll() override;
     void Cancel() override;
     glm::vec4 ReadColorPixel(uint32_t attachment, int x, int y) override;
@@ -63,7 +64,7 @@ public:
     void CompositeWorldTo(const Ref<Framebuffer>& destination, float exposure,
         const BloomPyramid* bloom = nullptr, const ExposureMeterPass* meter = nullptr,
         const DepthOfFieldPass* defocus = nullptr, const CameraMotionPass* shutter = nullptr,
-        const LensEffectsPass* optics = nullptr) override;
+        const LensEffectsPass* optics = nullptr, const ColorGradePass* color = nullptr) override;
     EditorTexture GetEditorTexture() const override;
     void ResetEditorReadback() override { m_EditorReadback.reset(); m_EditorPendingReadbacks.clear(); }
     int ReadEditorEntity(int x, int y) override;

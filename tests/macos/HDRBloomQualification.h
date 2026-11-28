@@ -18,6 +18,8 @@
 #endif
 #if defined(HZ_PLATFORM_MACOS) && __has_include(<Metal/Metal.hpp>)
 #include "Platform/macOS/Metal/MetalDevice.h"
+#include "Platform/macOS/Metal/MetalFramebuffer.h"
+#include "Platform/macOS/Metal/MetalTexture.h"
 #endif
 
 inline void HDRBloomQualification(const std::filesystem::path& output,
@@ -94,6 +96,320 @@ inline void HDRBloomQualification(const std::filesystem::path& output,
         }
         if (!file) throw std::runtime_error("Could not save HDR readback");
     };
+
+    if (const auto benchmark = FileSystem::GetEnvironmentPath("HAZEL_CAMERA_GRADE_BENCHMARK"); !benchmark.empty()) {
+        const bool control = benchmark == "control";
+        const bool combined = benchmark == "combined";
+        auto primary = scene->GetPrimaryCameraEntity();
+        if (!primary) throw std::runtime_error("Timing study needs a runtime camera");
+        const auto& authored = primary.GetComponent<CameraComponent>();
+        constexpr int samples = 31;
+        struct FrameQuery {
+            GLuint ID = 0;
+            ~FrameQuery() { if (ID) glDeleteQueries(1, &ID); }
+        } query;
+        if (!metal) glGenQueries(1, &query.ID);
+        const auto measure = [&](const SceneSubmission& frame, SceneRenderView& view, GLuint elapsed = 0) {
+            draw(frame, view, elapsed);
+#if defined(HZ_PLATFORM_MACOS) && __has_include(<Metal/Metal.hpp>)
+            if (metal) {
+                target->Unbind();
+                const auto completed = static_cast<MetalFramebuffer&>(*target).SubmitForTiming();
+                if (!completed) throw std::runtime_error("Timed camera frame could not submit");
+                const auto& backend = static_cast<const MetalRendererAPI&>(RenderCommand::Backend());
+                const auto observer = backend.Observe();
+                for (unsigned tries = 0; observer->Snapshot().InFlight != 0 && tries < 2500; ++tries) {
+                    target->Poll();
+                    if (observer->Snapshot().InFlight != 0) std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                }
+                if (observer->Snapshot().InFlight != 0 || !completed->Color.empty())
+                    throw std::runtime_error("Timed camera frame failed or unexpectedly read back its image");
+                return completed->Serial;
+            }
+#endif
+            if (!elapsed) glFinish();
+            return uint64_t(0);
+        };
+        for (const auto extent : {glm::uvec2(1280,720), glm::uvec2(1920,1080), glm::uvec2(3840,2160)}) {
+            target->Resize(extent.x, extent.y);
+            const auto shot = [&](int i, bool enabled, bool full = false) {
+                auto frame = study((i + 4) * .04f, extent);
+                if (full && combined) {
+                    frame.FrameSeconds = 1.f / 60;
+                    frame.Camera.Physical = authored.Camera.GetPhysicalCamera();
+                    frame.Camera.DepthOfField = authored.DepthOfField;
+                    frame.Camera.MotionBlur = authored.MotionBlur;
+                    frame.Camera.LensEffects = authored.LensEffects;
+                    frame.Presentation.Exposure.Mode = ExposureMode::Automatic;
+                }
+                if (enabled) frame.Camera.ColorGrade = {4500, .004f, .85f, .3f, .3f, -.2f, "CameraStudy/Grade.cube", .45f};
+                return frame;
+            };
+            {
+                std::array<SceneRenderView, 2> isolated;
+                for (auto& view : isolated) view.BloomMetrics = std::make_shared<BloomTiming>();
+                for (int i = -4; i < samples; ++i) {
+                    std::array<double, 2> present{};
+                    uint64_t lutBytes = 0;
+                    for (bool enabled : {i % 2 != 0, i % 2 == 0}) {
+                        auto frame = shot(i, enabled);
+                        frame.Presentation.TemporalAA = false;
+                        frame.Presentation.AmbientOcclusion.Enabled = false;
+                        frame.Presentation.ScreenReflections.Enabled = false;
+                        frame.Presentation.Shadows.Enabled = false;
+                        frame.LocalLights.clear();
+                        frame.ReflectionProbes.clear();
+                        auto& view = isolated[enabled];
+                        measure(frame, view);
+                        if (i >= 0 && (!view.BloomMetrics->Valid || view.BloomMetrics->Milliseconds[3] <= 0))
+                            throw std::runtime_error("Grading benchmark has no native presentation timestamps");
+                        present[enabled] = view.BloomMetrics->Milliseconds[3];
+                        if (enabled && view.ColorGrade.LUT.Texture) {
+                            const auto& lut = view.ColorGrade.LUT.Texture;
+                            lutBytes = uint64_t(lut->GetWidth()) * lut->GetHeight() * 8;
+#if defined(HZ_PLATFORM_MACOS) && __has_include(<Metal/Metal.hpp>)
+                            if (metal)
+                                lutBytes = static_cast<const MetalTexture2D&>(*lut).Snapshot()->Texture->allocatedSize();
+#endif
+                        }
+                    }
+                    if (i >= 0 && !lutBytes)
+                        throw std::runtime_error("Grading benchmark did not bind its LUT");
+                    if (i >= 0)
+                        std::cout << "GRADE_PASS_TIMING " << extent.x << ' ' << extent.y << ' ' << i << ' '
+                                  << present[1] - present[0] << ' ' << lutBytes << '\n';
+                }
+            }
+            std::array<SceneRenderView, 2> views;
+            for (int i = -4; i < samples; ++i) {
+                for (bool enabled : {i % 2 != 0, i % 2 == 0}) {
+                    const auto serial = measure(shot(i, enabled && !control, true), views[enabled], query.ID);
+                    GLuint64 ns = 0;
+                    if (query.ID) glGetQueryObjectui64v(query.ID, GL_QUERY_RESULT, &ns);
+                    if (i >= 0)
+                        std::cout << "GRADE_FRAME_TIMING " << extent.x << ' ' << extent.y << ' ' << enabled << ' '
+                                  << i << ' ' << serial << ' ' << ns << '\n';
+                }
+            }
+        }
+        return;
+    }
+
+    if (!FileSystem::GetEnvironmentPath("HAZEL_CAMERA_GRADE_TEST").empty()) {
+        constexpr glm::uvec2 extent(640, 360);
+        SceneSubmission frame;
+        frame.Assets = assets;
+        frame.Presentation.SceneReferred = true;
+        frame.Camera.Orthographic = true;
+        frame.Camera.View = glm::mat4(1);
+        frame.Camera.Projection = glm::ortho(-1.f, 1.f, -1.f, 1.f, .1f, 20.f);
+        frame.Camera.ViewProjection = frame.Camera.Projection;
+        SceneRenderView view;
+        const size_t center = extent.x * (extent.y / 2) + extent.x / 2;
+        const auto paint = [&](glm::vec3 linear) {
+            frame.Presentation.Background = glm::vec4(linear, 1);
+            return render(frame, view);
+        };
+        auto& grade = frame.Camera.ColorGrade;
+        const auto base = paint({.26f, .39f, .47f});
+        grade.LUT = "CameraStudy/Missing.cube";
+        if (paint({.26f, .39f, .47f})->Color != base->Color)
+            throw std::runtime_error("A missing LUT changed neutral presentation");
+        grade = {};
+        const auto identity = paint({.26f, .39f, .47f});
+        if (identity->Color != base->Color)
+            throw std::runtime_error("Neutral grading differs from the established presentation");
+
+        // FP64 integral of Planck radiance against the CIE 1931 2° observer.
+        // The vectors have Y=.2 and each wavelength sample was 1 nm.
+        struct NeutralSample { float Kelvin; glm::vec3 RGB; };
+        const std::array<NeutralSample, 5> whites{{
+            {2000, {.504054314f, .129372970f, .004084860f}},
+            {2856, {.369025803f, .165221047f, .046678129f}},
+            {3200, {.335958841f, .173186696f, .065164079f}},
+            {4000, {.282799658f, .184801206f, .106683482f}},
+            {6504, {.2f, .2f, .2f}},
+        }};
+        double whiteError = 0;
+        for (const auto& white : whites) {
+            grade.WhiteKelvin = white.Kelvin;
+            const auto color = paint(white.RGB)->Color[center];
+            for (unsigned channel = 0; channel < 3; ++channel)
+                whiteError = std::max(whiteError, std::abs(double(color[channel]) - .16));
+        }
+        grade.TintUV = .01f;
+        const auto tint = paint(glm::vec3(.22f))->Color[center];
+        if (whiteError > .002 || !(tint.r > tint.g && tint.b > tint.g))
+            throw std::runtime_error("Native white balance missed the spectral neutral or tint reference");
+
+        grade = {};
+        grade.Saturation = .4f;
+        grade.Contrast = .5f;
+        grade.Shadows = .3f;
+        grade.Highlights = -.4f;
+        const auto tone = paint({.26f, .39f, .47f});
+        const glm::dvec3 weights(.2126, .7152, .0722);
+        const glm::dvec3 neutral(.22, .35, .43);
+        const auto desaturated = .4 * neutral + .6 * glm::dvec3(glm::dot(weights, neutral));
+        const double y = glm::dot(weights, desaturated);
+        const double contrasted = y + .9 * (-y*y*y + 1.5*y*y - .5*y);
+        const double targetY = contrasted + .65 * contrasted * (1 - contrasted) * (.3 - .7 * contrasted);
+        const glm::dvec3 toneExpected = targetY > y
+            ? (desaturated * (1 - targetY) + glm::dvec3(targetY - y)) / (1 - y)
+            : desaturated * (targetY / y);
+        double toneError = 0;
+        for (unsigned c = 0; c < 3; ++c)
+            toneError = std::max(toneError, std::abs(toneExpected[c] - tone->Color[center][c]));
+        if (toneError > 2e-6) throw std::runtime_error("Native film controls failed the FP64 reference");
+        coverage(base, tone);
+
+        grade = {};
+        grade.LUT = "CameraStudy/Grade.cube";
+        grade.LUTStrength = .65f;
+        double lutError = 0;
+        for (const auto& value : {glm::vec3(.26f,.39f,.47f), glm::vec3(.02f,.1f,.5f), glm::vec3(.74f,.17f,.28f)}) {
+            const auto path = grade.LUT;
+            grade.LUT.clear();
+            const auto ungraded = paint(value);
+            grade.LUT = path;
+            const auto graded = paint(value);
+            if (!view.ColorGrade.LUT.Texture) throw std::runtime_error("Authored 3D LUT was unavailable");
+            const glm::dvec3 c(ungraded->Color[center]);
+            const auto p = glm::clamp((c - .05) / .70, 0., 1.);
+            const glm::dvec3 cube(.75 * p.g + .125, .5 * p.b + .125, .75 * p.r + .125);
+            const auto expected = glm::mix(c, cube, .65);
+            for (unsigned k = 0; k < 3; ++k)
+                lutError = std::max(lutError, std::abs(expected[k] - graded->Color[center][k]));
+            coverage(ungraded, graded);
+        }
+        if (lutError > .0025) throw std::runtime_error("Native LUT missed the independent affine cube reference");
+        grade.LUT = "CameraStudy/Malformed.cube";
+        if (paint({.26f, .39f, .47f})->Color != base->Color)
+            throw std::runtime_error("Malformed LUT did not fall back to neutral");
+        std::cout << "GRADE_REFERENCE whiteError=" << whiteError << " toneError=" << toneError
+                  << " lutError=" << lutError << " missingMalformed=exact pickingDepth=exact\n";
+
+        auto gallery = study(.42f, extent);
+        gallery.Presentation.Exposure.Mode = ExposureMode::Automatic;
+        gallery.FrameSeconds = 1.f / 60;
+        gallery.Camera.Physical = PhysicalCamera{};
+        gallery.Camera.Physical->FocusDistance = 3;
+        gallery.Camera.DepthOfField.Enabled = true;
+        gallery.Camera.MotionBlur = {true, MotionShutterMode::Angle, 180, MotionBlurQuality::Balanced};
+        gallery.Camera.LensEffects.FlareStrength = .2f;
+        gallery.Camera.LensEffects.Vignette = .2f;
+        SceneRenderView plainView, gradedView;
+        auto warm = study(.40f, extent);
+        warm.Presentation = gallery.Presentation;
+        warm.FrameSeconds = gallery.FrameSeconds;
+        warm.Camera.Physical = gallery.Camera.Physical;
+        warm.Camera.DepthOfField = gallery.Camera.DepthOfField;
+        warm.Camera.MotionBlur = gallery.Camera.MotionBlur;
+        warm.Camera.LensEffects = gallery.Camera.LensEffects;
+        render(warm, plainView);
+        render(warm, gradedView);
+        const auto first = render(gallery, plainView);
+        gallery.Camera.ColorGrade = {4500, .004f, .85f, .3f, .3f, -.2f, "CameraStudy/Grade.cube", .14f};
+        const auto combined = render(gallery, gradedView);
+        coverage(first, combined);
+        if (first->Color == combined->Color || !gradedView.Shutter.Pass.Valid || !gradedView.Focus.Pass.Gathered ||
+            !gradedView.Lens.Pass.Flare || (metal && plainView.Temporal.Phase != gradedView.Temporal.Phase))
+            throw std::runtime_error("Full camera presentation did not preserve the scene-linear temporal sequence");
+        save("grade-gallery-base", first);
+        save("grade-gallery", combined);
+        const auto ui = [] {
+            Renderer2D::BeginScene(glm::mat4(1));
+            Renderer2D::DrawQuad({0, 0, -.99f}, {.12f, .12f}, glm::vec4(1));
+            Renderer2D::EndScene();
+        };
+        gallery.CameraDiscontinuity = true;
+        const auto gradeUI = render(gallery, gradedView, 0, ui);
+        gallery.Camera.ColorGrade = {};
+        const auto plainUI = render(gallery, plainView, 0, ui);
+        if (gradeUI->Color[center] != plainUI->Color[center] || gradeUI->Color[center] == combined->Color[center])
+            throw std::runtime_error("Grading changed screen UI");
+        gallery.Camera.LensEffects = {};
+        gallery.Camera.BloomOverride = false;
+        render(gallery, gradedView);
+        if (!gradedView.Bloom.Levels.empty()) throw std::runtime_error("Camera bloom-off did not release the view pyramid");
+        gallery.Presentation.Bloom.Enabled = false;
+        gallery.Camera.BloomOverride = true;
+        render(gallery, gradedView);
+        if (gradedView.Bloom.Levels.empty()) throw std::runtime_error("Camera bloom-on did not enable scene glare");
+        std::cout << "GRADE_COMBINED temporal=pass screenUI=exact bloomAuthority=pass\n";
+
+        auto primary = scene->GetPrimaryCameraEntity();
+        if (!primary) throw std::runtime_error("Grading study has no runtime camera");
+        auto& authored = primary.GetComponent<CameraComponent>().ColorGrade;
+        if (!authored.HasWhiteBalance() || authored.LUT.empty())
+            throw std::runtime_error("Prepare the runtime study with --grade-camera");
+        scene->OnViewportResize(extent.x, extent.y);
+        scene->OnRuntimeStart();
+        const auto runtime = [&] {
+            SceneRenderView runtimeView;
+            target->Bind();
+            scene->OnUpdateRuntime(Timestep(1.f / 60), &runtimeView, target);
+            auto result = capture(target);
+            if (!result || !result->Completed || !result->Error.empty())
+                throw std::runtime_error("Grading runtime capture failed");
+            return result;
+        };
+        const auto eye = runtime();
+        const auto saved = authored;
+        authored = {};
+        const auto plain = runtime();
+        authored = saved;
+        scene->OnRuntimeStop();
+        coverage(eye, plain);
+        if (eye->Color == plain->Color) throw std::runtime_error("Runtime ignored authored white balance and LUT");
+        std::cout << "GRADE_RUNTIME authoredCamera=pass pickingDepth=exact\n";
+#if defined(HZ_PLATFORM_MACOS) && __has_include(<Metal/Metal.hpp>)
+        if (metal) {
+            auto& backend = static_cast<MetalRendererAPI&>(RenderCommand::Backend());
+            constexpr glm::uvec2 queueSize(257, 149);
+            target->Resize(queueSize.x, queueSize.y);
+            std::array<Ref<const FramebufferReadback>, 3> queued, serial;
+            const auto shot = [&](unsigned i) {
+                auto sample = study(.04f * i, queueSize);
+                sample.Camera.ColorGrade.LUT = i == 1 ? "CameraStudy/GradeAlt.cube" : "CameraStudy/Grade.cube";
+                sample.Camera.ColorGrade.LUTStrength = .5f;
+                return sample;
+            };
+            SceneRenderView queueView;
+            for (unsigned i = 0; i < serial.size(); ++i) serial[i] = render(shot(i), queueView);
+            queueView.Reset();
+            auto unblock = backend.GateQueueForTesting();
+            try {
+                for (unsigned i = 0; i < queued.size(); ++i) {
+                    draw(shot(i), queueView);
+                    target->Unbind();
+                    queued[i] = target->Submit();
+                    if (!queued[i] || queued[i]->Completed)
+                        throw std::runtime_error("Grade test did not hold all three submissions");
+                }
+                queueView.Reset();
+                target->Resize(1, 1);
+                if (backend.Observe()->Snapshot().InFlight != queued.size())
+                    throw std::runtime_error("Grade lifetime did not exercise the full queue");
+            } catch (...) {
+                unblock();
+                throw;
+            }
+            unblock();
+            for (unsigned i = 0; i < queued.size(); ++i) {
+                for (unsigned tries = 0; !queued[i]->Completed && tries < 2500; ++tries) {
+                    target->Poll();
+                    if (!queued[i]->Completed) std::this_thread::sleep_for(std::chrono::milliseconds(2));
+                }
+                if (!queued[i]->Completed || !queued[i]->Error.empty() || queued[i]->Color != serial[i]->Color)
+                    throw std::runtime_error("Queued grade did not retain its LUT");
+                coverage(queued[i], serial[i]);
+            }
+            std::cout << "GRADE_LIFETIME queue=3 replacement=exact viewReset=pass resize=pass\n";
+        }
+#endif
+        return;
+    }
 
     if (!FileSystem::GetEnvironmentPath("HAZEL_CAMERA_LENS_TEST").empty()) {
         constexpr unsigned width = 640, height = 360;

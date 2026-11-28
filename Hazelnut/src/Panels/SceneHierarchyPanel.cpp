@@ -2,6 +2,7 @@
 #include "UI/TextEmphasisUI.h"
 #include "Authoring/StructuralCommand.h"
 #include "SceneHierarchyPanel.h"
+#include "Hazel/Scene/CameraPresets.h"
 #include "ContentBrowserPayload.h"
 #include "Hazel/Scene/Components.h"
 
@@ -1060,21 +1061,46 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
                                      component.FixedAspectRatio);
             }
 
-            bool overrideExposure = component.ExposureOverride.has_value();
-            if (PropertyUI::Checkbox("camera-exposure-override", "Override scene exposure", overrideExposure)) {
-                if (overrideExposure) component.ExposureOverride = m_Context->Presentation().Exposure;
-                else component.ExposureOverride.reset();
+            int preset = 0;
+            if (PropertyUI::Combo("camera-preset", "Apply preset", preset,
+                "Choose preset…\0Automatic / Balanced\0Cinematic\0Outdoor daylight\0Low light\0Manual photographic\0") && preset > 0)
+                ApplyCameraPreset(component, CameraPreset(preset - 1));
+
+            int exposureChoice = component.ExposureOverride
+                ? (component.ExposureOverride->Mode == ExposureMode::Automatic ? 1 : 2) : 0;
+            if (PropertyUI::Combo("camera-exposure-source", "Exposure", exposureChoice,
+                "Use scene exposure\0Automatic\0Manual physical\0")) {
+                if (exposureChoice == 0) {
+                    component.ExposureOverride.reset();
+                } else {
+                    auto policy = component.ExposureOverride.value_or(m_Context->Presentation().Exposure);
+                    policy.Mode = exposureChoice == 1 ? ExposureMode::Automatic : ExposureMode::ManualPhysical;
+                    component.ExposureOverride = policy;
+                }
             }
-            if (component.ExposureOverride) DrawCameraExposure(*component.ExposureOverride);
+            if (component.ExposureOverride) DrawCameraExposure(*component.ExposureOverride, false);
+
+            int bloomChoice = component.BloomOverride ? (*component.BloomOverride ? 1 : 2) : 0;
+            if (PropertyUI::Combo("camera-bloom", "Bloom", bloomChoice, "Use scene bloom\0Enabled\0Disabled\0"))
+                component.BloomOverride = bloomChoice ? std::optional<bool>(bloomChoice == 1) : std::nullopt;
+
+            int quality = component.DepthOfField.Quality == DepthOfFieldQuality::Balanced
+                ? (component.MotionBlur.Quality == MotionBlurQuality::Balanced ? 1 : 0)
+                : (component.MotionBlur.Quality == MotionBlurQuality::Cinematic ? 2 : 0);
+            if (PropertyUI::Combo("camera-quality", "Optical quality", quality, "Per effect\0Balanced\0Cinematic\0") && quality) {
+                component.DepthOfField.Quality = quality == 1 ? DepthOfFieldQuality::Balanced : DepthOfFieldQuality::Cinematic;
+                component.MotionBlur.Quality = quality == 1 ? MotionBlurQuality::Balanced : MotionBlurQuality::Cinematic;
+            }
 
             auto& defocus = component.DepthOfField;
             if (camera.GetProjectionType() == SceneCamera::ProjectionType::Perspective)
             {
                 PropertyUI::Checkbox("depth-of-field", "Depth of field", defocus.Enabled);
-                if (defocus.Enabled && ImGui::TreeNode("Depth of field settings"))
-                {
+                if (defocus.Enabled)
                     targetPicker("focus-subject", "Focus subject", defocus.TrackedSubject,
                         [entity](Entity candidate) { return candidate != entity; }, "Manual focus");
+                if (defocus.Enabled && ImGui::TreeNode("Depth of field settings"))
+                {
                     int quality = int(defocus.Quality);
                     if (PropertyUI::Combo("depth-of-field-quality", "Quality", quality, "Balanced\0Cinematic\0"))
                         defocus.Quality = DepthOfFieldQuality(quality);
@@ -1152,36 +1178,65 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
                 PropertyUI::DragFloat("sensor-grain", "Grain", optics.Grain, .001f, 0, .08f);
                 ImGui::TreePop();
             }
-            bool usePhysical = camera.GetPhysicalCamera().has_value();
-            if (PropertyUI::Checkbox("physical-camera", "Physical camera", usePhysical))
-            {
-                if (usePhysical)
-                    camera.SetPhysicalCamera(PhysicalCamera{});
-                else
-                    camera.SetPhysicalCamera(std::nullopt);
-            }
-            if (usePhysical)
-            {
-                auto lens = *camera.GetPhysicalCamera();
-                bool changed = bool(PropertyUI::DragFloat("aperture", "Aperture (f-number)", lens.Aperture, .05f, .5f, 128));
-                changed |= bool(PropertyUI::DragFloat("shutter-seconds", "Shutter (s)", lens.ShutterSeconds, .0001f, 1.f / 32000, 60, "%.6f"));
+            auto lens = camera.GetPhysicalCamera().value_or(PhysicalCamera{});
+            bool changed = bool(PropertyUI::DragFloat("aperture", "Aperture (f-number)", lens.Aperture, .05f, .5f, 128));
+            changed |= bool(PropertyUI::DragFloat("shutter-seconds", "Shutter (s)", lens.ShutterSeconds, .0001f, 1.f / 32000, 60, "%.6f"));
+            if (ImGui::TreeNode("Physical lens")) {
+                int aperture = 0;
+                if (PropertyUI::Combo("aperture-preset", "Aperture preset", aperture, "Choose…\0f/1.4\0f/2.8\0f/4\0f/5.6\0f/8\0f/11\0f/16\0") && aperture > 0) {
+                    constexpr float values[]{1.4f, 2.8f, 4, 5.6f, 8, 11, 16};
+                    lens.Aperture = values[aperture - 1];
+                    changed = true;
+                }
+                int shutter = 0;
+                if (PropertyUI::Combo("shutter-preset", "Shutter preset", shutter, "Choose…\0" "1/24 s\0" "1/48 s\0" "1/60 s\0" "1/125 s\0" "1/250 s\0" "1/1000 s\0") && shutter > 0) {
+                    constexpr float reciprocal[]{24, 48, 60, 125, 250, 1000};
+                    lens.ShutterSeconds = 1 / reciprocal[shutter - 1];
+                    changed = true;
+                }
                 changed |= bool(PropertyUI::DragFloat("iso", "ISO", lens.ISO, 1, 1, 204800, "%.0f"));
                 ImGui::Text("EV100 %.2f", lens.EV100());
-                if (ImGui::TreeNode("Physical lens"))
-                {
-                    if (camera.GetProjectionType() == SceneCamera::ProjectionType::Perspective)
-                        changed |= bool(PropertyUI::Checkbox("lens-projection", "Frame using lens", lens.LensProjection));
-                    changed |= bool(PropertyUI::DragFloat("focal-length", "Focal length (mm)", lens.FocalLengthMM, .2f, 1, 2000));
-                    changed |= bool(PropertyUI::DragFloat("sensor-width", "Sensor width (mm)", lens.SensorWidthMM, .1f, 1, 200));
-                    changed |= bool(PropertyUI::DragFloat("sensor-height", "Sensor height (mm)", lens.SensorHeightMM, .1f, 1, 200));
-                    ImGui::TreePop();
+                if (camera.GetProjectionType() == SceneCamera::ProjectionType::Perspective)
+                    changed |= bool(PropertyUI::Checkbox("lens-projection", "Frame using lens", lens.LensProjection));
+                changed |= bool(PropertyUI::DragFloat("focal-length", "Focal length (mm)", lens.FocalLengthMM, .2f, 1, 2000));
+                changed |= bool(PropertyUI::DragFloat("sensor-width", "Sensor width (mm)", lens.SensorWidthMM, .1f, 1, 200));
+                changed |= bool(PropertyUI::DragFloat("sensor-height", "Sensor height (mm)", lens.SensorHeightMM, .1f, 1, 200));
+                ImGui::TreePop();
+            }
+            if (defocus.Enabled && camera.GetProjectionType() == SceneCamera::ProjectionType::Perspective)
+                changed |= bool(PropertyUI::DragFloat("focus-distance",
+                    defocus.TrackedSubject ? "Fallback focus (world units)" : "Focus distance (world units)",
+                    lens.FocusDistance, .05f, lens.FocalLengthMM / 1000.f + .001f, 100000));
+            if (changed) camera.SetPhysicalCamera(lens);
+            if (ImGui::TreeNode("Color grade")) {
+                auto& grade = component.ColorGrade;
+                PropertyUI::DragFloat("white-kelvin", "White balance (K)", grade.WhiteKelvin, 10, 2000, 12000, "%.0f");
+                PropertyUI::DragFloat("tint-uv", "Tint (CIE 1960 UV)", grade.TintUV, .0001f, -.02f, .02f, "%.4f");
+                PropertyUI::DragFloat("saturation", "Saturation", grade.Saturation, .01f, 0, 2);
+                PropertyUI::DragFloat("contrast", "Contrast", grade.Contrast, .01f, -1, 1);
+                PropertyUI::DragFloat("grading-shadows", "Shadows", grade.Shadows, .01f, -1, 1);
+                PropertyUI::DragFloat("grading-highlights", "Highlights", grade.Highlights, .01f, -1, 1);
+                const auto label = grade.LUT.empty() ? std::string("Drop a linear .cube asset") : grade.LUT.generic_u8string();
+                PropertyUI::ReadOnly("color-lut", "Grading LUT", label.c_str());
+                if (ImGui::BeginDragDropTarget()) {
+                    if (auto payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
+                        try {
+                            const auto assets = m_Context->GetAssets();
+                            if (!assets) throw std::runtime_error("Open a project before assigning a camera LUT");
+                            auto candidate = grade;
+                            candidate.LUT = Project::MakeAssetReference(assets->Root(),
+                                ContentBrowserPath(payload->Data, payload->DataSize));
+                            candidate.Validate();
+                            grade = std::move(candidate);
+                        } catch (const std::exception& error) { m_HierarchyError = error.what(); }
+                    }
+                    ImGui::EndDragDropTarget();
                 }
-                if (defocus.Enabled && camera.GetProjectionType() == SceneCamera::ProjectionType::Perspective)
-                    changed |= bool(PropertyUI::DragFloat("focus-distance",
-                        defocus.TrackedSubject ? "Fallback focus (world units)" : "Focus distance (world units)",
-                        lens.FocusDistance, .05f, lens.FocalLengthMM / 1000.f + .001f, 100000));
-                if (changed)
-                    camera.SetPhysicalCamera(lens);
+                if (!grade.LUT.empty()) {
+                    if (ImGui::Button("Clear grading LUT")) grade.LUT.clear();
+                    PropertyUI::DragFloat("lut-strength", "LUT strength", grade.LUTStrength, .01f, 0, 1);
+                }
+                ImGui::TreePop();
             }
         });
 

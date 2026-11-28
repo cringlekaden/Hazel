@@ -4,7 +4,7 @@
 #include "Hazel/Renderer/Resources/Framebuffer.h"
 #include "Hazel/Renderer/Scene/DepthOfField.h"
 #include "Hazel/Renderer/Scene/CameraMotion.h"
-#include "Hazel/Renderer/Scene/LensEffects.h"
+#include "Hazel/Renderer/Scene/WorldPresentation.h"
 #include "Hazel/Renderer/Scene/DirectionalShadows.h"
 #include "Hazel/Renderer/Scene/SpotShadows.h"
 #include "Hazel/Renderer/Scene/PointShadows.h"
@@ -41,7 +41,7 @@ Layout CPUContract(const std::string& name)
     if (name == "SpotShadows") return {sizeof(SpotShadowData), {offsetof(SpotShadowData, VP),
         offsetof(SpotShadowData, Tiles), offsetof(SpotShadowData, LightIndices)}};
     if (name == "LocalLights") return {sizeof(Renderer3DUniforms::LocalLightData), {0, 16}};
-    if (name == "Presentation") return {5 * sizeof(glm::vec4), {0, 16, 32, 48, 64}};
+    if (name == "Presentation") return {sizeof(WorldPresentationParameters), {0, 16, 32, 48, 64, 80, 96, 112, 128, 144, 160}};
     if (name == "DefocusPrefilter" || name == "LensFlare") return {2 * sizeof(glm::vec4), {0, 16}};
     if (name == "Bloom") return {3 * sizeof(glm::vec4), {0, 16, 32}};
     if (name == "ShutterFilter") return {sizeof(ShutterParameters),

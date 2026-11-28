@@ -28,7 +28,7 @@ namespace Hazel {
         void CompositeWorldTo(const Ref<Framebuffer> &destination, float exposure,
             const BloomPyramid* bloom = nullptr, const ExposureMeterPass* meter = nullptr,
             const DepthOfFieldPass* defocus = nullptr, const CameraMotionPass* shutter = nullptr,
-            const LensEffectsPass* optics = nullptr) override;
+            const LensEffectsPass* optics = nullptr, const ColorGradePass* color = nullptr) override;
         std::vector<glm::vec4> ReadColorPixels() override;
         virtual glm::vec4 ReadColorPixel(uint32_t attachment, int x, int y) override;
         virtual int ReadPixel(uint32_t attachmentIndex, int x, int y) override;

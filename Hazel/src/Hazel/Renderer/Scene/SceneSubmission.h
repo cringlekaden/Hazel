@@ -2,6 +2,7 @@
 #include "Hazel/Assets/ImportedAsset.h"
 #include "Hazel/Assets/Environment.h"
 #include "Hazel/Renderer/Cameras/CameraDefocus.h"
+#include "Hazel/Renderer/Cameras/CameraColorGrade.h"
 #include "Hazel/Renderer/Cameras/CameraLensEffects.h"
 #include "Hazel/Renderer/Cameras/CameraShutter.h"
 #include "Hazel/Scene/SceneDefaults.h"
@@ -51,6 +52,8 @@ struct SceneCameraView
     std::optional<float> FocusSubjectDepth{};
     MotionBlurSettings MotionBlur{};
     LensEffectsSettings LensEffects{};
+    ColorGradeSettings ColorGrade{};
+    std::optional<bool> BloomOverride{};
 };
 struct SubmittedMesh
 {

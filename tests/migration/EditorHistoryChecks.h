@@ -57,6 +57,12 @@ static void EditorHistoryChecks()
         optics.DirtStrength = .2f;
         optics.FlareStrength = .15f;
         proposed.Camera->LensEffects = optics;
+        ColorGradeSettings grade;
+        grade.WhiteKelvin = 4700;
+        grade.LUT = "CameraStudy/Look.cube";
+        grade.LUTStrength = .25f;
+        proposed.Camera->ColorGrade = grade;
+        proposed.Camera->BloomOverride = false;
         std::string error;
         Check(history.Begin(*fixture.World, CreateScope<UIEditCommand>(
             *fixture.World, entity.GetUUID(), "Physical camera", before)), "Camera history begin failed");
@@ -68,6 +74,8 @@ static void EditorHistoryChecks()
             entity.GetComponent<CameraComponent>().DepthOfField == defocus &&
             entity.GetComponent<CameraComponent>().MotionBlur == shutter &&
             entity.GetComponent<CameraComponent>().LensEffects == optics &&
+            entity.GetComponent<CameraComponent>().ColorGrade == grade &&
+            entity.GetComponent<CameraComponent>().BloomOverride == std::optional<bool>(false) &&
             changed != original, "Inspector did not apply the camera optics and exposure");
         Check(history.Undo(*fixture.World) && fixture.State() == original &&
             history.Redo(*fixture.World) && fixture.State() == changed, "Physical camera Undo/Redo lost authored values");

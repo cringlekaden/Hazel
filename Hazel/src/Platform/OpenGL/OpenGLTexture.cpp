@@ -32,7 +32,7 @@ static GLenum HazelImageFormatToGLDataFormat(ImageFormat format)
         case ImageFormat::R8: return GL_RED;
         case ImageFormat::RG32F: return GL_RG;
         case ImageFormat::RGB8: return GL_RGB;
-        case ImageFormat::RGBA8: case ImageFormat::RGBA32F: return GL_RGBA;
+        case ImageFormat::RGBA8: case ImageFormat::RGBA16F: case ImageFormat::RGBA32F: return GL_RGBA;
         default: throw std::invalid_argument("Unsupported texture image format");
     }
 }
@@ -43,6 +43,7 @@ static GLenum HazelImageFormatToGLInternalFormat(ImageFormat format)
         case ImageFormat::RG32F: return GL_RG32F;
         case ImageFormat::RGB8: return GL_RGB8;
         case ImageFormat::RGBA8: return GL_RGBA8;
+        case ImageFormat::RGBA16F: return GL_RGBA16F;
         case ImageFormat::RGBA32F: return GL_RGBA32F;
         default: throw std::invalid_argument("Unsupported texture image format");
     }
@@ -85,10 +86,10 @@ OpenGLTexture2D::OpenGLTexture2D(const TextureSpecification& specification)
     m_Specification.Validate();
     m_InternalFormat=specification.Encoding==TextureEncoding::SRGB ? (specification.Format==ImageFormat::RGB8?GL_SRGB8:GL_SRGB8_ALPHA8) : Utils::HazelImageFormatToGLInternalFormat(specification.Format);
     m_DataFormat=Utils::HazelImageFormatToGLDataFormat(specification.Format);
-    m_DataType=(specification.Format==ImageFormat::RGBA32F || specification.Format==ImageFormat::RG32F) ? GL_FLOAT : GL_UNSIGNED_BYTE;
+    m_DataType=specification.Format==ImageFormat::RGBA16F ? GL_HALF_FLOAT : (specification.Format==ImageFormat::RGBA32F || specification.Format==ImageFormat::RG32F) ? GL_FLOAT : GL_UNSIGNED_BYTE;
     m_BytesPerPixel=specification.Format==ImageFormat::R8 ? 1u :
                     specification.Format==ImageFormat::RGB8 ? 3u :
-                    specification.Format==ImageFormat::RGBA8 ? 4u : specification.Format==ImageFormat::RG32F ? 8u : 16u;
+                    specification.Format==ImageFormat::RGBA8 ? 4u : (specification.Format==ImageFormat::RG32F || specification.Format==ImageFormat::RGBA16F) ? 8u : 16u;
     AllocateStorage(nullptr);
 }
 

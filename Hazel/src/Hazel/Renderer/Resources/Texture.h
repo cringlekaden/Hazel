@@ -18,7 +18,8 @@ namespace Hazel {
 		RGB8,
 		RGBA8,
 		RGBA32F,
-		RG32F
+		RG32F,
+		RGBA16F
 	};
 
 	enum class TextureEncoding { Linear, SRGB };

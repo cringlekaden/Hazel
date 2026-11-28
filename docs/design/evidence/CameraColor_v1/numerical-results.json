@@ -1,0 +1,73 @@
+{
+  "debug-metal": {
+    "study": [
+      "GRADE_REFERENCE whiteError=0.00101483 toneError=2.70781e-08 lutError=9.06662e-05 missingMalformed=exact pickingDepth=exact",
+      "GRADE_COMBINED temporal=pass screenUI=exact bloomAuthority=pass",
+      "GRADE_RUNTIME authoredCamera=pass pickingDepth=exact",
+      "GRADE_LIFETIME queue=3 replacement=exact viewReset=pass resize=pass"
+    ],
+    "exactFrozenCaptures": 36,
+    "exactAutomaticCapturesAgainstPhase5": 17
+  },
+  "debug-opengl": {
+    "study": [
+      "GRADE_REFERENCE whiteError=0.00101483 toneError=2.70781e-08 lutError=9.06662e-05 missingMalformed=exact pickingDepth=exact",
+      "GRADE_COMBINED temporal=pass screenUI=exact bloomAuthority=pass",
+      "GRADE_RUNTIME authoredCamera=pass pickingDepth=exact"
+    ],
+    "exactFrozenCaptures": 36,
+    "exactAutomaticCapturesAgainstPhase5": 17
+  },
+  "release-metal": {
+    "study": [
+      "GRADE_REFERENCE whiteError=0.00101483 toneError=2.70781e-08 lutError=9.06662e-05 missingMalformed=exact pickingDepth=exact",
+      "GRADE_COMBINED temporal=pass screenUI=exact bloomAuthority=pass",
+      "GRADE_RUNTIME authoredCamera=pass pickingDepth=exact",
+      "GRADE_LIFETIME queue=3 replacement=exact viewReset=pass resize=pass"
+    ],
+    "exactFrozenCaptures": 36,
+    "exactAutomaticCapturesAgainstPhase5": 17
+  },
+  "release-opengl": {
+    "study": [
+      "GRADE_REFERENCE whiteError=0.00101483 toneError=2.70781e-08 lutError=9.06662e-05 missingMalformed=exact pickingDepth=exact",
+      "GRADE_COMBINED temporal=pass screenUI=exact bloomAuthority=pass",
+      "GRADE_RUNTIME authoredCamera=pass pickingDepth=exact"
+    ],
+    "exactFrozenCaptures": 36,
+    "exactAutomaticCapturesAgainstPhase5": 17
+  },
+  "relocatedArchive": {
+    "archiveIntegrity": "PASS",
+    "metalSourceFree": {
+      "exitCode": 0,
+      "results": [
+        "GRADE_REFERENCE whiteError=0.00101483 toneError=2.70781e-08 lutError=9.06662e-05 missingMalformed=exact pickingDepth=exact",
+        "GRADE_COMBINED temporal=pass screenUI=exact bloomAuthority=pass",
+        "GRADE_RUNTIME authoredCamera=pass pickingDepth=exact",
+        "GRADE_LIFETIME queue=3 replacement=exact viewReset=pass resize=pass"
+      ]
+    },
+    "openglSourceFree": {
+      "exitCode": 0,
+      "results": [
+        "GRADE_REFERENCE whiteError=0.00101483 toneError=2.70781e-08 lutError=9.06662e-05 missingMalformed=exact pickingDepth=exact",
+        "GRADE_COMBINED temporal=pass screenUI=exact bloomAuthority=pass",
+        "GRADE_RUNTIME authoredCamera=pass pickingDepth=exact"
+      ]
+    }
+  },
+  "relocatedDesktop": {
+    "archiveIntegrity": "PASS",
+    "metalPlayer": "PASS",
+    "openglPlayer": "PASS",
+    "Metal completed presentations": 62,
+    "OpenGL rendered frames minimum": 60
+  },
+  "editorSceneRuntime": {
+    "immutableExampleRevision": "86c581c13fd5c944c2a06d720314a753d7607d8f",
+    "debug": "PASS SceneFoundationSmoke, EditorSmoke, RuntimeSessionSmoke",
+    "release": "PASS SceneFoundationSmoke, EditorSmoke, RuntimeSessionSmoke",
+    "defaultReleaseExampleSnapshot": "FAIL pre-existing IBLQuality_v2/Materials/M0R3.hmat checksum"
+  }
+}

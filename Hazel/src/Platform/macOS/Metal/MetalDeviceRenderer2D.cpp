@@ -66,6 +66,7 @@ void MetalRenderer2DFrame::CollectAllocations(std::set<const MTL::Allocation*>& 
     if (Shutter)
         for (const auto& target : {Shutter->TileMax, Shutter->NeighborMax, Shutter->Filtered})
             allocations.insert(target->Targets[0].get());
+    if (ColorLUT) allocations.insert(ColorLUT->Texture.get());
     if (Lens) {
         if (Lens->Flare) allocations.insert(Lens->Flare->Targets[0].get());
         if (Lens->Dirt) allocations.insert(Lens->Dirt->Texture.get());
@@ -739,7 +740,7 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
     }
     if (quad->World) {
         auto table = NS::TransferPtr(MTL4::ArgumentTableDescriptor::alloc()->init());
-        table->setInitializeBindings(true); table->setMaxBufferBindCount(6); table->setMaxTextureBindCount(quad->Reflections ? 6 : 11); table->setMaxSamplerStateBindCount(quad->Reflections ? 1 : 11);
+        table->setInitializeBindings(true); table->setMaxBufferBindCount(6); table->setMaxTextureBindCount(quad->Reflections ? 6 : 12); table->setMaxSamplerStateBindCount(quad->Reflections ? 1 : 12);
         quad->PresentationArguments = NS::TransferPtr(m_Device->newArgumentTable(table.get(), &error));
         auto sampler = NS::TransferPtr(MTL::SamplerDescriptor::alloc()->init());
         sampler->setMinFilter(MTL::SamplerMinMagFilterNearest); sampler->setMagFilter(MTL::SamplerMinMagFilterNearest);
@@ -747,10 +748,10 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
         if (!quad->OutputSampler) quad->OutputSampler = NS::TransferPtr(m_Device->newSamplerState(sampler.get()));
         auto optics = quad->Lens ? quad->Lens->Presentation : LensPresentation{};
         if (explicitWorldFilter) optics.Gate.w += 2.f;
-        const glm::vec4 presentation[]{glm::vec4(quad->Exposure, quad->BloomIntensity, quad->ExposureMeter ? 1.f : 0.f, shutterMode),
-            defocusLens, optics.Sensor, optics.Gate, optics.Dirt};
+        const WorldPresentationParameters presentation{{quad->Exposure, quad->BloomIntensity,
+            quad->ExposureMeter ? 1.f : 0.f, shutterMode}, defocusLens, optics, quad->ColorGrade};
         auto uniform = quad->Reflections ? AcquireRenderer2DBuffer(sizeof(*quad->Reflections), &*quad->Reflections) :
-            AcquireRenderer2DBuffer(sizeof(presentation), presentation);
+            AcquireRenderer2DBuffer(sizeof(presentation), &presentation);
         Check(bool(quad->PresentationArguments) && bool(quad->OutputSampler) && bool(uniform), "Cannot allocate world presentation bindings");
         quad->PresentationArguments->setAddress(uniform->gpuAddress(), 5);
         for (unsigned slot=0; slot<(quad->Reflections ? 6u : 2u); ++slot)
@@ -773,6 +774,10 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
             quad->PresentationArguments->setTexture((dirt ? dirt->Texture : fallback)->gpuResourceID(), 10);
             quad->PresentationArguments->setSamplerState((dirt ? dirt->Sampler : sampler)->gpuResourceID(), 10);
             if (dirt) quad->Residency->addAllocation(dirt->Texture.get());
+            const auto& lut = quad->ColorLUT;
+            quad->PresentationArguments->setTexture((lut ? lut->Texture : fallback)->gpuResourceID(), 11);
+            quad->PresentationArguments->setSamplerState((lut ? lut->Sampler : sampler)->gpuResourceID(), 11);
+            if (lut) quad->Residency->addAllocation(lut->Texture.get());
         }
         quad->Residency->addAllocation(uniform.get()); quad->Buffers.push_back(std::move(uniform));
     }

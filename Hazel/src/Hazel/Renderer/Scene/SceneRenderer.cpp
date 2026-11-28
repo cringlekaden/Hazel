@@ -1,5 +1,6 @@
 #include "hzpch.h"
 #include "SceneRenderer.h"
+#include "Hazel/Project/Project.h"
 #include "Hazel/Renderer/Drawing/Renderer3D.h"
 #include "Hazel/Assets/ProjectAssets.h"
 #include "Hazel/Renderer/Drawing/Renderer2D.h"
@@ -286,7 +287,8 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
         throw std::runtime_error("Linear lighting inspection requires an explicit FP32 color target");
     const auto& bloom = frame.Presentation.Bloom;
     const auto& optics = frame.Camera.LensEffects;
-    const bool useBloom = bloom.Enabled && bloom.Intensity > 0 && frame.Presentation.SceneReferred &&
+    const auto& grade = frame.Camera.ColorGrade;
+    const bool useBloom = frame.Camera.BloomOverride.value_or(bloom.Enabled) && bloom.Intensity > 0 && frame.Presentation.SceneReferred &&
         !frame.CaptureRadiance && frame.Debug == SurfaceView::Shaded && frame.AmbientOcclusionView == 0 &&
         frame.LocalLightingView == 0 && frame.ShadowView == 0 && view.TemporalDebug == 0;
     const auto& exposure = frame.Camera.ExposureOverride ? *frame.Camera.ExposureOverride : frame.Presentation.Exposure;
@@ -301,6 +303,9 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
     if (!useBloom && !flare) view.Bloom = {};
     if (!useBloom && view.BloomMetrics) *view.BloomMetrics = {};
     if (!lensEffects) view.Lens = {};
+    const bool colorLUT = photographic && grade.LUTStrength > 0 && !grade.LUT.empty() && frame.Assets;
+    const bool colorGrade = photographic && (grade.HasWhiteBalance() || grade.HasToneControls() || colorLUT);
+    if (!colorLUT) view.ColorGrade = {};
     const bool automatic = exposure.Mode == ExposureMode::Automatic && photographic;
     const bool defocus = frame.Camera.DepthOfField.Enabled && photographic && !frame.Camera.Orthographic;
     const bool shutter = frame.Camera.MotionBlur.Enabled && photographic && display;
@@ -507,13 +512,43 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
         const auto* bloomPass = useBloom || flare ? &view.Bloom : nullptr;
         const auto* defocusPass = defocus ? &view.Focus.Pass : nullptr;
         const auto* shutterPass = shutter ? &view.Shutter.Pass : nullptr;
+        ColorGradePass color;
+        if (colorGrade) {
+            grade.Validate();
+            if (grade.HasWhiteBalance()) {
+                const auto matrix = glm::transpose(grade.WhiteBalance());
+                for (int row = 0; row < 3; ++row)
+                    color.Parameters.White[row] = glm::vec4(glm::vec3(matrix[row]), row == 0 ? 1.f : 0.f);
+            }
+            color.Parameters.Tone = {grade.Saturation - 1, grade.Contrast, grade.Shadows, grade.Highlights};
+            if (colorLUT) {
+                auto& state = view.ColorGrade;
+                if (state.Path != grade.LUT || state.Assets.lock() != frame.Assets || state.Epoch != frame.Assets->Epoch()) {
+                    state = {};
+                    state.Path = grade.LUT;
+                    state.Assets = frame.Assets;
+                    state.Epoch = frame.Assets->Epoch();
+                    try {
+                        state.LUT = LoadColorGradeLUT(Project::ResolveOwnedAsset(frame.Assets->Root(), grade.LUT));
+                    } catch (const std::exception& error) {
+                        HZ_CORE_WARN("Camera LUT '{}' unavailable: {}", grade.LUT.generic_u8string(), error.what());
+                    }
+                }
+                color.LUT = state.LUT.Texture;
+                if (color.LUT) {
+                    color.Parameters.LUTScale = {state.LUT.Scale, float(state.LUT.Size)};
+                    color.Parameters.LUTBias = {state.LUT.Bias, grade.LUTStrength};
+                }
+            }
+        }
+        const auto* colorPass = colorGrade ? &color : nullptr;
         const auto* lensPass = lensEffects ? &view.Lens.Pass : nullptr;
         if (shutter) {
             view.Shutter.Previous = frame;
             view.Shutter.Extent = extent;
         }
         if (!automatic) {
-            view.Radiance->CompositeWorldTo(display, gain, bloomPass, nullptr, defocusPass, shutterPass, lensPass);
+            view.Radiance->CompositeWorldTo(display, gain, bloomPass, nullptr, defocusPass, shutterPass, lensPass, colorPass);
             return;
         }
 
@@ -538,7 +573,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
              {exposure.SpotCenter, exposure.SpotRadius, float(exposure.Metering)},
              {step(exposure.BrighteningRate), step(exposure.DarkeningRate), valid ? 1.f : 0.f, exposure.IncludeSky ? 1.f : 0.f}},
             std::make_shared<std::atomic<bool>>(false), view.ExposureTiming};
-        view.Radiance->CompositeWorldTo(display, gain, bloomPass, &meter, defocusPass, shutterPass, lensPass);
+        view.Radiance->CompositeWorldTo(display, gain, bloomPass, &meter, defocusPass, shutterPass, lensPass, colorPass);
         state.Latest = 1 - state.Latest;
         state.Submitted = std::move(meter.Submitted);
         state.Camera = frame.Camera;

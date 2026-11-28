@@ -5,10 +5,10 @@
 #include <imgui.h>
 
 namespace Hazel {
-inline void DrawCameraExposure(CameraExposure& exposure)
+inline void DrawCameraExposure(CameraExposure& exposure, bool showMode = true)
 {
     int mode = int(exposure.Mode);
-    if (PropertyUI::Combo("exposure-mode", "Exposure mode", mode, "Manual physical\0Automatic\0"))
+    if (showMode && PropertyUI::Combo("exposure-mode", "Exposure mode", mode, "Manual physical\0Automatic\0"))
         exposure.Mode = ExposureMode(mode);
     PropertyUI::SliderFloat("compensation", "Exposure compensation (stops)", exposure.CompensationStops, -16, 16);
     if (exposure.Mode != ExposureMode::Automatic) return;

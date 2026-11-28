@@ -184,6 +184,7 @@ quantization error within its range.
    retain existing numerical tolerances, neutral grading to preserve output,
    and new optional operations to match independent color references and
    source-free packaging. Verify presentational warps against picking and UI.
+   [Phase 6 implementation and native evidence](camera-color-presentation.md)
 
 ### Performance ceilings
 

@@ -8,7 +8,7 @@
 #include "Hazel/Renderer/Resources/Framebuffer.h"
 #include "Hazel/Renderer/Scene/DepthOfField.h"
 #include "Hazel/Renderer/Scene/CameraMotion.h"
-#include "Hazel/Renderer/Scene/LensEffects.h"
+#include "Hazel/Renderer/Scene/WorldPresentation.h"
 #include <Metal/Metal.hpp>
 #include <memory>
 #include <optional>
@@ -116,6 +116,8 @@ struct MetalRenderer2DFrame
     std::optional<MetalDefocus> Defocus;
     std::optional<MetalShutter> Shutter;
     std::optional<MetalLensEffects> Lens;
+    ColorPresentation ColorGrade;
+    std::shared_ptr<const MetalTextureVersion> ColorLUT;
     std::shared_ptr<std::atomic<bool>> ShutterSubmitted;
     std::shared_ptr<MetalShader> BloomShader;
     std::vector<MetalBloomPass> BloomPasses;

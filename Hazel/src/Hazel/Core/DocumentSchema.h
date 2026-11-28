@@ -3,7 +3,7 @@
 #include <initializer_list>
 #include <string>
 
-namespace Hazel { struct DepthOfFieldSettings; struct LensEffectsSettings; struct MotionBlurSettings; struct PhysicalCamera; }
+namespace Hazel { struct ColorGradeSettings; struct DepthOfFieldSettings; struct LensEffectsSettings; struct MotionBlurSettings; struct PhysicalCamera; }
 
 namespace Hazel::DocumentSchema
 {
@@ -19,4 +19,6 @@ DepthOfFieldSettings ReadDepthOfField(const YAML::Node& node);
 MotionBlurSettings ReadMotionBlur(const YAML::Node& node);
 LensEffectsSettings ReadLensEffects(const YAML::Node& node);
 YAML::Node EncodeLensEffects(const LensEffectsSettings& settings);
+ColorGradeSettings ReadColorGrade(const YAML::Node& node);
+YAML::Node EncodeColorGrade(const ColorGradeSettings& settings);
 }

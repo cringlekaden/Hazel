@@ -14,6 +14,7 @@ namespace Hazel {
     struct DepthOfFieldPass;
     struct CameraMotionPass;
     struct LensEffectsPass;
+    struct ColorGradePass;
 
 	enum class FramebufferTextureFormat
 	{
@@ -118,7 +119,7 @@ namespace Hazel {
         virtual void CompositeWorldTo(const Ref<Framebuffer> &destination, float exposure,
             const BloomPyramid* bloom = nullptr, const ExposureMeterPass* meter = nullptr,
             const DepthOfFieldPass* defocus = nullptr, const CameraMotionPass* shutter = nullptr,
-            const LensEffectsPass* optics = nullptr) = 0;
+            const LensEffectsPass* optics = nullptr, const ColorGradePass* color = nullptr) = 0;
         virtual glm::vec4 ReadColorPixel(uint32_t attachment, int x, int y) = 0;
         virtual void ResetEditorReadback() {}
         virtual int ReadEditorEntity(int x, int y) { return ReadPixel(1, x, y); }

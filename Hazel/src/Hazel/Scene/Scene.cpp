@@ -655,10 +655,13 @@ namespace Hazel {
             cameraView.View=glm::inverse(world);cameraView.Projection=camera.GetProjection();
             cameraView.Identity = entity.GetUUID();
             cameraView.Physical = camera.GetPhysicalCamera();
-            cameraView.ExposureOverride = entity.GetComponent<CameraComponent>().ExposureOverride;
-            cameraView.DepthOfField = entity.GetComponent<CameraComponent>().DepthOfField;
-            cameraView.MotionBlur = entity.GetComponent<CameraComponent>().MotionBlur;
-            cameraView.LensEffects = entity.GetComponent<CameraComponent>().LensEffects;
+            const auto& authored = entity.GetComponent<CameraComponent>();
+            cameraView.ExposureOverride = authored.ExposureOverride;
+            cameraView.DepthOfField = authored.DepthOfField;
+            cameraView.MotionBlur = authored.MotionBlur;
+            cameraView.LensEffects = authored.LensEffects;
+            cameraView.ColorGrade = authored.ColorGrade;
+            cameraView.BloomOverride = authored.BloomOverride;
             if (inspection)
             {
                 auto inspected = *inspection;
@@ -667,6 +670,8 @@ namespace Hazel {
                 inspected.DepthOfField = cameraView.DepthOfField;
                 inspected.MotionBlur = cameraView.MotionBlur;
                 inspected.LensEffects = cameraView.LensEffects;
+                inspected.ColorGrade = cameraView.ColorGrade;
+                inspected.BloomOverride = cameraView.BloomOverride;
                 if (inspected.Physical && inspected.Physical->LensProjection && !cameraView.Orthographic)
                 {
                     inspected.Projection = cameraView.Projection;

@@ -24,8 +24,8 @@ MetalTexture2D::MetalTexture2D(std::shared_ptr<MetalDevice> device, const Textur
 {
     specification.Validate();
     if (!m_Device || specification.Width > 16384 || specification.Height > 16384 ||
-        (specification.Format != ImageFormat::RGB8 && specification.Format != ImageFormat::RGBA8 && specification.Format != ImageFormat::RGBA32F && specification.Format != ImageFormat::RG32F))
-        throw std::invalid_argument("Metal textures require <=16384x16384 RGB8/RGBA8, RG32F or RGBA32F");
+        (specification.Format != ImageFormat::RGB8 && specification.Format != ImageFormat::RGBA8 && specification.Format != ImageFormat::RGBA32F && specification.Format != ImageFormat::RG32F && specification.Format != ImageFormat::RGBA16F))
+        throw std::invalid_argument("Metal textures require <=16384x16384 RGB8/RGBA8, RG32F, RGBA16F or RGBA32F");
     if ((specification.Format == ImageFormat::RGBA32F || specification.Format == ImageFormat::RG32F) &&
         (specification.MinFilter == TextureFilter::Linear || specification.MagFilter == TextureFilter::Linear) &&
         !m_Device->NativeDevice()->supports32BitFloatFiltering())
@@ -33,7 +33,7 @@ MetalTexture2D::MetalTexture2D(std::shared_ptr<MetalDevice> device, const Textur
 }
 void MetalTexture2D::SetData(const void* data, uint32_t size)
 {
-    const uint32_t pixelBytes = m_Specification.Format == ImageFormat::RGB8 ? 3 : m_Specification.Format == ImageFormat::RGBA8 ? 4 : m_Specification.Format == ImageFormat::RG32F ? 8 : 16;
+    const uint32_t pixelBytes = m_Specification.Format == ImageFormat::RGB8 ? 3 : m_Specification.Format == ImageFormat::RGBA8 ? 4 : (m_Specification.Format == ImageFormat::RG32F || m_Specification.Format == ImageFormat::RGBA16F) ? 8 : 16;
     if (!data || uint64_t(size) != uint64_t(GetWidth()) * GetHeight() * pixelBytes)
         throw std::invalid_argument("Metal texture upload requires the complete specified image");
     std::vector<uint8_t> expanded;
@@ -49,7 +49,12 @@ void MetalTexture2D::SetData(const void* data, uint32_t size)
     auto pool = NS::TransferPtr(NS::AutoreleasePool::alloc()->init());
     auto version = std::make_shared<MetalTextureVersion>();
     auto descriptor = NS::TransferPtr(MTL::TextureDescriptor::alloc()->init());
-    descriptor->setTextureType(MTL::TextureType2D); descriptor->setPixelFormat(m_Specification.Format == ImageFormat::RG32F ? MTL::PixelFormatRG32Float : m_Specification.Format != ImageFormat::RGBA32F ? (m_Specification.Encoding == TextureEncoding::SRGB ? MTL::PixelFormatRGBA8Unorm_sRGB : MTL::PixelFormatRGBA8Unorm) : MTL::PixelFormatRGBA32Float);
+    descriptor->setTextureType(MTL::TextureType2D);
+    auto format = m_Specification.Encoding == TextureEncoding::SRGB ? MTL::PixelFormatRGBA8Unorm_sRGB : MTL::PixelFormatRGBA8Unorm;
+    if (m_Specification.Format == ImageFormat::RGBA16F) format = MTL::PixelFormatRGBA16Float;
+    if (m_Specification.Format == ImageFormat::RGBA32F) format = MTL::PixelFormatRGBA32Float;
+    if (m_Specification.Format == ImageFormat::RG32F) format = MTL::PixelFormatRG32Float;
+    descriptor->setPixelFormat(format);
     descriptor->setWidth(GetWidth()); descriptor->setHeight(GetHeight());
     if (m_Specification.GenerateMips) {
         uint32_t levels = 1;

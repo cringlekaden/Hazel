@@ -62,7 +62,7 @@ dimensions to frame the shot.
 
 New native HDR projects use automatic exposure. Scene Settings supplies the
 editor navigation policy and the default for runtime cameras. To use a different
-policy in Play or Nutella, select **Override scene exposure** on the camera.
+policy in Play or Nutella, select **Automatic** or **Manual physical** under **Exposure** on the camera.
 Automatic exposure meters the HDR world before bloom. **Lock adaptation**
 holds the current gain until a cut or view reset, and compensation remains
 editable. **Manual physical** uses EV100 from the active camera. A camera
@@ -91,6 +91,13 @@ modulates only glare, including bloom. Vignette, chromatic separation,
 radial distortion and grain start at zero. Lens effects apply to the
 camera’s world image before screen UI.
 [Lens effects and qualification](design/camera-lens-effects.md)
+
+**Apply preset** writes editable exposure, lens and blur settings. Under
+**Bloom**, a camera can inherit the scene policy or override enablement.
+**Color grade** offers white balance in kelvin, tint, saturation, contrast,
+shadow and highlight adjustments and a linear Rec.709 `.cube` LUT. The
+grade applies to the world before screen UI.
+[Camera presets and grading](design/camera-color-presentation.md)
 
 A final pass applies the piecewise sRGB transfer into RGBA8, or into Nutella's
 window with `GL_FRAMEBUFFER_SRGB` disabled. Alpha is copied. The editor's output

@@ -25,7 +25,7 @@ POSES = 17
 
 
 def authored_study(source, root, runtime_only=False, physical_camera=False, automatic_camera=False,
-                   defocus_camera=False, shutter_camera=False, lens_camera=False):
+                   defocus_camera=False, shutter_camera=False, lens_camera=False, grade_camera=False):
     def producer_inputs(directory, names):
         return [name for name in names if name.endswith(".hdr") or
                 (Path(directory).name == "CapturedReflections" and name.endswith(".hlight"))]
@@ -38,6 +38,16 @@ def authored_study(source, root, runtime_only=False, physical_camera=False, auto
     if lens_camera:
         (assets / "CameraStudy").mkdir(exist_ok=True)
         png(assets / "CameraStudy/Dirt.png", 2, 2, [(1, 1, 1)] * 4)
+    if grade_camera:
+        (assets / "CameraStudy").mkdir(exist_ok=True)
+        table = ["LUT_3D_SIZE 17", "LUT_3D_INPUT_RANGE 0.05 0.75"]
+        for b in range(17):
+            for g in range(17):
+                for r in range(17):
+                    table.append(f"{.125 + .75 * g / 16} {.125 + .5 * b / 16} {.125 + .75 * r / 16}")
+        (assets / "CameraStudy/Grade.cube").write_text("\n".join(table) + "\n")
+        (assets / "CameraStudy/GradeAlt.cube").write_text("LUT_3D_SIZE 2\n" + ".8 .2 .3\n" * 8)
+        (assets / "CameraStudy/Malformed.cube").write_text("LUT_3D_SIZE 17\n.5 .6 .7\n")
     scene = (assets / source_scene).read_text().replace("Scene: SSR Gallery", "Scene: HDR Bloom Study", 1)
     if physical_camera or defocus_camera:
         lens = r"""\1
@@ -88,6 +98,20 @@ def authored_study(source, root, runtime_only=False, physical_camera=False, auto
         DirtTexture: CameraStudy/Dirt.png
         DirtStrength: 0.12
         Vignette: 0.15
+""" + marker)
+    if grade_camera:
+        marker = "      Primary: true"
+        if scene.count(marker) != 1:
+            raise RuntimeError("The grade study needs one primary camera")
+        scene = scene.replace(marker, """      ColorGrade:
+        Version: 1
+        WhiteKelvin: 4500
+        TintUV: 0.004
+        Saturation: 0.85
+        Contrast: 0.3
+        Highlights: -0.2
+        LUT: CameraStudy/Grade.cube
+        LUTStrength: 0.14
 """ + marker)
     scene, count = re.subn(r"(?m)^  (?:Exposure: .*$|CameraExposure:(?:\n    [^\n]+)*)", """  CameraExposure:
     Version: 1
@@ -355,6 +379,7 @@ def main():
     parser.add_argument("--defocus-camera", action="store_true", help="Author the study's runtime camera with depth of field")
     parser.add_argument("--shutter-camera", action="store_true", help="Author the study's runtime camera with motion blur")
     parser.add_argument("--lens-camera", action="store_true", help="Author camera flare and a private dirt fixture")
+    parser.add_argument("--grade-camera", action="store_true", help="Author white balance and a linear .cube fixture")
     parser.add_argument("--runtime-only", action="store_true",
                         help="Omit producer inputs from the generated study for archive qualification")
     benchmark = parser.add_mutually_exclusive_group()
@@ -365,11 +390,15 @@ def main():
     benchmark.add_argument("--shutter-study", action="store_true", help="Run the motion shutter reference")
     benchmark.add_argument("--shutter-benchmark", action="store_true", help="Time the shutter passes and complete frames")
     benchmark.add_argument("--lens-benchmark", action="store_true", help="Time flare and the full lens-enabled frame")
+    benchmark.add_argument("--grade-benchmark", action="store_true", help="Measure the incremental camera color cost")
+    benchmark.add_argument("--grade-study", action="store_true", help="Run camera color references")
     benchmark.add_argument("--lens-study", action="store_true", help="Run the physical lens effect references")
+    parser.add_argument("--grade-benchmark-scenario", choices=("standard", "control", "combined"), default="standard",
+                        help="Measure white balance and grading, background noise, or all authored optics")
     parser.add_argument("--lens-benchmark-full", action="store_true", help="Include optical warp, grain and the maximum flare tap count")
     parser.add_argument("--motion", action="store_true")
     args = parser.parse_args()
-    if args.lens_benchmark_full and not args.lens_benchmark:
+    if args.lens_benchmark_full and not args.lens_benchmark and not args.grade_benchmark:
         parser.error("--lens-benchmark-full requires --lens-benchmark")
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
@@ -377,7 +406,8 @@ def main():
         report = {"status": "INCOMPLETE"}
         try:
             qualify_archive(args.archive.resolve(), output, report, args.offscreen_only, hdr_bloom=PROJECT,
-                            defocus_study=args.defocus_study, shutter_study=args.shutter_study, lens_study=args.lens_study)
+                            defocus_study=args.defocus_study, shutter_study=args.shutter_study, lens_study=args.lens_study,
+                            grade_study=args.grade_study)
             report["status"] = "PASS native offscreen archive relocation" if args.offscreen_only else "PASS native archive relocation"
         finally:
             (output / "results.json").write_text(json.dumps(report, indent=2) + "\n")
@@ -396,9 +426,11 @@ def main():
         parser.error("--shutter-camera requires --from-gallery")
     if args.lens_camera and not args.from_gallery:
         parser.error("--lens-camera requires --from-gallery")
+    if args.grade_camera and not args.from_gallery:
+        parser.error("--grade-camera requires --from-gallery")
     project = args.project.resolve() if args.project else authored_study(
         args.from_gallery.resolve(), output / "HDR Bloom Study", args.runtime_only, args.physical_camera,
-        args.automatic_camera, args.defocus_camera, args.shutter_camera, args.lens_camera)
+        args.automatic_camera, args.defocus_camera, args.shutter_camera, args.lens_camera, args.grade_camera)
     print(project, flush=True)
     if args.prepare_only:
         return
@@ -413,6 +445,10 @@ def main():
         env.update(HAZEL_CAMERA_SHUTTER_TEST="1")
     if args.lens_study:
         env.update(HAZEL_CAMERA_LENS_TEST="1")
+    if args.grade_benchmark:
+        env.update(HAZEL_CAMERA_GRADE_BENCHMARK=args.grade_benchmark_scenario, HAZEL_METAL_TRACE="1")
+    if args.grade_study:
+        env.update(HAZEL_CAMERA_GRADE_TEST="1")
     if args.lens_benchmark:
         env.update(HAZEL_CAMERA_LENS_BENCHMARK="full" if args.lens_benchmark_full else "1", HAZEL_METAL_TRACE="1")
     if args.shutter_benchmark:
@@ -421,7 +457,7 @@ def main():
         env.update(HAZEL_CAMERA_DEFOCUS_BENCHMARK="1", HAZEL_METAL_TRACE="1")
     if args.benchmark:
         env.update(HAZEL_BLOOM_BENCHMARK="1", HAZEL_METAL_TRACE="1")
-    elif not args.exposure_benchmark and not args.defocus_benchmark and not args.shutter_benchmark and not args.lens_benchmark:
+    elif not args.exposure_benchmark and not args.defocus_benchmark and not args.shutter_benchmark and not args.lens_benchmark and not args.grade_benchmark:
         env.update(MTL_DEBUG_LAYER="1", MTL_SHADER_VALIDATION="1")
     report = {"config": args.config, "project": str(project), "status": "INCOMPLETE", "backends": {}}
     try:
@@ -437,10 +473,10 @@ def main():
             if run.returncode:
                 raise RuntimeError(f"{backend} failed. See {log_path}")
             record = {"command": list(map(str, cmd)), "checks": [line for line in log.splitlines()
-                      if line.startswith(("BLOOM_", "CAMERA_", "DEFOCUS_", "SHUTTER_", "LENS_")) and not line.startswith(
+                      if line.startswith(("BLOOM_", "CAMERA_", "DEFOCUS_", "SHUTTER_", "LENS_", "GRADE_")) and not line.startswith(
                           ("BLOOM_TIMING", "BLOOM_PHASES", "CAMERA_METER_TIMING", "CAMERA_FRAME_TIMING",
                            "DEFOCUS_PASS_TIMING", "DEFOCUS_FRAME_TIMING", "SHUTTER_PASS_TIMING", "SHUTTER_FRAME_TIMING",
-                           "LENS_PASS_TIMING", "LENS_FRAME_TIMING"))]}
+                           "LENS_PASS_TIMING", "LENS_FRAME_TIMING", "GRADE_PASS_TIMING", "GRADE_FRAME_TIMING"))]}
             report["backends"][backend] = record
             if args.exposure_benchmark:
                 record["timing"] = exposure_timings(log, folder, backend)
@@ -471,6 +507,13 @@ def main():
             if args.lens_benchmark:
                 record["timing"] = optical_timings(log, folder, backend, "lens", ("flareMS",), samples=31)
                 continue
+            if args.grade_benchmark:
+                record["timing"] = optical_timings(log, folder, backend, "grade", ("compositeDeltaMS",), samples=31)
+                continue
+            if args.grade_study:
+                for state in ("gallery", "gallery-base"):
+                    png(folder / f"grade-{state}.png", *SIZE, pixels(folder / f"grade-{state}.bin"))
+                continue
             if args.lens_study:
                 for state in ("flare", "dirt", "distortion", "gallery"):
                     png(folder / f"lens-{state}.png", *SIZE, pixels(folder / f"lens-{state}.bin"))
@@ -485,7 +528,7 @@ def main():
                 reflection_diagnostic.write_motion(folder / "matched-motion.png", folder, pixels,
                                                    modes=("off", "on"), poses=POSES)
         if not any((args.benchmark, args.exposure_benchmark, args.defocus_study, args.defocus_benchmark,
-                    args.shutter_study, args.shutter_benchmark, args.lens_study, args.lens_benchmark)) and args.backend == "both":
+                    args.shutter_study, args.shutter_benchmark, args.lens_study, args.lens_benchmark, args.grade_study, args.grade_benchmark)) and args.backend == "both":
             report["aaOffParity"] = compare(output)
         if args.defocus_study:
             report["status"] = "PASS defocus disc study"
@@ -497,6 +540,10 @@ def main():
             report["status"] = "MEASURED motion shutter timing"
         elif args.lens_benchmark:
             report["status"] = "MEASURED lens effects timing"
+        elif args.grade_benchmark:
+            report["status"] = "MEASURED camera color timing"
+        elif args.grade_study:
+            report["status"] = "PASS camera color study"
         elif args.lens_study:
             report["status"] = "PASS lens effects study"
         else:

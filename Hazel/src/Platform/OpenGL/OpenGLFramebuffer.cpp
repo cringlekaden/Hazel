@@ -5,7 +5,7 @@
 #include "Hazel/Renderer/Scene/CameraMotion.h"
 #include "Hazel/Renderer/Scene/DepthOfField.h"
 #include "Hazel/Renderer/Scene/ExposureMeter.h"
-#include "Hazel/Renderer/Scene/LensEffects.h"
+#include "Hazel/Renderer/Scene/WorldPresentation.h"
 #include "Hazel/Core/Resources.h"
 #include "Hazel/Renderer/RenderCommand.h"
 #include "Hazel/Renderer/Resources/Shader.h"
@@ -712,7 +712,7 @@ uint32_t OpenGLFramebuffer::MeterExposure(const ExposureMeterPass& meter)
 void OpenGLFramebuffer::CompositeWorldTo(const Ref<Framebuffer> &destination, float exposure,
                                          const BloomPyramid* bloom, const ExposureMeterPass* meter,
                                          const DepthOfFieldPass* defocus, const CameraMotionPass* shutter,
-                                         const LensEffectsPass* optics)
+                                         const LensEffectsPass* optics, const ColorGradePass* color)
 {
     auto target = std::dynamic_pointer_cast<OpenGLFramebuffer>(destination);
     if (!std::isfinite(exposure) || exposure < -16 || exposure > 16 || !target ||
@@ -791,12 +791,13 @@ void OpenGLFramebuffer::CompositeWorldTo(const Ref<Framebuffer> &destination, fl
         m_ToneShader = Shader::Create(
             (Resources::Get().Root / "shaders/WorldPresentation.glsl").generic_u8string());
     if (!m_ToneParameters)
-        m_ToneParameters = UniformBuffer::Create(sizeof(glm::vec4) * 5, 5);
+        m_ToneParameters = UniformBuffer::Create(sizeof(WorldPresentationParameters), 5);
     const auto lens = optics ? optics->Presentation : LensPresentation{};
-    const glm::vec4 parameters[]{glm::vec4(exposure, bloom ? bloom->Intensity : 0.f, meter ? 1.f : 0.f, motion ? 1.f : 0.f),
-        defocus ? defocus->Parameters.Lens : glm::vec4(0), lens.Sensor, lens.Gate, lens.Dirt};
+    const WorldPresentationParameters parameters{{exposure, bloom ? bloom->Intensity : 0.f,
+        meter ? 1.f : 0.f, motion ? 1.f : 0.f}, defocus ? defocus->Parameters.Lens : glm::vec4(0),
+        lens, color ? color->Parameters : ColorPresentation{}};
     m_ToneParameters->Bind();
-    m_ToneParameters->SetData(parameters, sizeof(parameters));
+    m_ToneParameters->SetData(&parameters, sizeof(parameters));
     m_ToneShader->Bind();
     m_ToneShader->SetInt("u_World", 0);
     m_ToneShader->SetInt("u_Picking", 1);
@@ -810,6 +811,8 @@ void OpenGLFramebuffer::CompositeWorldTo(const Ref<Framebuffer> &destination, fl
         glBindSampler(9, 0);
     }
     if (optics && optics->DirtTexture) optics->DirtTexture->Bind(10);
+    m_ToneShader->SetInt("u_GradeLUT", color && color->LUT ? 11 : 0);
+    if (color && color->LUT) color->LUT->Bind(11);
     BindDefocusLayers(*m_ToneShader, defocus);
     BindShutterLayer(*m_ToneShader, shutter);
     glActiveTexture(GL_TEXTURE3);

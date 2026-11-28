@@ -1,6 +1,7 @@
 #pragma once
 #include "Hazel/Renderer/Cameras/CameraDefocus.h"
 #include "Hazel/Renderer/Cameras/CameraExposure.h"
+#include "Hazel/Renderer/Cameras/CameraColorGrade.h"
 #include "Hazel/Renderer/Cameras/CameraLensEffects.h"
 #include "Hazel/Renderer/Cameras/CameraShutter.h"
 #include "Hazel/Renderer/Scene/Lighting.h"
@@ -135,6 +136,8 @@ namespace Hazel {
 		DepthOfFieldSettings DepthOfField;
 		MotionBlurSettings MotionBlur;
 		LensEffectsSettings LensEffects;
+		ColorGradeSettings ColorGrade;
+		std::optional<bool> BloomOverride;
 		bool Primary = true; // TODO: think about moving to Scene
 		bool FixedAspectRatio = false;
 

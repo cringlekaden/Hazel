@@ -295,6 +295,10 @@ namespace Hazel {
 			out << YAML::Key << "Primary" << YAML::Value << cameraComponent.Primary;
 			if (!(cameraComponent.LensEffects == LensEffectsSettings{}))
 				out << YAML::Key << "LensEffects" << YAML::Value << DocumentSchema::EncodeLensEffects(cameraComponent.LensEffects);
+            if (!(cameraComponent.ColorGrade == ColorGradeSettings{}))
+                out << YAML::Key << "ColorGrade" << YAML::Value << DocumentSchema::EncodeColorGrade(cameraComponent.ColorGrade);
+            if (cameraComponent.BloomOverride)
+                out << YAML::Key << "BloomOverride" << YAML::Value << *cameraComponent.BloomOverride;
 			out << YAML::Key << "FixedAspectRatio" << YAML::Value << cameraComponent.FixedAspectRatio;
 
 			out << YAML::EndMap; // CameraComponent
@@ -655,6 +659,10 @@ namespace Hazel {
 						cc.MotionBlur = DocumentSchema::ReadMotionBlur(motion);
 					if (const auto lens = cameraComponent["LensEffects"])
 						cc.LensEffects = DocumentSchema::ReadLensEffects(lens);
+                    if (const auto grade = cameraComponent["ColorGrade"])
+                        cc.ColorGrade = DocumentSchema::ReadColorGrade(grade);
+                    if (const auto bloom = cameraComponent["BloomOverride"])
+                        cc.BloomOverride = bloom.as<bool>();
 					cc.Primary = cameraComponent["Primary"].as<bool>();
 					cc.FixedAspectRatio = cameraComponent["FixedAspectRatio"].as<bool>();
 				}

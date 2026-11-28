@@ -8,6 +8,7 @@
 #include "Hazel/Project/RendererRequestsSerializer.h"
 #include "Hazel/Project/RuntimeStorage.h"
 #include "Hazel/Renderer/Cameras/CameraDefocus.h"
+#include "Hazel/Renderer/Cameras/CameraColorGrade.h"
 #include "Hazel/Renderer/Cameras/CameraLensEffects.h"
 #include "Hazel/Renderer/Cameras/CameraShutter.h"
 #include "Hazel/Renderer/Scene/Lighting.h"
@@ -138,6 +139,43 @@ YAML::Node EncodeLensEffects(const LensEffectsSettings& settings)
     node["Grain"] = settings.Grain;
     return node;
 }
+ColorGradeSettings ReadColorGrade(const YAML::Node& node)
+{
+    Keys(node, {"Version", "WhiteKelvin", "TintUV", "Saturation", "Contrast", "Shadows", "Highlights",
+        "LUT", "LUTStrength"}, "ColorGrade");
+    if (node["Version"].as<unsigned>(0) != 1) throw std::runtime_error("Unsupported ColorGrade version");
+    ColorGradeSettings grade;
+    const auto read = [&](const char* name, float& value) {
+        if (const auto field = node[name]) value = field.as<float>();
+    };
+    read("WhiteKelvin", grade.WhiteKelvin);
+    read("TintUV", grade.TintUV);
+    read("Saturation", grade.Saturation);
+    read("Contrast", grade.Contrast);
+    read("Shadows", grade.Shadows);
+    read("Highlights", grade.Highlights);
+    read("LUTStrength", grade.LUTStrength);
+    if (const auto lut = node["LUT"]) grade.LUT = std::filesystem::u8path(lut.as<std::string>());
+    grade.Validate();
+    return grade;
+}
+
+YAML::Node EncodeColorGrade(const ColorGradeSettings& grade)
+{
+    grade.Validate();
+    YAML::Node node;
+    node["Version"] = 1;
+    node["WhiteKelvin"] = grade.WhiteKelvin;
+    node["TintUV"] = grade.TintUV;
+    node["Saturation"] = grade.Saturation;
+    node["Contrast"] = grade.Contrast;
+    node["Shadows"] = grade.Shadows;
+    node["Highlights"] = grade.Highlights;
+    if (!grade.LUT.empty()) node["LUT"] = grade.LUT.generic_u8string();
+    node["LUTStrength"] = grade.LUTStrength;
+    return node;
+}
+
 bool Project(const YAML::Node& root)
 {
     Structure(root);
@@ -238,7 +276,12 @@ bool Scene(const YAML::Node& root, bool prefabDocument)
         else legacy = true; // documented identity transform
         if (auto n = entity["CameraComponent"])
         {
-            Keys(n, {"Camera", "Primary", "FixedAspectRatio", "CameraExposure", "DepthOfField", "MotionBlur", "LensEffects"}, "CameraComponent");
+            Keys(n, {"Camera", "Primary", "FixedAspectRatio", "CameraExposure", "DepthOfField", "MotionBlur", "LensEffects",
+                "ColorGrade", "BloomOverride"}, "CameraComponent");
+            if (const auto grade = n["ColorGrade"])
+                ReadColorGrade(grade);
+            if (const auto bloom = n["BloomOverride"])
+                bloom.as<bool>();
             if (const auto lens = n["LensEffects"])
                 ReadLensEffects(lens);
             if (const auto motion = n["MotionBlur"])

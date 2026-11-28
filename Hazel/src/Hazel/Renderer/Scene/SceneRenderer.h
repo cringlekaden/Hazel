@@ -4,6 +4,7 @@
 #include "CameraMotion.h"
 #include "DepthOfField.h"
 #include "ExposureMeter.h"
+#include "ColorGrade.h"
 #include "LensEffects.h"
 #include "Hazel/Renderer/Resources/Framebuffer.h"
 #include <functional>
@@ -63,6 +64,12 @@ struct LensViewState {
     glm::uvec2 Extent{0};
     unsigned Noise = 0;
 };
+struct ColorGradeViewState {
+    ColorGradeLUT LUT;
+    std::filesystem::path Path;
+    std::weak_ptr<ProjectAssets> Assets;
+    uint64_t Epoch = 0;
+};
 class SceneRenderView
 {
   public:
@@ -92,6 +99,7 @@ class SceneRenderView
     FocusViewState Focus;
     ShutterViewState Shutter;
     LensViewState Lens;
+    ColorGradeViewState ColorGrade;
     std::shared_ptr<LensEffectsTiming> LensTiming; // Explicit qualification instrumentation.
     std::shared_ptr<CameraMotionTiming> ShutterTiming; // Explicit qualification instrumentation.
     std::shared_ptr<DepthOfFieldTiming> DefocusTiming; // Explicit qualification instrumentation.
@@ -107,6 +115,7 @@ class SceneRenderView
         Focus = {};
         Shutter = {};
         Lens = {};
+        ColorGrade = {};
         ReflectionSurface.reset();
         ReflectionProbes = {};
         Jittered.reset();Motion.reset();Temporal={};

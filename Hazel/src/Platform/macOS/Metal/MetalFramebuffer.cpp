@@ -233,6 +233,12 @@ Ref<const FramebufferReadback> MetalFramebuffer::Submit()
     }
     catch (...) { m_Frame.reset(); throw; }
 }
+Ref<const FramebufferReadback> MetalFramebuffer::SubmitForTiming()
+{
+    Check(m_Frame && !Backend().IsFramebufferBound(m_Frame), "Unbind framebuffer before submitting timed work");
+    m_Frame->Readback = false;
+    return Submit();
+}
 void MetalFramebuffer::Poll()
 {
     m_Device->Poll();
@@ -379,7 +385,7 @@ void MetalFramebuffer::ResolveReflectionsTo(const Ref<Framebuffer>& destination,
 void MetalFramebuffer::CompositeWorldTo(const Ref<Framebuffer>& destination, float exposure,
                                         const BloomPyramid* bloom, const ExposureMeterPass* meter,
                                         const DepthOfFieldPass* defocus, const CameraMotionPass* shutter,
-                                        const LensEffectsPass* optics)
+                                        const LensEffectsPass* optics, const ColorGradePass* color)
 {
     auto target = std::dynamic_pointer_cast<MetalFramebuffer>(destination);
     Check(target && target.get() != this && target->m_Device == m_Device && std::isfinite(exposure) && exposure >= -16 && exposure <= 16, "Invalid Metal world destination/exposure");
@@ -388,6 +394,11 @@ void MetalFramebuffer::CompositeWorldTo(const Ref<Framebuffer>& destination, flo
         m_Frame->Width == target->m_Frame->Width && m_Frame->Height == target->m_Frame->Height,
         "World conversion requires an unbound world and a bound empty destination of equal extent");
     target->m_Frame->PresentationShader = std::static_pointer_cast<MetalShader>(Backend().LoadShader("WorldPresentation"));
+    if (color) {
+        target->m_Frame->ColorGrade = color->Parameters;
+        if (color->LUT)
+            target->m_Frame->ColorLUT = static_cast<const MetalTexture2D&>(*color->LUT).Snapshot();
+    }
     if (optics) {
         MetalLensEffects pass;
         pass.Presentation = optics->Presentation;

@@ -19,8 +19,10 @@ layout(binding=7) uniform sampler2D u_DefocusBounds;
 layout(binding=8) uniform sampler2D u_ShutterLayer;
 layout(binding=9) uniform sampler2D u_Flare;
 layout(binding=10) uniform sampler2D u_Dirt;
+layout(binding=11) uniform sampler2D u_GradeLUT;
 layout(std140,binding=5) uniform Presentation {
     vec4 u_Presentation, u_Defocus, u_Sensor, u_Gate, u_DirtSettings;
+    vec4 u_WhiteR, u_WhiteG, u_WhiteB, u_Tone, u_LUTScale, u_LUTBias;
 };
 // SHUTTER RECONSTRUCTION
 vec3 reconstructShutter(vec3 sceneColor, ivec2 pixel, float mode)
@@ -123,6 +125,29 @@ float sensorNoise(ivec2 pixel, uint frame)
     value ^= value >> 16;
     return float(value & 65535u) / 65535.0 - .5;
 }
+vec3 gradeTone(vec3 color)
+{
+    float luminance = dot(color, vec3(.2126, .7152, .0722));
+    color = clamp(color + u_Tone.x * (color - luminance), 0.0, 1.0);
+    luminance = clamp(dot(color, vec3(.2126, .7152, .0722)), 0.0, 1.0);
+    float contrasted = luminance + 1.8 * u_Tone.y * luminance * (1.0 - luminance) * (luminance - .5);
+    float target = contrasted + .65 * contrasted * (1.0 - contrasted) * mix(u_Tone.z, u_Tone.w, contrasted);
+    if (target > luminance)
+        return mix(color, vec3(1), (target - luminance) / (1.0 - luminance));
+    if (target < luminance)
+        return color * (target / luminance);
+    return color;
+}
+vec3 gradeLUT(vec3 color)
+{
+    float size = u_LUTScale.w;
+    vec3 p = clamp(color * u_LUTScale.rgb + u_LUTBias.rgb, 0.0, 1.0) * (size - 1.0);
+    float slice = floor(p.b);
+    vec2 first = vec2((slice * size + p.r + .5) / (size * size), (p.g + .5) / size);
+    vec2 last = first + vec2(slice < size - 1.0 ? 1.0 / size : 0.0, 0);
+    vec3 graded = mix(texture(u_GradeLUT, first).rgb, texture(u_GradeLUT, last).rgb, fract(p.b));
+    return mix(color, graded, u_LUTBias.w);
+}
 void main() {
     ivec2 pixel = ivec2(gl_FragCoord.xy);
     ivec2 extent = textureSize(u_World, 0);
@@ -168,7 +193,11 @@ void main() {
     float gain = u_Presentation.x;
     if (u_Presentation.z > .5)
         gain = clamp(gain + texelFetch(u_AdaptedGain, ivec2(0), 0).r, -16., 16.);
+    if (u_WhiteR.w > .5)
+        world = max(vec3(dot(u_WhiteR.rgb, world), dot(u_WhiteG.rgb, world), dot(u_WhiteB.rgb, world)), 0.0);
     vec3 display = neutral(world * exp2(gain));
+    if (any(notEqual(u_Tone, vec4(0)))) display = gradeTone(display);
+    if (u_LUTBias.w > 0.0) display = gradeLUT(display);
     if (u_Sensor.w > 0.0) {
         float luma = clamp(dot(display, vec3(.2126, .7152, .0722)), 0.0, 1.0);
         float weight = sqrt(luma * (1.0 - luma));

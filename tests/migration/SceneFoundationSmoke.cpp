@@ -1,3 +1,4 @@
+#include "Hazel/Scene/CameraPresets.h"
 // CPU checks for exact target ECS/YAML dependencies and portable camera state.
 #include "Hazel/Scene/SceneCamera.h"
 #include "Hazel/Renderer/Cameras/CameraDefocus.h"
@@ -235,6 +236,52 @@ static void CameraLensContracts()
     Check(!reader.DeserializeText(YAML::Dump(invalid)) && reader.SerializeText() == text,
           "Escaping lens dirt path mutated the camera");
     std::cout << "PASS: lens optics scene round-trip and transactional asset-path rejection\n";
+}
+static void CameraGradeContracts()
+{
+    using namespace Hazel;
+    auto scene = CreateRef<Scene>();
+    auto entity = scene->CreateEntity("Camera look");
+    auto& camera = entity.AddComponent<CameraComponent>();
+    camera.Camera.SetPerspective(glm::radians(60.f), .1f, 500);
+    const auto originalFOV = camera.Camera.GetPerspectiveVerticalFOV();
+
+    Check(ColorGradeSettings{}.WhiteBalance() == glm::dmat3(1), "D65 must produce an exact identity");
+    camera.ColorGrade.WhiteKelvin = 2856;
+    // Independently integrate the CIE standard observer for a 2856 K blackbody.
+    const auto gray = camera.ColorGrade.WhiteBalance() * glm::dvec3(.369025803, .165221047, .046678129);
+    Check(glm::length(gray - glm::dvec3(.2)) < .002, "White balance did not neutralize the thermal reference");
+    camera.ColorGrade.WhiteKelvin = 4950;
+    camera.ColorGrade.TintUV = .003f;
+    camera.ColorGrade.LUT = "CameraStudy/Look.cube";
+    camera.ColorGrade.LUTStrength = .48f;
+    for (auto preset : {CameraPreset::AutomaticBalanced, CameraPreset::Cinematic,
+             CameraPreset::OutdoorDaylight, CameraPreset::LowLight, CameraPreset::ManualPhotographic}) {
+        const auto color = camera.ColorGrade;
+        ApplyCameraPreset(camera, preset);
+        const bool motion = preset == CameraPreset::Cinematic;
+        Check(camera.Camera.GetPerspectiveVerticalFOV() == originalFOV && camera.ColorGrade == color,
+              "Preset changed the projection or authored color");
+        Check(camera.DepthOfField.Enabled == motion && camera.MotionBlur.Enabled == motion &&
+              (camera.ExposureOverride->Mode == ExposureMode::ManualPhysical) ==
+                   (preset == CameraPreset::ManualPhotographic),
+              "Preset drove unintended exposure or optics");
+        camera.Camera.GetPhysicalCamera()->Validate();
+        camera.ExposureOverride->Validate();
+    }
+    camera.BloomOverride = false;
+    const auto text = SceneSerializer(scene).SerializeText();
+    auto copy = CreateRef<Scene>();
+    SceneSerializer reader(copy);
+    Check(reader.DeserializeText(text), "Color grade scene could not be loaded");
+    const auto& loaded = copy->GetEntityByUUID(entity.GetUUID()).GetComponent<CameraComponent>();
+    Check(loaded.ColorGrade == camera.ColorGrade && loaded.BloomOverride == std::optional<bool>(false),
+          "Color grade or explicit bloom override changed across serialization");
+    auto invalid = YAML::Load(text);
+    invalid["Entities"][0]["CameraComponent"]["ColorGrade"]["LUT"] = "../Outside.cube";
+    Check(!reader.DeserializeText(YAML::Dump(invalid)) && reader.SerializeText() == text,
+          "Out-of-project camera LUT mutated the loaded scene");
+    std::cout << "PASS: camera white balance, five presets and transactional grading persistence\n";
 }
 static void CameraExposureMigration()
 {
@@ -556,7 +603,7 @@ int main()
         StorageChecks();
         AssetCookingChecks();ImportCookingChecks();
         Hazel::Log::Init();
-        PhysicalCameraContracts();CameraDefocusContracts();CameraShutterContracts();CameraLensContracts();CameraExposureMigration();LocalLightContracts();AuthoredComparisonContracts();ImportPublicationChecks();
+        PhysicalCameraContracts();CameraDefocusContracts();CameraShutterContracts();CameraLensContracts();CameraGradeContracts();CameraExposureMigration();LocalLightContracts();AuthoredComparisonContracts();ImportPublicationChecks();
         CPUFontFamilyDocument();
         Hazel::EditorDocumentChecks();
         Hazel::EditorStateChecks();

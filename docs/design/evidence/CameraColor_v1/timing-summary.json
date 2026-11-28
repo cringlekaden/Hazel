@@ -1,0 +1,365 @@
+{
+  "standard": {
+    "metal": {
+      "1280x720": {
+        "passesMS": {
+          "median": 0.003375,
+          "p95": 0.0472083
+        },
+        "scratchBytes": 147456,
+        "offFrameMS": {
+          "median": 9.915667003951967,
+          "p95": 10.439958015922457
+        },
+        "onFrameMS": {
+          "median": 9.904875012580305,
+          "p95": 10.456582996994257
+        },
+        "pairedFrameDeltaMS": {
+          "median": -0.00900006853044033,
+          "p95": 0.6343340501189232
+        }
+      },
+      "1920x1080": {
+        "passesMS": {
+          "median": 0.00175,
+          "p95": 0.117208
+        },
+        "scratchBytes": 147456,
+        "offFrameMS": {
+          "median": 20.876417052932084,
+          "p95": 21.345125045627356
+        },
+        "onFrameMS": {
+          "median": 20.929124963004142,
+          "p95": 21.517875022254884
+        },
+        "pairedFrameDeltaMS": {
+          "median": 0.12241594959050417,
+          "p95": 0.6934170378372073
+        }
+      },
+      "3840x2160": {
+        "passesMS": {
+          "median": -0.01275,
+          "p95": 0.614708
+        },
+        "scratchBytes": 147456,
+        "offFrameMS": {
+          "median": 79.95012495666742,
+          "p95": 81.54999994440004
+        },
+        "onFrameMS": {
+          "median": 80.16041695373133,
+          "p95": 81.72299998113886
+        },
+        "pairedFrameDeltaMS": {
+          "median": 0.014375022146850824,
+          "p95": 0.8999579586088657
+        }
+      }
+    },
+    "opengl": {
+      "1280x720": {
+        "passesMS": {
+          "median": 0.040833,
+          "p95": 0.250833
+        },
+        "scratchBytes": 39304,
+        "offFrameMS": {
+          "median": 35.509542,
+          "p95": 36.630084
+        },
+        "onFrameMS": {
+          "median": 35.426041,
+          "p95": 36.119
+        },
+        "pairedFrameDeltaMS": {
+          "median": -0.34820700000000215,
+          "p95": 1.266959
+        }
+      },
+      "1920x1080": {
+        "passesMS": {
+          "median": 0.007542,
+          "p95": 0.374
+        },
+        "scratchBytes": 39304,
+        "offFrameMS": {
+          "median": 38.511291,
+          "p95": 39.82625
+        },
+        "onFrameMS": {
+          "median": 38.381333,
+          "p95": 39.851875
+        },
+        "pairedFrameDeltaMS": {
+          "median": -0.10804300000000211,
+          "p95": 1.8909570000000002
+        }
+      },
+      "3840x2160": {
+        "passesMS": {
+          "median": 0.020377,
+          "p95": 0.465958
+        },
+        "scratchBytes": 39304,
+        "offFrameMS": {
+          "median": 63.3005,
+          "p95": 65.991874
+        },
+        "onFrameMS": {
+          "median": 63.695875,
+          "p95": 65.279375
+        },
+        "pairedFrameDeltaMS": {
+          "median": 0.10462500000000574,
+          "p95": 1.7725010000000054
+        }
+      }
+    },
+    "Metal queue summary": "METAL_FINAL submitted=420 completed=420 presented=0 completed_presented=0 errors=0 peak_frame_bytes=1978039136 peak_attachment_bytes=3194413824 peak_allocator_bytes=11038248 live_attachment_generations=0 pending_bytes=0"
+  },
+  "control": {
+    "metal": {
+      "1280x720": {
+        "passesMS": {
+          "median": 0.00766667,
+          "p95": 0.0779167
+        },
+        "scratchBytes": 147456,
+        "offFrameMS": {
+          "median": 9.912375011481345,
+          "p95": 10.496500006411225
+        },
+        "onFrameMS": {
+          "median": 9.902499965392053,
+          "p95": 10.391791991423815
+        },
+        "pairedFrameDeltaMS": {
+          "median": -0.05937495734542608,
+          "p95": 0.6017920095473528
+        }
+      },
+      "1920x1080": {
+        "passesMS": {
+          "median": 0.00229167,
+          "p95": 0.0492917
+        },
+        "scratchBytes": 147456,
+        "offFrameMS": {
+          "median": 20.935249980539083,
+          "p95": 21.558999957051128
+        },
+        "onFrameMS": {
+          "median": 20.916791982017457,
+          "p95": 21.558666951023042
+        },
+        "pairedFrameDeltaMS": {
+          "median": -0.006958027370274067,
+          "p95": 0.6356249796226621
+        }
+      },
+      "3840x2160": {
+        "passesMS": {
+          "median": -0.015875,
+          "p95": 0.554083
+        },
+        "scratchBytes": 147456,
+        "offFrameMS": {
+          "median": 79.69458296429366,
+          "p95": 81.34112495463341
+        },
+        "onFrameMS": {
+          "median": 79.93974996497855,
+          "p95": 81.69858303153887
+        },
+        "pairedFrameDeltaMS": {
+          "median": 0.17249997472390532,
+          "p95": 1.0542079689912498
+        }
+      }
+    },
+    "opengl": {
+      "1280x720": {
+        "passesMS": {
+          "median": 0.022,
+          "p95": 0.226499
+        },
+        "scratchBytes": 39304,
+        "offFrameMS": {
+          "median": 35.406209,
+          "p95": 36.256541
+        },
+        "onFrameMS": {
+          "median": 35.540834,
+          "p95": 36.500334
+        },
+        "pairedFrameDeltaMS": {
+          "median": -0.039500000000003865,
+          "p95": 1.9378760000000028
+        }
+      },
+      "1920x1080": {
+        "passesMS": {
+          "median": 0.007959,
+          "p95": 0.216209
+        },
+        "scratchBytes": 39304,
+        "offFrameMS": {
+          "median": 38.740124,
+          "p95": 39.731416
+        },
+        "onFrameMS": {
+          "median": 38.62325,
+          "p95": 39.8575
+        },
+        "pairedFrameDeltaMS": {
+          "median": -0.058332999999997526,
+          "p95": 1.1875009999999975
+        }
+      },
+      "3840x2160": {
+        "passesMS": {
+          "median": 0.019707,
+          "p95": 0.695707
+        },
+        "scratchBytes": 39304,
+        "offFrameMS": {
+          "median": 64.033751,
+          "p95": 65.670251
+        },
+        "onFrameMS": {
+          "median": 64.091334,
+          "p95": 65.467125
+        },
+        "pairedFrameDeltaMS": {
+          "median": 0.11349899999999735,
+          "p95": 1.258625000000002
+        }
+      }
+    },
+    "Metal queue summary": "METAL_FINAL submitted=420 completed=420 presented=0 completed_presented=0 errors=0 peak_frame_bytes=1977893416 peak_attachment_bytes=3194413824 peak_allocator_bytes=11038248 live_attachment_generations=0 pending_bytes=0"
+  },
+  "combined": {
+    "metal": {
+      "1280x720": {
+        "passesMS": {
+          "median": 0.00625,
+          "p95": 0.0755833
+        },
+        "scratchBytes": 147456,
+        "offFrameMS": {
+          "median": 11.4727079635486,
+          "p95": 12.209875043481588
+        },
+        "onFrameMS": {
+          "median": 11.493749974761158,
+          "p95": 12.116292025893927
+        },
+        "pairedFrameDeltaMS": {
+          "median": -0.009500014130026102,
+          "p95": 0.6705840351060033
+        }
+      },
+      "1920x1080": {
+        "passesMS": {
+          "median": 0.00320833,
+          "p95": 0.0515417
+        },
+        "scratchBytes": 147456,
+        "offFrameMS": {
+          "median": 23.601166962180287,
+          "p95": 24.041500000748783
+        },
+        "onFrameMS": {
+          "median": 23.65250000730157,
+          "p95": 24.2994999862276
+        },
+        "pairedFrameDeltaMS": {
+          "median": 0.1520830555818975,
+          "p95": 0.8034579805098474
+        }
+      },
+      "3840x2160": {
+        "passesMS": {
+          "median": -0.0115833,
+          "p95": 0.249333
+        },
+        "scratchBytes": 147456,
+        "offFrameMS": {
+          "median": 89.54537496902049,
+          "p95": 91.15458303131163
+        },
+        "onFrameMS": {
+          "median": 89.60866701090708,
+          "p95": 91.22604195727035
+        },
+        "pairedFrameDeltaMS": {
+          "median": 0.6144170183688402,
+          "p95": 1.5150419785641134
+        }
+      }
+    },
+    "opengl": {
+      "1280x720": {
+        "passesMS": {
+          "median": -0.010959,
+          "p95": 0.182501
+        },
+        "scratchBytes": 39304,
+        "offFrameMS": {
+          "median": 35.25,
+          "p95": 36.030791
+        },
+        "onFrameMS": {
+          "median": 35.225,
+          "p95": 35.907501
+        },
+        "pairedFrameDeltaMS": {
+          "median": 0.01737500000000125,
+          "p95": 0.6797499999999985
+        }
+      },
+      "1920x1080": {
+        "passesMS": {
+          "median": 0.006458,
+          "p95": 0.165792
+        },
+        "scratchBytes": 39304,
+        "offFrameMS": {
+          "median": 50.904041,
+          "p95": 57.342499
+        },
+        "onFrameMS": {
+          "median": 50.302541,
+          "p95": 58.29425
+        },
+        "pairedFrameDeltaMS": {
+          "median": -0.09962499999999608,
+          "p95": 3.5606670000000022
+        }
+      },
+      "3840x2160": {
+        "passesMS": {
+          "median": -0.00225,
+          "p95": 0.550083
+        },
+        "scratchBytes": 39304,
+        "offFrameMS": {
+          "median": 73.725375,
+          "p95": 75.065959
+        },
+        "onFrameMS": {
+          "median": 73.6605,
+          "p95": 75.459625
+        },
+        "pairedFrameDeltaMS": {
+          "median": 0.2502099999999956,
+          "p95": 1.7019590000000022
+        }
+      }
+    },
+    "Metal queue summary": "METAL_FINAL submitted=420 completed=420 presented=0 completed_presented=0 errors=0 peak_frame_bytes=2115980408 peak_attachment_bytes=3470287616 peak_allocator_bytes=11234856 live_attachment_generations=0 pending_bytes=0"
+  }
+}

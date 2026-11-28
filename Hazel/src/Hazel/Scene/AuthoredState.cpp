@@ -178,6 +178,12 @@ std::string SceneSerializer::CaptureAuthoredState(Entity only, const std::type_i
             state.Value(optics.AnamorphicStreak); state.Value(optics.DirtTexture);
             state.Value(optics.DirtStrength); state.Value(optics.DirtScale); state.Value(optics.Vignette);
             state.Value(optics.ChromaticPixels); state.Value(optics.Distortion); state.Value(optics.Grain);
+            const auto& grade = c.ColorGrade;
+            state.Value(grade.WhiteKelvin); state.Value(grade.TintUV); state.Value(grade.Saturation);
+            state.Value(grade.Contrast); state.Value(grade.Shadows); state.Value(grade.Highlights);
+            state.Value(grade.LUT); state.Value(grade.LUTStrength);
+            state.Value(c.BloomOverride.has_value());
+            if (c.BloomOverride) state.Value(*c.BloomOverride);
             state.Value(c.Primary);
             state.Value(c.FixedAspectRatio);
         });
