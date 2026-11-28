@@ -3,6 +3,8 @@
 Starting point: owner-accepted HDR bloom at `4d6bb7a` on `feature/3d-foundations`.
 This record defines the phase gates and pass order for the complete camera.
 
+[Final qualification report](camera-system-qualification.md)
+
 ## Current frame and ownership
 
 Hazelnut's navigation camera and Nutella's active primary camera both reach
