@@ -1,0 +1,14 @@
+Environment:
+  Version: 1
+  Name: Pavilion Hall / baked
+  Notice: See Pavilion ASSET_CREDITS.md for the source asset licenses.
+  Source:
+    Kind: SceneCapture
+    Image: Pavilion/Reflections/Hall.hlight
+    Interpretation: LinearRec709D65Cube
+  Preparation:
+    Recipe: Hazel.IBL_v1.GGX-correlated-single.r045.E-pi.AB-NoV-r.cube-top
+    Background: 16
+    Specular: 256
+    Irradiance: 32
+    Samples: 1024

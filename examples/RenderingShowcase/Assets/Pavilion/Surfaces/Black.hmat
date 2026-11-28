@@ -1,0 +1,45 @@
+Material:
+  Version: 1
+  Name: Black
+  Model: MetallicRoughness
+  BaseColor: [0.025, 0.031, 0.034, 1]
+  Emissive: [0.0, 0.0, 0.0]
+  EmissiveStrength: 1
+  Metallic: 0.22
+  Roughness: 0.36
+  NormalScale: 0.5
+  OcclusionStrength: 0.8
+  Alpha: Opaque
+  AlphaCutoff: 0.4
+  DoubleSided: false
+  Textures:
+    BaseColor:
+      Image: ''
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    MetallicRoughness:
+      Image: ''
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Normal:
+      Image: ''
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Occlusion:
+      Image: ''
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Emissive:
+      Image: ''
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat

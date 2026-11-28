@@ -1,0 +1,45 @@
+Material:
+  Version: 1
+  Name: Concrete
+  Model: MetallicRoughness
+  BaseColor: [0.62, 0.54, 0.43, 1]
+  Emissive: [0.0, 0.0, 0.0]
+  EmissiveStrength: 1
+  Metallic: 1
+  Roughness: 0.87
+  NormalScale: 0.26
+  OcclusionStrength: 0.8
+  Alpha: Opaque
+  AlphaCutoff: 0.4
+  DoubleSided: false
+  Textures:
+    BaseColor:
+      Image: Pavilion/Surfaces/concrete_wall_007-color.jpg
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    MetallicRoughness:
+      Image: Pavilion/Surfaces/concrete_wall_007-arm.jpg
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Normal:
+      Image: Pavilion/Surfaces/concrete_wall_007-normal.jpg
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Occlusion:
+      Image: Pavilion/Surfaces/concrete_wall_007-arm.jpg
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Emissive:
+      Image: ''
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat

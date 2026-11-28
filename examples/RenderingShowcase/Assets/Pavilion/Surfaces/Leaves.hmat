@@ -1,0 +1,45 @@
+Material:
+  Version: 1
+  Name: Leaves
+  Model: MetallicRoughness
+  BaseColor: [0.74, 0.78, 0.58, 1]
+  Emissive: [0.0, 0.0, 0.0]
+  EmissiveStrength: 1
+  Metallic: 0
+  Roughness: 0.91
+  NormalScale: 0.5
+  OcclusionStrength: 0.8
+  Alpha: Mask
+  AlphaCutoff: 0.4
+  DoubleSided: true
+  Textures:
+    BaseColor:
+      Image: Pavilion/Surfaces/Grasses.png
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    MetallicRoughness:
+      Image: ''
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Normal:
+      Image: ''
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Occlusion:
+      Image: ''
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Emissive:
+      Image: ''
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat

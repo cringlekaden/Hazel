@@ -1,0 +1,333 @@
+PrefabVersion: 3
+PrefabRoot: 6390948200489750861
+SceneVersion: 3
+Scene: Imported model
+Presentation:
+  Mode: DisplayReferred
+  Background: [0.0100228256, 0.0100228256, 0.0100228256, 1]
+Entities:
+  - Entity: 6390948200489750861
+    Relationship:
+      Parent: 0
+      Order: 0
+    TagComponent:
+      Tag: Imported model
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+  - Entity: 13656164128317450906
+    Relationship:
+      Parent: 6390948200489750861
+      Order: 0
+    TagComponent:
+      Tag: Architecture / Aggregate
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Pavilion/Architecture/meshes/0c6cbedb31c8e0b9.hmesh
+      Materials:
+        []
+  - Entity: 5337269350023734302
+    Relationship:
+      Parent: 6390948200489750861
+      Order: 1
+    TagComponent:
+      Tag: Architecture / Black
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Pavilion/Architecture/meshes/1731ada5e6a39464.hmesh
+      Materials:
+        []
+  - Entity: 5857838821712826251
+    Relationship:
+      Parent: 6390948200489750861
+      Order: 2
+    TagComponent:
+      Tag: Architecture / Bronze
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Pavilion/Architecture/meshes/7b742e0865e29013.hmesh
+      Materials:
+        []
+  - Entity: 11627564686681722358
+    Relationship:
+      Parent: 6390948200489750861
+      Order: 3
+    TagComponent:
+      Tag: Architecture / Concrete
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Pavilion/Architecture/meshes/a1a359b5da61ce07.hmesh
+      Materials:
+        []
+  - Entity: 14295940188329711134
+    Relationship:
+      Parent: 6390948200489750861
+      Order: 4
+    TagComponent:
+      Tag: Architecture / Amber
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Pavilion/Architecture/meshes/40482c8c2212e05d.hmesh
+      Materials:
+        []
+  - Entity: 3899158522435707968
+    Relationship:
+      Parent: 6390948200489750861
+      Order: 5
+    TagComponent:
+      Tag: Architecture / Oak
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Pavilion/Architecture/meshes/0f55735a33fc82c6.hmesh
+      Materials:
+        []
+  - Entity: 12637278073270236316
+    Relationship:
+      Parent: 6390948200489750861
+      Order: 6
+    TagComponent:
+      Tag: Architecture / Marble
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Pavilion/Architecture/meshes/8176cb8701f17e06.hmesh
+      Materials:
+        []
+  - Entity: 17590278355271191658
+    Relationship:
+      Parent: 6390948200489750861
+      Order: 7
+    TagComponent:
+      Tag: Architecture / Warm
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Pavilion/Architecture/meshes/0a6d40f938d2cc9f.hmesh
+      Materials:
+        []
+  - Entity: 16554703009931087953
+    Relationship:
+      Parent: 6390948200489750861
+      Order: 8
+    TagComponent:
+      Tag: Architecture / Slate
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Pavilion/Architecture/meshes/967351e735800838.hmesh
+      Materials:
+        []
+  - Entity: 9231586230939057650
+    Relationship:
+      Parent: 6390948200489750861
+      Order: 9
+    TagComponent:
+      Tag: Orbital sculpture outer / Bronze
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Pavilion/Architecture/meshes/8821a8378b58ef76.hmesh
+      Materials:
+        []
+  - Entity: 17368193643728382238
+    Relationship:
+      Parent: 6390948200489750861
+      Order: 10
+    TagComponent:
+      Tag: Orbital sculpture inner / Steel
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Pavilion/Architecture/meshes/dbbde9ea7c3d0c80.hmesh
+      Materials:
+        []
+  - Entity: 7190182811623859240
+    Relationship:
+      Parent: 6390948200489750861
+      Order: 11
+    TagComponent:
+      Tag: Orbital sculpture arc / Warm
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Pavilion/Architecture/meshes/2d95967e37d9fc01.hmesh
+      Materials:
+        []
+  - Entity: 1981420783428102276
+    Relationship:
+      Parent: 6390948200489750861
+      Order: 12
+    TagComponent:
+      Tag: Kinetic exhibit / Bronze
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Pavilion/Architecture/meshes/800fd3e656365e11.hmesh
+      Materials:
+        []
+  - Entity: 11412071465209932251
+    Relationship:
+      Parent: 6390948200489750861
+      Order: 13
+    TagComponent:
+      Tag: Archive lens housing / Steel
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Pavilion/Architecture/meshes/a670306ed0c3ae71.hmesh
+      Materials:
+        []
+  - Entity: 851069453469156639
+    Relationship:
+      Parent: 6390948200489750861
+      Order: 14
+    TagComponent:
+      Tag: Archive lens rim / Bronze
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Pavilion/Architecture/meshes/13fa9ea3cc127478.hmesh
+      Materials:
+        []
+  - Entity: 17514744558263022011
+    Relationship:
+      Parent: 6390948200489750861
+      Order: 15
+    TagComponent:
+      Tag: Architecture / Cold
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Pavilion/Architecture/meshes/4802f7b6073c1717.hmesh
+      Materials:
+        []
+  - Entity: 14424246935493331352
+    Relationship:
+      Parent: 6390948200489750861
+      Order: 16
+    TagComponent:
+      Tag: Architecture / Exit
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Pavilion/Architecture/meshes/511ecfea16bdf945.hmesh
+      Materials:
+        []
+  - Entity: 8252283340662678222
+    Relationship:
+      Parent: 6390948200489750861
+      Order: 17
+    TagComponent:
+      Tag: Architecture / Title
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Pavilion/Architecture/meshes/cba676d9a18c3bb1.hmesh
+      Materials:
+        []
+  - Entity: 5140279050590898543
+    Relationship:
+      Parent: 6390948200489750861
+      Order: 18
+    TagComponent:
+      Tag: Architecture / Exhibition
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Pavilion/Architecture/meshes/904c74d3fc14e3cc.hmesh
+      Materials:
+        []
+  - Entity: 14693542190441127919
+    Relationship:
+      Parent: 6390948200489750861
+      Order: 19
+    TagComponent:
+      Tag: Architecture / Label
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Pavilion/Architecture/meshes/c56ef470896ca0ce.hmesh
+      Materials:
+        []
+  - Entity: 10401791475431983026
+    Relationship:
+      Parent: 6390948200489750861
+      Order: 20
+    TagComponent:
+      Tag: Court grasses / Leaves
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Pavilion/Architecture/meshes/76a578d8ca5f88b5.hmesh
+      Materials:
+        []

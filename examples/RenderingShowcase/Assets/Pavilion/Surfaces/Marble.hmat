@@ -1,0 +1,45 @@
+Material:
+  Version: 1
+  Name: Marble
+  Model: MetallicRoughness
+  BaseColor: [0.48, 0.53, 0.56, 1]
+  Emissive: [0.0, 0.0, 0.0]
+  EmissiveStrength: 1
+  Metallic: 1
+  Roughness: 0.27
+  NormalScale: 0.12
+  OcclusionStrength: 0.8
+  Alpha: Opaque
+  AlphaCutoff: 0.4
+  DoubleSided: false
+  Textures:
+    BaseColor:
+      Image: Pavilion/Surfaces/marble_01-color.jpg
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    MetallicRoughness:
+      Image: Pavilion/Surfaces/marble_01-arm.jpg
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Normal:
+      Image: Pavilion/Surfaces/marble_01-normal.jpg
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Occlusion:
+      Image: Pavilion/Surfaces/marble_01-arm.jpg
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Emissive:
+      Image: ''
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat

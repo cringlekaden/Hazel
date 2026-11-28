@@ -1,0 +1,9 @@
+Mesh:
+  Version: 1
+  ID: 7b742e0865e29013
+  Name: Architecture / Bronze
+  Import: Pavilion/Architecture/Import.himport
+  Slots:
+    - ID: bee1249d229d4ae9
+      Name: Surface 1
+      Material: Pavilion/Architecture/materials/8f42732066ef771f.hmat

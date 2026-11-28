@@ -9,7 +9,7 @@ import tempfile
 import time
 
 import hazel as hz
-from internal.testing.projects import snapshot
+from internal.testing.projects import snapshot, snapshot_studio
 
 
 def native_profile(profile):
@@ -241,7 +241,7 @@ def packages(output,profile,interactive=False,interactive_app=None,logs=None):
         # Expanded maintained probes require the same frozen fixture projects
         # as the normal suite. These test-only inputs are outside pristine bundles.
         reference=snapshot('RenderingReference',working/'probe-fixtures/reference','RenderingReference.hproj')
-        showcase=snapshot('RenderingShowcase',working/'probe-fixtures/showcase','RenderingShowcase.hproj')
+        showcase=snapshot_studio(working/'probe-fixtures/showcase')
         for name in ('Hazelnut','Nutella'):
             cwd=working/name/'unrelated cwd';cwd.mkdir(parents=True)
             root=extract_verified(output/f'{name}-macos-arm64-Release.zip',working)

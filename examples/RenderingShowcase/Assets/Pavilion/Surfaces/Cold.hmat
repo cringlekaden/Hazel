@@ -1,0 +1,45 @@
+Material:
+  Version: 1
+  Name: Cold
+  Model: MetallicRoughness
+  BaseColor: [0.05, 0.2, 0.26, 1]
+  Emissive: [0.0603774, 0.5471698, 1.0]
+  EmissiveStrength: 2.65
+  Metallic: 0
+  Roughness: 0.5
+  NormalScale: 0.5
+  OcclusionStrength: 0.8
+  Alpha: Opaque
+  AlphaCutoff: 0.4
+  DoubleSided: false
+  Textures:
+    BaseColor:
+      Image: ''
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    MetallicRoughness:
+      Image: ''
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Normal:
+      Image: ''
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Occlusion:
+      Image: ''
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Emissive:
+      Image: ''
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat

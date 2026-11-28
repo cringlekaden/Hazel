@@ -11,7 +11,7 @@ import subprocess
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import hazel as hz
-from internal.testing.projects import snapshot
+from internal.testing.projects import snapshot, snapshot_studio
 
 BASELINE = 'b49256001bd6d13422fa4c88d0a52a96ac3b5c42'
 
@@ -64,7 +64,7 @@ def main():
     # gate, BRDF, energy equation, texture and reference expectation fixed.
     ablation = baseline.replace(original, 'N=resolveShadingNormal(N,baseNormal,V);')
     reference = snapshot('RenderingReference', out/'reference', 'RenderingReference.hproj')
-    showcase = snapshot('RenderingShowcase', out/'showcase', 'RenderingShowcase.hproj')
+    showcase = snapshot_studio(out/'showcase')
     report = dict(baseline=BASELINE, analytic=analytic(), configuration=args.config, gates={})
     try:
         for name, shader, expected in [('baseline', baseline, 0), ('resolve-only', ablation, 1),

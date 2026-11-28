@@ -105,7 +105,7 @@ see the [native qualification evidence](docs/design/taa-qualification.md) and
 remains pending.
 
 For engine code navigation, start with [Follow a frame](docs/follow-a-frame.md).
-The [Rendering Showcase](examples/RenderingShowcase/README.md) demonstrates prepared IBL and material surfaces separately from diagnostic references.
+[The Pavilion](examples/RenderingShowcase/README.md) is the rendering showcase. Its dusk courtyard, aviation exhibition and optics archive exercise native PBR, reflections and physical camera controls in one project.
 
 ## License and attribution
 

@@ -1,0 +1,44 @@
+Material:
+  Version: 1
+  Name: RubberWoodMat
+  Model: MetallicRoughness
+  BaseColor: [1, 1, 1, 1]
+  Emissive: [0, 0, 0]
+  Metallic: 1
+  Roughness: 1
+  NormalScale: 1
+  OcclusionStrength: 1
+  Alpha: Opaque
+  AlphaCutoff: 0.5
+  DoubleSided: false
+  Textures:
+    BaseColor:
+      Image: Pavilion/FlightHelmet/images/2.png
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    MetallicRoughness:
+      Image: Pavilion/FlightHelmet/images/1.png
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Normal:
+      Image: Pavilion/FlightHelmet/images/0.png
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Occlusion:
+      Image: Pavilion/FlightHelmet/images/1.png
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Emissive:
+      Image: ""
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat

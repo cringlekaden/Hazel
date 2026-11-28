@@ -1,0 +1,45 @@
+Material:
+  Version: 1
+  Name: Aggregate
+  Model: MetallicRoughness
+  BaseColor: [0.68, 0.62, 0.52, 1]
+  Emissive: [0.0, 0.0, 0.0]
+  EmissiveStrength: 1
+  Metallic: 1
+  Roughness: 0.88
+  NormalScale: 0.65
+  OcclusionStrength: 0.8
+  Alpha: Opaque
+  AlphaCutoff: 0.4
+  DoubleSided: false
+  Textures:
+    BaseColor:
+      Image: Pavilion/Surfaces/concrete_floor_02-color.jpg
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    MetallicRoughness:
+      Image: Pavilion/Surfaces/concrete_floor_02-arm.jpg
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Normal:
+      Image: Pavilion/Surfaces/concrete_floor_02-normal.jpg
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Occlusion:
+      Image: Pavilion/Surfaces/concrete_floor_02-arm.jpg
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Emissive:
+      Image: ''
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat

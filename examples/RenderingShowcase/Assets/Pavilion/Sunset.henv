@@ -1,0 +1,14 @@
+Environment:
+  Version: 1
+  Name: Dikhololo Sunset
+  Notice: Greg Zaal / Poly Haven, CC0-1.0. 2K Radiance HDR with normalized header. https://polyhaven.com/a/dikhololo_sunset
+  Source:
+    Kind: RadianceHDR
+    Image: Pavilion/Sunset.hdr
+    Interpretation: LinearRec709D65TopDown
+  Preparation:
+    Recipe: Hazel.IBL_v1.GGX-correlated-single.r045.E-pi.AB-NoV-r.cube-top
+    Background: 512
+    Specular: 256
+    Irradiance: 32
+    Samples: 2048

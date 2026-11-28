@@ -1,0 +1,108 @@
+PrefabVersion: 3
+PrefabRoot: 14753347392602146751
+SceneVersion: 3
+Scene: Imported model
+Presentation:
+  Mode: DisplayReferred
+  Background: [0.0100228256, 0.0100228256, 0.0100228256, 1]
+Entities:
+  - Entity: 14753347392602146751
+    Relationship:
+      Parent: 0
+      Order: 0
+    TagComponent:
+      Tag: Imported model
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+  - Entity: 5726781619488509550
+    Relationship:
+      Parent: 14753347392602146751
+      Order: 0
+    TagComponent:
+      Tag: Hose_low
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Pavilion/FlightHelmet/meshes/cc79f240df72b5f1.hmesh
+      Materials:
+        []
+  - Entity: 12644028919789293927
+    Relationship:
+      Parent: 14753347392602146751
+      Order: 1
+    TagComponent:
+      Tag: RubberWood_low
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Pavilion/FlightHelmet/meshes/2ad93c7fc139ec86.hmesh
+      Materials:
+        []
+  - Entity: 3331042573468817173
+    Relationship:
+      Parent: 14753347392602146751
+      Order: 2
+    TagComponent:
+      Tag: GlassPlastic_low
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Pavilion/FlightHelmet/meshes/557773c533397782.hmesh
+      Materials:
+        []
+  - Entity: 6652383671801726196
+    Relationship:
+      Parent: 14753347392602146751
+      Order: 3
+    TagComponent:
+      Tag: MetalParts_low
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Pavilion/FlightHelmet/meshes/8ae5b0fb10db431d.hmesh
+      Materials:
+        []
+  - Entity: 610637891100244008
+    Relationship:
+      Parent: 14753347392602146751
+      Order: 4
+    TagComponent:
+      Tag: LeatherParts_low
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Pavilion/FlightHelmet/meshes/1beef80d933774d0.hmesh
+      Materials:
+        []
+  - Entity: 3697783092539816596
+    Relationship:
+      Parent: 14753347392602146751
+      Order: 5
+    TagComponent:
+      Tag: Lenses_low
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Pavilion/FlightHelmet/meshes/860a697022b0ea4e.hmesh
+      Materials:
+        []

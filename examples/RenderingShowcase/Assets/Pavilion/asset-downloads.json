@@ -1,0 +1,145 @@
+{
+  "downloaded": "2026-11-27",
+  "files": [
+    {
+      "file": "FlightHelmet.bin",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/4995a638c96dbc94376d3d6164e70fee3ac7f7a2/Models/FlightHelmet/glTF/FlightHelmet.bin",
+      "sha256": "9e623a27f837e1cc995d1380da5fd3becf4d29586fefba882fc0ba76b49f94bf"
+    },
+    {
+      "file": "FlightHelmet_Materials_RubberWoodMat_Normal.png",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/4995a638c96dbc94376d3d6164e70fee3ac7f7a2/Models/FlightHelmet/glTF/FlightHelmet_Materials_RubberWoodMat_Normal.png",
+      "sha256": "bb70753c836c59db7e245e5fe2c9db8eee833d29d67e03da348f6adb1e95142a"
+    },
+    {
+      "file": "FlightHelmet_Materials_RubberWoodMat_OcclusionRoughMetal.png",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/4995a638c96dbc94376d3d6164e70fee3ac7f7a2/Models/FlightHelmet/glTF/FlightHelmet_Materials_RubberWoodMat_OcclusionRoughMetal.png",
+      "sha256": "2727d4638514f75fcbd29777bf03db6bd2f0f1ad926e2976cf2346aa22c0bd19"
+    },
+    {
+      "file": "FlightHelmet_Materials_RubberWoodMat_BaseColor.png",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/4995a638c96dbc94376d3d6164e70fee3ac7f7a2/Models/FlightHelmet/glTF/FlightHelmet_Materials_RubberWoodMat_BaseColor.png",
+      "sha256": "f751d643d1f220b300705d9ad57ed284a883eb7d3788469199b752f4381dcc37"
+    },
+    {
+      "file": "FlightHelmet_Materials_GlassPlasticMat_Normal.png",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/4995a638c96dbc94376d3d6164e70fee3ac7f7a2/Models/FlightHelmet/glTF/FlightHelmet_Materials_GlassPlasticMat_Normal.png",
+      "sha256": "c297f18f3b4259fc8b411cdc843a4a44b8cef3e3a53b21cec7b53574e5ef6872"
+    },
+    {
+      "file": "FlightHelmet_Materials_GlassPlasticMat_OcclusionRoughMetal.png",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/4995a638c96dbc94376d3d6164e70fee3ac7f7a2/Models/FlightHelmet/glTF/FlightHelmet_Materials_GlassPlasticMat_OcclusionRoughMetal.png",
+      "sha256": "d4519704f15395c7138421a5814b478df549a2411bc6fa97dd6d02ba62dc6c54"
+    },
+    {
+      "file": "FlightHelmet_Materials_GlassPlasticMat_BaseColor.png",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/4995a638c96dbc94376d3d6164e70fee3ac7f7a2/Models/FlightHelmet/glTF/FlightHelmet_Materials_GlassPlasticMat_BaseColor.png",
+      "sha256": "0914544aabe161046f417274051e34ecc85163cfce6698581b3e1e18c96fe4f1"
+    },
+    {
+      "file": "FlightHelmet_Materials_MetalPartsMat_Normal.png",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/4995a638c96dbc94376d3d6164e70fee3ac7f7a2/Models/FlightHelmet/glTF/FlightHelmet_Materials_MetalPartsMat_Normal.png",
+      "sha256": "a833fcc12718c02bcba97cbc9760d06c4a711ce7f36c23076e7cf6d4393a80e7"
+    },
+    {
+      "file": "FlightHelmet_Materials_MetalPartsMat_OcclusionRoughMetal.png",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/4995a638c96dbc94376d3d6164e70fee3ac7f7a2/Models/FlightHelmet/glTF/FlightHelmet_Materials_MetalPartsMat_OcclusionRoughMetal.png",
+      "sha256": "17f3e27b51011b8f98751dae25958e2b850fcf1467f1019bec812553e0e5eb1d"
+    },
+    {
+      "file": "FlightHelmet_Materials_MetalPartsMat_BaseColor.png",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/4995a638c96dbc94376d3d6164e70fee3ac7f7a2/Models/FlightHelmet/glTF/FlightHelmet_Materials_MetalPartsMat_BaseColor.png",
+      "sha256": "8e26add3ad1b2398d58638580bb1fe56f2fbae3572b4a682b6595a5a26fb1b40"
+    },
+    {
+      "file": "FlightHelmet_Materials_LeatherPartsMat_Normal.png",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/4995a638c96dbc94376d3d6164e70fee3ac7f7a2/Models/FlightHelmet/glTF/FlightHelmet_Materials_LeatherPartsMat_Normal.png",
+      "sha256": "7fb69b26f80c67df41e87d7344bde9d24dda0be77546b0a6acabc4040694872a"
+    },
+    {
+      "file": "FlightHelmet_Materials_LeatherPartsMat_OcclusionRoughMetal.png",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/4995a638c96dbc94376d3d6164e70fee3ac7f7a2/Models/FlightHelmet/glTF/FlightHelmet_Materials_LeatherPartsMat_OcclusionRoughMetal.png",
+      "sha256": "b77e60f175e4632cd3d892bc9f0e748f522c9288a469585d5cb90270cd68910e"
+    },
+    {
+      "file": "FlightHelmet_Materials_LeatherPartsMat_BaseColor.png",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/4995a638c96dbc94376d3d6164e70fee3ac7f7a2/Models/FlightHelmet/glTF/FlightHelmet_Materials_LeatherPartsMat_BaseColor.png",
+      "sha256": "c9346ac6daa3ad34d0b36c1e7cf311ccbcc298710ea453cdf3b6ad40dc60013f"
+    },
+    {
+      "file": "FlightHelmet_Materials_LensesMat_Normal.png",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/4995a638c96dbc94376d3d6164e70fee3ac7f7a2/Models/FlightHelmet/glTF/FlightHelmet_Materials_LensesMat_Normal.png",
+      "sha256": "430775894001933044c89070b1bfd4f9b8489f74780b1ab7079efb0afca95d8d"
+    },
+    {
+      "file": "FlightHelmet_Materials_LensesMat_OcclusionRoughMetal.png",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/4995a638c96dbc94376d3d6164e70fee3ac7f7a2/Models/FlightHelmet/glTF/FlightHelmet_Materials_LensesMat_OcclusionRoughMetal.png",
+      "sha256": "35d81a71ab184f9b50f63ff8f3e0f90cfb6c99f9b2d9ed9d9887a902c16a458d"
+    },
+    {
+      "file": "FlightHelmet_Materials_LensesMat_BaseColor.png",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/4995a638c96dbc94376d3d6164e70fee3ac7f7a2/Models/FlightHelmet/glTF/FlightHelmet_Materials_LensesMat_BaseColor.png",
+      "sha256": "b55f6561f8adabc907360443aab010f3effaf05074fdccea46d8c2d66247cf16"
+    },
+    {
+      "file": "FlightHelmet.gltf",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/4995a638c96dbc94376d3d6164e70fee3ac7f7a2/Models/FlightHelmet/glTF/FlightHelmet.gltf",
+      "sha256": "c9c16c8b85749f62f38ec6069700e5388c6894d8e566f51a35cc270255402cd3"
+    },
+    {
+      "file": "FlightHelmet.README.md",
+      "url": "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/4995a638c96dbc94376d3d6164e70fee3ac7f7a2/Models/FlightHelmet/README.md",
+      "sha256": "7724b64fb4fae1135ddec3738d1eb9320d3bb9c890f599c423a09e205fb7257f"
+    },
+    {
+      "file": "marble_01/color.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/marble_01/marble_01_diff_1k.jpg",
+      "sha256": "b10dabea976d68baa976a0d4e8dac58789df8d26a1b50697f320106f1b00a229"
+    },
+    {
+      "file": "marble_01/arm.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/marble_01/marble_01_arm_1k.jpg",
+      "sha256": "84b1516c27b4393230e77e0aa525186b4a8a415169661a4385f02dcb10c14104"
+    },
+    {
+      "file": "marble_01/normal.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/marble_01/marble_01_nor_gl_1k.jpg",
+      "sha256": "77c2a9b549a6a408659f8197be91945aeb0abc33e697f1dd2ce24ee8dc7c2bc0"
+    },
+    {
+      "file": "concrete_floor_02/color.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_floor_02/concrete_floor_02_diff_1k.jpg",
+      "sha256": "6db84a6d87dc50508b9d134d6fbd2b7e876b8081a5f43a118a249ca18de73af5"
+    },
+    {
+      "file": "concrete_floor_02/arm.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_floor_02/concrete_floor_02_arm_1k.jpg",
+      "sha256": "01d80e4cb4eb4605902d1c1362da1c309fdba5907039acddd9226d893bbd8946"
+    },
+    {
+      "file": "concrete_floor_02/normal.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_floor_02/concrete_floor_02_nor_gl_1k.jpg",
+      "sha256": "fcda391b57a816d646ae15544688be53790478da5cd48dbe514b3c6901415e61"
+    },
+    {
+      "file": "concrete_wall_007/color.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_wall_007/concrete_wall_007_diff_1k.jpg",
+      "sha256": "1a5ff668a66e147d9fb795d8407ca67a144a1ca010779a5b8386137a4917a086"
+    },
+    {
+      "file": "concrete_wall_007/arm.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_wall_007/concrete_wall_007_arm_1k.jpg",
+      "sha256": "b403affeb0eaac2386bd6d91d41acb99f7862e1b9101a14ab0af6da21fdf544f"
+    },
+    {
+      "file": "concrete_wall_007/normal.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_wall_007/concrete_wall_007_nor_gl_1k.jpg",
+      "sha256": "cccb1841908ced8b89b65b5de97c1926f717dab63a14559264703a99639c291f"
+    },
+    {
+      "file": "sky.hdr",
+      "url": "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/2k/dikhololo_sunset_2k.hdr",
+      "sha256": "f278e6ec3b22f479d7a26baf62dbadf12da3a41958ebcf1022ad199837e67e6f"
+    }
+  ]
+}

@@ -1,0 +1,316 @@
+Import:
+  Version: 1
+  Recipe: StaticMesh_v1
+  Producer: GLB2/TinyGLTF-0d9ce1a9561688c6c6e7471430d15a50a0b15f1a/Mikk-3e895b49d05ea07e4c2133156cfa94369e19e409
+  SourceNotice: Original Hazel Pavilion architecture, Apache-2.0
+  ID: e06c39ce410245ed
+  Generation: f8cd59618167e3ca
+  PrefabRoot: 58b13587141d114d
+  Source: Pavilion/Architecture/Source.glb
+  SourceHash: 59210f67141c4727a12219170faa17d193bc4cddbee6df1c95709f4cfc98ba49
+  Scene: -1
+  Prefab: Pavilion/Architecture/Model.hprefab
+  PrefabSource: ce782e1540c2ac835295272fe0e20895528f1b7acea7ab0d53617aae9ed90da3
+  PrefabAcceptedHash: 7a707600e815b029f4c6ab8a4c9461cd73adea09824f888eaac69ff8fa297472
+  Materials:
+    - ID: 8f42732066ef771f
+      Source: c236cddc2c5ae0edc86fe6e7a1ee72b4ae8af9beac3830c1253f724be5917efe
+      Output: Pavilion/Architecture/materials/8f42732066ef771f.hmat
+      AcceptedHash: 91b0e4f42541ca81ef692cfeb5f6e51f88c9d79eb391bc350e8cad4b94ab794f
+      SourceKey: default
+  Meshes:
+    - ID: 0c6cbedb31c8e0b9
+      Source: e85ea1340c2fa03fc9ea989e39d12094abe2f320d21e7700ee6caa96e7cde126
+      Output: Pavilion/Architecture/meshes/0c6cbedb31c8e0b9.hmesh
+      Geometry: Pavilion/Architecture/generations/f8cd59618167e3ca/0c6cbedb31c8e0b9.hgeom
+      GeometryHash: 7b677c68bb339a689e778d540433568ff3056b8269d80d3e4750ab859478de7f
+      SourceKey: mesh:0
+      Slots:
+        - ID: 05f560d84b55e967
+          Source: 90f11e43a061c830cffcd1a815680aaf1e60e715ff7aa4a21d829b5fe82a9d2b
+          SourceKey: mesh:0/primitive:0
+          Material: Pavilion/Architecture/materials/8f42732066ef771f.hmat
+    - ID: 1731ada5e6a39464
+      Source: 5ea826a0457d34e76faf7b98d96d21850a32d3725e612409a38470b25a9b5fc7
+      Output: Pavilion/Architecture/meshes/1731ada5e6a39464.hmesh
+      Geometry: Pavilion/Architecture/generations/f8cd59618167e3ca/1731ada5e6a39464.hgeom
+      GeometryHash: 8cde41139a250c7f733d83c4df9da758a1e3b1ccb1ceef60fd2a5fa37506785c
+      SourceKey: mesh:1
+      Slots:
+        - ID: e3773052c80ecb2c
+          Source: e53faf3c0954eadf47ca32ce53fd8ab32552678d2f3c6162384b048fa5453516
+          SourceKey: mesh:1/primitive:0
+          Material: Pavilion/Architecture/materials/8f42732066ef771f.hmat
+    - ID: 7b742e0865e29013
+      Source: 15cb3922ac2dfbf8a76b25dc464bf986ef8b1e2e61d40f576ece2316104388d7
+      Output: Pavilion/Architecture/meshes/7b742e0865e29013.hmesh
+      Geometry: Pavilion/Architecture/generations/f8cd59618167e3ca/7b742e0865e29013.hgeom
+      GeometryHash: 0bdc329219e6861e60903fb7793921f4f9d0565bf6fb341b9aab1f19c01af944
+      SourceKey: mesh:2
+      Slots:
+        - ID: bee1249d229d4ae9
+          Source: 3ecdbe9462496c79357e80ddef3a5b0ea0ddb3ce6b98edfa7f11fa953af429c8
+          SourceKey: mesh:2/primitive:0
+          Material: Pavilion/Architecture/materials/8f42732066ef771f.hmat
+    - ID: a1a359b5da61ce07
+      Source: 9c8fa5e94e6eded185d8b1c3b3629d2ed4cd167e92f4b8d59f401d1dc5214bc2
+      Output: Pavilion/Architecture/meshes/a1a359b5da61ce07.hmesh
+      Geometry: Pavilion/Architecture/generations/f8cd59618167e3ca/a1a359b5da61ce07.hgeom
+      GeometryHash: 996bd4746f458fb36ceab6088d616388824482ee9c35b512417b7f849d1e1258
+      SourceKey: mesh:3
+      Slots:
+        - ID: c5cd039b68831b35
+          Source: ebe2218f7a785ccda51f3e27e810dadfce7efa4355b17ff68a5af476002c8b12
+          SourceKey: mesh:3/primitive:0
+          Material: Pavilion/Architecture/materials/8f42732066ef771f.hmat
+    - ID: 40482c8c2212e05d
+      Source: ada02d474f08470f664668f932653f48251ca63df8101cdbdede602f49cd002f
+      Output: Pavilion/Architecture/meshes/40482c8c2212e05d.hmesh
+      Geometry: Pavilion/Architecture/generations/f8cd59618167e3ca/40482c8c2212e05d.hgeom
+      GeometryHash: d9a0bfe2af4499decada67b69c9d45b86bad2d3e5a4033abf03ead3de8b534b7
+      SourceKey: mesh:4
+      Slots:
+        - ID: 45ca41c0222e40d2
+          Source: 9ecbd80974323108a2d5ea20de4f8160976ef3dc334cd373d83ef4646c6329ef
+          SourceKey: mesh:4/primitive:0
+          Material: Pavilion/Architecture/materials/8f42732066ef771f.hmat
+    - ID: 0f55735a33fc82c6
+      Source: 5797ffe2a7ebd648a004ebce31b85ed585223c0fab607aebd77b428473b0363b
+      Output: Pavilion/Architecture/meshes/0f55735a33fc82c6.hmesh
+      Geometry: Pavilion/Architecture/generations/f8cd59618167e3ca/0f55735a33fc82c6.hgeom
+      GeometryHash: 138e1073c21daf7e9f5bdfaa191a1abcd9a3eea4b343d89e101dcd316efff5d8
+      SourceKey: mesh:5
+      Slots:
+        - ID: 3c6ff97a6e652d78
+          Source: 681c97744435993681848c7e7192151f15e4a98bea43ba1d1c099925d90a6b6d
+          SourceKey: mesh:5/primitive:0
+          Material: Pavilion/Architecture/materials/8f42732066ef771f.hmat
+    - ID: 8176cb8701f17e06
+      Source: 840c507891025be3b1ad1f8dd12d42f0eaf27d370d0a559decf073601fa32f9e
+      Output: Pavilion/Architecture/meshes/8176cb8701f17e06.hmesh
+      Geometry: Pavilion/Architecture/generations/f8cd59618167e3ca/8176cb8701f17e06.hgeom
+      GeometryHash: a09b55eb6dc9b78434b2fc8629818db6021fc5ed0d1c7c32bca0a6d95fd3270a
+      SourceKey: mesh:6
+      Slots:
+        - ID: 3fd67eadd0f0c73d
+          Source: 267aeffb93d481c360a1e60b41577690c92ee68a86876ed7f6a37910d43941f1
+          SourceKey: mesh:6/primitive:0
+          Material: Pavilion/Architecture/materials/8f42732066ef771f.hmat
+    - ID: 0a6d40f938d2cc9f
+      Source: a639600ea0ccaab9e1c5ff763c07f75b457a5966dc47baa307a388cabb6045ef
+      Output: Pavilion/Architecture/meshes/0a6d40f938d2cc9f.hmesh
+      Geometry: Pavilion/Architecture/generations/f8cd59618167e3ca/0a6d40f938d2cc9f.hgeom
+      GeometryHash: aea3885be56f4d81004f4b565729527003986f320906ea9d58e38aa02042714a
+      SourceKey: mesh:7
+      Slots:
+        - ID: e9dcb89c5090df96
+          Source: 418b7b51982111d90ccc75abfae6bee30bba70a7a23019a1ef4d2d25872a09a8
+          SourceKey: mesh:7/primitive:0
+          Material: Pavilion/Architecture/materials/8f42732066ef771f.hmat
+    - ID: 967351e735800838
+      Source: 047bc5d812cb121fddbf856b9c15ae84886c3b0ffa685f6d7149c0da19fc24e6
+      Output: Pavilion/Architecture/meshes/967351e735800838.hmesh
+      Geometry: Pavilion/Architecture/generations/f8cd59618167e3ca/967351e735800838.hgeom
+      GeometryHash: fc2d2a721cad7203bfe842969b7eae1b5fd70ad70d54694c421eee904b7afc18
+      SourceKey: mesh:8
+      Slots:
+        - ID: 3ec2bb0b775930c8
+          Source: 2200a4e57d77bd55eeff308b7ced7a8edaed16335143cdf538fdfd3a7622c9e4
+          SourceKey: mesh:8/primitive:0
+          Material: Pavilion/Architecture/materials/8f42732066ef771f.hmat
+    - ID: 8821a8378b58ef76
+      Source: 9f7df96051d4ea1f26e3631d8dfd9ee0ce7bb9f3f0b674b903914a8b3e0d4286
+      Output: Pavilion/Architecture/meshes/8821a8378b58ef76.hmesh
+      Geometry: Pavilion/Architecture/generations/f8cd59618167e3ca/8821a8378b58ef76.hgeom
+      GeometryHash: 2c428bb9388f22e9e65d10e401f9dc9bb4bac2b000db4e8703f4979ed658a40e
+      SourceKey: mesh:9
+      Slots:
+        - ID: 14f750def936b4ae
+          Source: ac41e3454679bbcd7b86e306c48f508e0719d3c3783e85c0c240fec127284bb8
+          SourceKey: mesh:9/primitive:0
+          Material: Pavilion/Architecture/materials/8f42732066ef771f.hmat
+    - ID: dbbde9ea7c3d0c80
+      Source: 49a84663cb95832dd95a4f1c42145b9f5849681841ac8d21e0e1420df08b6c75
+      Output: Pavilion/Architecture/meshes/dbbde9ea7c3d0c80.hmesh
+      Geometry: Pavilion/Architecture/generations/f8cd59618167e3ca/dbbde9ea7c3d0c80.hgeom
+      GeometryHash: 58037f6120927dd655630b1a8291edeee2e7213ac03d1b8f887cf77844278cb4
+      SourceKey: mesh:10
+      Slots:
+        - ID: f3cc4b9f2a53bed4
+          Source: 63312f5d41e60a8ca5d7c6da82942d2e472b7a566319d911ae5520adf4917fa3
+          SourceKey: mesh:10/primitive:0
+          Material: Pavilion/Architecture/materials/8f42732066ef771f.hmat
+    - ID: 2d95967e37d9fc01
+      Source: b115375608865a8f5517c6e9157935393dbe43eec60db6746fa0e7459266fd9a
+      Output: Pavilion/Architecture/meshes/2d95967e37d9fc01.hmesh
+      Geometry: Pavilion/Architecture/generations/f8cd59618167e3ca/2d95967e37d9fc01.hgeom
+      GeometryHash: 97d965f1cfcbc79e08837c8a2c0eb35cfe7549ea2a1476bdba74286e993a288e
+      SourceKey: mesh:11
+      Slots:
+        - ID: 599de380940a9743
+          Source: 9bf09f53c0ad60f5fb6823cc74c9ae12d3153680455e09e0b355aa4b547d2e94
+          SourceKey: mesh:11/primitive:0
+          Material: Pavilion/Architecture/materials/8f42732066ef771f.hmat
+    - ID: 800fd3e656365e11
+      Source: ea0cd419eccc0d8be243c68b66593ee5b3706dc1a91733447ed43605d252a2c3
+      Output: Pavilion/Architecture/meshes/800fd3e656365e11.hmesh
+      Geometry: Pavilion/Architecture/generations/f8cd59618167e3ca/800fd3e656365e11.hgeom
+      GeometryHash: dc6dfbb19ac153b7ea01f2abc425084ba2c24e61986b572b6711c2db5a848332
+      SourceKey: mesh:12
+      Slots:
+        - ID: 8308ceca3660a5aa
+          Source: c9aff0d16607c20575bf5c48dcd66d6ce628b109aca99673e24085b8bd337557
+          SourceKey: mesh:12/primitive:0
+          Material: Pavilion/Architecture/materials/8f42732066ef771f.hmat
+    - ID: a670306ed0c3ae71
+      Source: 13bb5e0b82dd5b5444ded739a5e4af981c2d250d6c72375fcc05794aac7e3a67
+      Output: Pavilion/Architecture/meshes/a670306ed0c3ae71.hmesh
+      Geometry: Pavilion/Architecture/generations/f8cd59618167e3ca/a670306ed0c3ae71.hgeom
+      GeometryHash: 0a5798448e9d95c4b4311d9ddc92d0e3490d1b536be567ef3e9ac61501366665
+      SourceKey: mesh:13
+      Slots:
+        - ID: f0f90f9f4631cae0
+          Source: 5219037cc0685862bdf9afc4b9b3c80feff4395f0d07f919fd728bda197e9fda
+          SourceKey: mesh:13/primitive:0
+          Material: Pavilion/Architecture/materials/8f42732066ef771f.hmat
+    - ID: 13fa9ea3cc127478
+      Source: 59477ac9a9218db2676942442f3a22952f3c0cd51873f34c771383980355fd14
+      Output: Pavilion/Architecture/meshes/13fa9ea3cc127478.hmesh
+      Geometry: Pavilion/Architecture/generations/f8cd59618167e3ca/13fa9ea3cc127478.hgeom
+      GeometryHash: 230018891cb2ece16b6d1962d1be60776f148c3a7a10a530c88d8c334d6c7768
+      SourceKey: mesh:14
+      Slots:
+        - ID: eb3e13fd34815a7a
+          Source: 6514d81ad73327767b8fa4ec84b0f143cf87e9553434c5ac00ca212e37887493
+          SourceKey: mesh:14/primitive:0
+          Material: Pavilion/Architecture/materials/8f42732066ef771f.hmat
+    - ID: 4802f7b6073c1717
+      Source: 010e4167d1bdf3b2c30156430a65775ce1a2e0143169da0c4f3e8944b0410b63
+      Output: Pavilion/Architecture/meshes/4802f7b6073c1717.hmesh
+      Geometry: Pavilion/Architecture/generations/f8cd59618167e3ca/4802f7b6073c1717.hgeom
+      GeometryHash: d096f304bd2871973cc10763d9ac690984139ea1c524359ced22c3d0695464e3
+      SourceKey: mesh:15
+      Slots:
+        - ID: 815f8479c7b01f69
+          Source: e4447da6a649528c6e303644fe06b2260224bc30e6d6534d225366ec9b721900
+          SourceKey: mesh:15/primitive:0
+          Material: Pavilion/Architecture/materials/8f42732066ef771f.hmat
+    - ID: 511ecfea16bdf945
+      Source: 317faa6bb3456d4c682ec6310ca47c23ae62ccab510d2e7cdc74abfa05746573
+      Output: Pavilion/Architecture/meshes/511ecfea16bdf945.hmesh
+      Geometry: Pavilion/Architecture/generations/f8cd59618167e3ca/511ecfea16bdf945.hgeom
+      GeometryHash: 0b05a2b4891eab12cb21cb98391f4a8aadadbb11f9dfa8b4da8fcca42372cebd
+      SourceKey: mesh:16
+      Slots:
+        - ID: dc398c0eebe0018a
+          Source: b817b12bf2e4a82229ac4a6b4daa16a5b990fee9caa4176b371641f89c3d3122
+          SourceKey: mesh:16/primitive:0
+          Material: Pavilion/Architecture/materials/8f42732066ef771f.hmat
+    - ID: cba676d9a18c3bb1
+      Source: 63604260a783485db6fc4f280bb33cf590e43a6b03cf8d77838d6c92b29553bf
+      Output: Pavilion/Architecture/meshes/cba676d9a18c3bb1.hmesh
+      Geometry: Pavilion/Architecture/generations/f8cd59618167e3ca/cba676d9a18c3bb1.hgeom
+      GeometryHash: 50d627093d321576b2ab526bae5a2c3ae708a4af0ffcac533310e0a93e96c3a9
+      SourceKey: mesh:17
+      Slots:
+        - ID: d6a7c1ae5f95f26f
+          Source: ac6909e85bb8db28aed70c126075d6e9eade7569595b17b176083b6702c3e08c
+          SourceKey: mesh:17/primitive:0
+          Material: Pavilion/Architecture/materials/8f42732066ef771f.hmat
+    - ID: 904c74d3fc14e3cc
+      Source: 443a528dde3a4589725689193a9ab745d9af617d220e8750e846f95e995bf4c9
+      Output: Pavilion/Architecture/meshes/904c74d3fc14e3cc.hmesh
+      Geometry: Pavilion/Architecture/generations/f8cd59618167e3ca/904c74d3fc14e3cc.hgeom
+      GeometryHash: 9179cb92daea43731c9a851adcf166d92fcb1d516d42e52a635812b72349b8db
+      SourceKey: mesh:18
+      Slots:
+        - ID: 32af7fd8e73ac26e
+          Source: 61fa719b346a94bb371972cf1130d54776ee30d2d1dc020a0aa935d60524d808
+          SourceKey: mesh:18/primitive:0
+          Material: Pavilion/Architecture/materials/8f42732066ef771f.hmat
+    - ID: c56ef470896ca0ce
+      Source: 6498b32ba967d722d6d8d4e28fbbe284f773a084166c1363285215e0dd6ec974
+      Output: Pavilion/Architecture/meshes/c56ef470896ca0ce.hmesh
+      Geometry: Pavilion/Architecture/generations/f8cd59618167e3ca/c56ef470896ca0ce.hgeom
+      GeometryHash: 037f93758c9543e5fcb2fc25b08157a8132060bea0234979b626e174a71cbcf3
+      SourceKey: mesh:19
+      Slots:
+        - ID: 57cd5377b3494a74
+          Source: 9f3f37b088c10f9ac7bfbbb3f48ab192adea89c0b03e3c3e62e2a1256e7d8ae3
+          SourceKey: mesh:19/primitive:0
+          Material: Pavilion/Architecture/materials/8f42732066ef771f.hmat
+    - ID: 76a578d8ca5f88b5
+      Source: b7411fde10e5c2885036c7ad166584b896a659f18fabb0e17b0a76bfd9d70714
+      Output: Pavilion/Architecture/meshes/76a578d8ca5f88b5.hmesh
+      Geometry: Pavilion/Architecture/generations/f8cd59618167e3ca/76a578d8ca5f88b5.hgeom
+      GeometryHash: e2f89f16e9a8e4d56aaf0e8fe59d4a93c5307ee87ecf8a9df1f826e3cab67d8e
+      SourceKey: mesh:20
+      Slots:
+        - ID: 943cde45ce3465df
+          Source: 8da69828ea23cd781c395091cc2f1c23d0d3cad717468e6f9260e17d80ff3690
+          SourceKey: mesh:20/primitive:0
+          Material: Pavilion/Architecture/materials/8f42732066ef771f.hmat
+  Nodes:
+    - ID: bd8470ebd6cb2a9a
+      Source: 450327ea83879c287dae9c2696e72054e3b13efd5efc9e4aec79194681800383
+      SourceKey: node:0
+    - ID: 4a11ca321ebea41e
+      Source: 3b367a5b06e9b1d5e0a755d5e6397f7e72f13abdeebf24876375aaba5faac5b5
+      SourceKey: node:1
+    - ID: 514b395f47af8f8b
+      Source: 01a20f162ef6aee7593866f3ea70ab91d25bb6ce9da0040929dd97ca6bf73c65
+      SourceKey: node:2
+    - ID: a15d687a208a4df6
+      Source: 6dd1b5277067cc27847a17cb684bd00e214ca82816b626f75e44737599861bf3
+      SourceKey: node:3
+    - ID: c66561dbaf9f961e
+      Source: 56a44c6cae985001d05d7593f20245981335a0ac8c36dc5b18314d8c920b1f3a
+      SourceKey: node:4
+    - ID: 361c98047cb7a440
+      Source: bc4d54e407768f6ed29d840d5921614d4414beb186cb90777b7157244761124a
+      SourceKey: node:5
+    - ID: af60a173d51af49c
+      Source: 9c08088da28dded122233e02c55724f5707e2c3bdc98537815f5bd306fa566cc
+      SourceKey: node:6
+    - ID: f41d38f7822e8c6a
+      Source: ed29477e21970c2a93c5f0126a30fc094c135128ad29001884eac5679d0e6dd9
+      SourceKey: node:7
+    - ID: e5be1ead4d085051
+      Source: 84cd6ac19380ea3b07025584bb973417a02492cd5388ede9c14b6e49c8a5d5ae
+      SourceKey: node:8
+    - ID: 801d2ec418827df2
+      Source: 9138bd353c9df9b244b733b9ca3807e7984fe55d1741b9c72bbaca88aa75b299
+      SourceKey: node:9
+    - ID: f10838192ca0a91e
+      Source: 1d23881c68b143a0c9f4915ace8fb74d5ae1706195fb85fc365d5e9cdfcb8726
+      SourceKey: node:10
+    - ID: 63c8a92c04f5a428
+      Source: de2da09bd04d5c5c27a3805032ef1448abc10983cd7bc8b31a20b0a8299a8031
+      SourceKey: node:11
+    - ID: 1b7f6bb45acee884
+      Source: b771897d746bf1fa247d03b93b2cf2d83039084156efcdb34b81caa6affbff9e
+      SourceKey: node:12
+    - ID: 9e5fd288ab35a9db
+      Source: 519a68e4d35cafa0b6ee7af9895725bb5ed7c4935faf11131fca60286e608950
+      SourceKey: node:13
+    - ID: 0bcf9b28a537051f
+      Source: 78f51212f368cd115656a8fd086412d4e1298bd470c386d4f884605d8ef71ef4
+      SourceKey: node:14
+    - ID: f310df60eef931bb
+      Source: 06b6505197e145213a649b054f4cc674ef077c269f8a47095bb4aa0ace714645
+      SourceKey: node:15
+    - ID: c82d382a3698c998
+      Source: 552237b1cabcaff033d84798dcb754f2fe2249c97b56b505c92d3f9a41cd449c
+      SourceKey: node:16
+    - ID: 7285fff9d212a2ce
+      Source: 6a65277fed0b4b612d6f648a4e0faac37d3ff11028eb1aecda255231954b0afc
+      SourceKey: node:17
+    - ID: 4755f08fe8da496f
+      Source: fc14bd99cbe4f0b6a81dd4a9764c0ec2c3ad3dedd4568605fd641b4fff558ae6
+      SourceKey: node:18
+    - ID: cbe9f2c5c1755fef
+      Source: 93c486bcb5ad7f9264ee34218a11377192cfa9bd4dfa0f90f106e8d8bc8da673
+      SourceKey: node:19
+    - ID: 905a963c60cf47b2
+      Source: d0849ecd0e40b039df22428898ff354f987e61e5806cc923ce20b155e31bcb06
+      SourceKey: node:20

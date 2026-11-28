@@ -1,0 +1,82 @@
+{
+  "metal / SSR + probes / Probes only": {
+    "display_pixels": 921600,
+    "fraction_max_channel_delta_ge_3": 0.09186,
+    "max_display_delta": 204
+  },
+  "metal / Probes only / Global only": {
+    "display_pixels": 921600,
+    "fraction_max_channel_delta_ge_3": 0.11037,
+    "max_display_delta": 239
+  },
+  "metal / Bloom / Bloom off": {
+    "display_pixels": 921600,
+    "fraction_max_channel_delta_ge_3": 0.05318,
+    "max_display_delta": 182
+  },
+  "metal / Lens optics / Lens optics off": {
+    "display_pixels": 921600,
+    "fraction_max_channel_delta_ge_3": 0.23904,
+    "max_display_delta": 86
+  },
+  "metal / Automatic / Manual physical": {
+    "display_pixels": 921600,
+    "fraction_max_channel_delta_ge_3": 0.99999,
+    "max_display_delta": 122
+  },
+  "metal / Night Flight grade / Neutral": {
+    "display_pixels": 921600,
+    "fraction_max_channel_delta_ge_3": 0.96344,
+    "max_display_delta": 18
+  },
+  "metal / Physical DOF / DOF off": {
+    "display_pixels": 921600,
+    "fraction_max_channel_delta_ge_3": 0.47989,
+    "max_display_delta": 197
+  },
+  "metal / 180\u00b0 shutter / Shutter off": {
+    "display_pixels": 921600,
+    "fraction_max_channel_delta_ge_3": 0.20644,
+    "max_display_delta": 198
+  },
+  "gl / SSR + probes / Probes only": {
+    "display_pixels": 518400,
+    "fraction_max_channel_delta_ge_3": 0.10505,
+    "max_display_delta": 196
+  },
+  "gl / Probes only / Global only": {
+    "display_pixels": 518400,
+    "fraction_max_channel_delta_ge_3": 0.10554,
+    "max_display_delta": 240
+  },
+  "gl / Bloom / Bloom off": {
+    "display_pixels": 518400,
+    "fraction_max_channel_delta_ge_3": 0.07122,
+    "max_display_delta": 185
+  },
+  "gl / Lens optics / Lens optics off": {
+    "display_pixels": 518400,
+    "fraction_max_channel_delta_ge_3": 0.25086,
+    "max_display_delta": 86
+  },
+  "gl / Automatic / Manual physical": {
+    "display_pixels": 518400,
+    "fraction_max_channel_delta_ge_3": 0.99998,
+    "max_display_delta": 122
+  },
+  "gl / Night Flight grade / Neutral": {
+    "display_pixels": 518400,
+    "fraction_max_channel_delta_ge_3": 0.97231,
+    "max_display_delta": 17
+  },
+  "gl / Physical DOF / DOF off": {
+    "display_pixels": 518400,
+    "fraction_max_channel_delta_ge_3": 0.47581,
+    "max_display_delta": 206
+  },
+  "gl / 180\u00b0 shutter / Shutter off": {
+    "display_pixels": 518400,
+    "fraction_max_channel_delta_ge_3": 0.24739,
+    "max_display_delta": 206
+  }
+}

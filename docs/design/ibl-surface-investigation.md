@@ -169,9 +169,9 @@ python3 - <<'PY'
 import os, subprocess, sys
 sys.path.insert(0, 'scripts')
 import hazel as hz
-from internal.testing.projects import snapshot
+from internal.testing.projects import snapshot_studio
 out = hz.ROOT / 'build/ibl-surface-v1'
-project = snapshot('RenderingShowcase', out/'project', 'RenderingShowcase.hproj')
+project = snapshot_studio(out/'project')
 base = hz.binaries('Release')
 env = os.environ.copy()
 env.update(HAZEL_RENDERING_SHOWCASE_PROJECT=str(project),

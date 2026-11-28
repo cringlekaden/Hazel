@@ -113,8 +113,8 @@ the initial view. Normal authored rendering retains its existing camera support.
 From the canonical directory:
 
 ```sh
-python3 scripts/hazel.py run Hazelnut --config Release --project examples/RenderingShowcase/RenderingShowcase.hproj
-python3 scripts/hazel.py run Nutella --config Release --project examples/RenderingShowcase/RenderingShowcase.hproj --inspect-camera
+python3 scripts/hazel.py run Hazelnut --config Release --project examples/RenderingShowcase/RenderingShowcase-Studio.hproj
+python3 scripts/hazel.py run Nutella --config Release --project examples/RenderingShowcase/RenderingShowcase-Studio.hproj --inspect-camera
 ```
 
 In Hazelnut Play, enable **Inspect camera**; **Restore authored view** resets it.

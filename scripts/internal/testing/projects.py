@@ -33,3 +33,14 @@ def snapshot(name, destination, descriptor=None):
     descriptors=list(destination.glob('*.hproj'))
     if len(descriptors)!=1:raise RuntimeError('Expected one committed project: '+name)
     return descriptors[0]
+
+
+def snapshot_studio(destination):
+    """Select the Studio material fixture in current and historical snapshots."""
+    main = snapshot('RenderingShowcase', destination, 'RenderingShowcase.hproj')
+    studio = main.with_name('RenderingShowcase-Studio.hproj')
+    if studio.is_file():
+        return studio
+    if '  StartScene: Scenes/Gallery.hazel' in main.read_text(encoding='utf-8').splitlines():
+        return main
+    raise RuntimeError('The committed RenderingShowcase snapshot is missing its Studio fixture')

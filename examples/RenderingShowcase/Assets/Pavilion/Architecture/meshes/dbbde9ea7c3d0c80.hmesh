@@ -1,0 +1,9 @@
+Mesh:
+  Version: 1
+  ID: dbbde9ea7c3d0c80
+  Name: Orbital sculpture inner / Steel
+  Import: Pavilion/Architecture/Import.himport
+  Slots:
+    - ID: f3cc4b9f2a53bed4
+      Name: Surface 1
+      Material: Pavilion/Architecture/materials/8f42732066ef771f.hmat

@@ -225,7 +225,7 @@ def test(configuration, profile='native', suite='all', only=None):
             from internal.testing.projects import snapshot
             tutorial=snapshot('Sandbox',working/'tutorial','Sandbox.hproj')
             hz.script_build(tutorial,configuration)
-        from internal.testing.projects import snapshot
+        from internal.testing.projects import snapshot, snapshot_studio
         reference=snapshot('RenderingReference',working/'rendering-reference','RenderingReference.hproj')
         env=os.environ.copy()
         env['HAZEL_RENDERING_REFERENCE_PROJECT']=str(reference)
@@ -248,7 +248,7 @@ def test(configuration, profile='native', suite='all', only=None):
             from internal.import_checks import reference_imports
             reference_imports(configuration, working, env)
         if 'RuntimeSessionSmoke' in names or 'Renderer2DSmoke' in names:
-            showcase=snapshot('RenderingShowcase',working/'rendering-showcase','RenderingShowcase.hproj')
+            showcase=snapshot_studio(working/'rendering-showcase')
             env['HAZEL_RENDERING_SHOWCASE_PROJECT']=str(showcase)
         timings['setupSeconds'] = time.monotonic()-started
         for name in names:

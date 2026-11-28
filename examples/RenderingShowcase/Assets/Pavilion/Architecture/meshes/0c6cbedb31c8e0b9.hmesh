@@ -1,0 +1,9 @@
+Mesh:
+  Version: 1
+  ID: 0c6cbedb31c8e0b9
+  Name: Architecture / Aggregate
+  Import: Pavilion/Architecture/Import.himport
+  Slots:
+    - ID: 05f560d84b55e967
+      Name: Surface 1
+      Material: Pavilion/Architecture/materials/8f42732066ef771f.hmat

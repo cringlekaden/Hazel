@@ -1,0 +1,2126 @@
+{
+  "host": "Apple M4, 16 GiB, macOS 27.3.0",
+  "configuration": "Release",
+  "presentedScope": "Metal 4 window benchmark, Arrival, positive tracked timestamps only, discard first 30 presented per extent",
+  "offscreenScope": "18 recorded samples per shot after 6 warmup frames, deterministic 30 Hz; Metal feedback includes readback, GL elapsed query excludes CPU readback",
+  "presented": {
+    "ultra": {
+      "1280x720": {
+        "positiveFrames": 91,
+        "gpuWholeFrameMs": {
+          "samples": 91,
+          "median": 8.362207969184965,
+          "p95": 8.509291976224631
+        },
+        "sceneCPUms": {
+          "samples": 91,
+          "median": 5.99725,
+          "p95": 6.350959
+        },
+        "layerCPUms": {
+          "samples": 91,
+          "median": 6.113334,
+          "p95": 6.467041
+        },
+        "presentedIntervalMs": {
+          "samples": 90,
+          "median": 8.295520470710471,
+          "p95": 15.345999971032143
+        }
+      },
+      "1920x1080": {
+        "positiveFrames": 91,
+        "gpuWholeFrameMs": {
+          "samples": 91,
+          "median": 16.32599998265505,
+          "p95": 16.51087502250448
+        },
+        "sceneCPUms": {
+          "samples": 91,
+          "median": 6.281708,
+          "p95": 6.914917
+        },
+        "layerCPUms": {
+          "samples": 91,
+          "median": 6.711083,
+          "p95": 7.403667
+        },
+        "presentedIntervalMs": {
+          "samples": 90,
+          "median": 16.470041999127716,
+          "p95": 25.792374974116683
+        }
+      },
+      "2560x1440": {
+        "positiveFrames": 91,
+        "gpuWholeFrameMs": {
+          "samples": 91,
+          "median": 24.347083002794534,
+          "p95": 24.453875026665628
+        },
+        "sceneCPUms": {
+          "samples": 91,
+          "median": 6.382167,
+          "p95": 6.480917
+        },
+        "layerCPUms": {
+          "samples": 91,
+          "median": 6.502375,
+          "p95": 6.599375
+        },
+        "presentedIntervalMs": {
+          "samples": 90,
+          "median": 24.32510448852554,
+          "p95": 24.917208997067064
+        }
+      },
+      "resizeRunDeviceMemoryBytes": {
+        "peakTracked": 1550700060,
+        "peakNative": 1581662208,
+        "recommended": 12713115648
+      }
+    },
+    "high": {
+      "1280x720": {
+        "positiveFrames": 92,
+        "gpuWholeFrameMs": {
+          "samples": 92,
+          "median": 7.746416493318975,
+          "p95": 7.908500032499433
+        },
+        "sceneCPUms": {
+          "samples": 92,
+          "median": 5.922333500000001,
+          "p95": 6.466625
+        },
+        "layerCPUms": {
+          "samples": 92,
+          "median": 6.029604,
+          "p95": 6.612792
+        },
+        "presentedIntervalMs": {
+          "samples": 91,
+          "median": 7.749042008072138,
+          "p95": 14.983040979132056
+        }
+      },
+      "1920x1080": {
+        "positiveFrames": 90,
+        "gpuWholeFrameMs": {
+          "samples": 90,
+          "median": 15.445021010236815,
+          "p95": 15.6717500067316
+        },
+        "sceneCPUms": {
+          "samples": 90,
+          "median": 6.13475,
+          "p95": 6.84875
+        },
+        "layerCPUms": {
+          "samples": 90,
+          "median": 6.5663540000000005,
+          "p95": 7.354875
+        },
+        "presentedIntervalMs": {
+          "samples": 89,
+          "median": 15.49808302661404,
+          "p95": 25.066290982067585
+        }
+      },
+      "2560x1440": {
+        "positiveFrames": 91,
+        "gpuWholeFrameMs": {
+          "samples": 91,
+          "median": 23.131249996367842,
+          "p95": 23.24812498409301
+        },
+        "sceneCPUms": {
+          "samples": 91,
+          "median": 6.288375,
+          "p95": 6.422084
+        },
+        "layerCPUms": {
+          "samples": 91,
+          "median": 6.408542,
+          "p95": 6.537666
+        },
+        "presentedIntervalMs": {
+          "samples": 90,
+          "median": 23.11491599539295,
+          "p95": 23.70704198256135
+        }
+      },
+      "resizeRunDeviceMemoryBytes": {
+        "peakTracked": 1482528540,
+        "peakNative": 1513472000,
+        "recommended": 12713115648
+      }
+    }
+  },
+  "offscreen": {
+    "ultra": {
+      "1280": {
+        "shots": {
+          "4": {
+            "draws": {
+              "n": 18,
+              "median": 309.0,
+              "p95": 309.0
+            },
+            "gl_elapsed_ms": null,
+            "local_cull_ms": {
+              "n": 18,
+              "median": 0.0226,
+              "p95": 0.02454
+            },
+            "forward_ms": {
+              "n": 18,
+              "median": 4.80846,
+              "p95": 5.2465
+            },
+            "csm_ms": {
+              "n": 18,
+              "median": 0.61683,
+              "p95": 0.74321
+            },
+            "spot_ms": {
+              "n": 18,
+              "median": 0.24456,
+              "p95": 0.25525
+            },
+            "point_ms": {
+              "n": 18,
+              "median": 0.14458,
+              "p95": 0.15046
+            },
+            "ao_ms": {
+              "n": 18,
+              "median": 7.08756,
+              "p95": 7.13367
+            },
+            "taa_resolve_ms": {
+              "n": 18,
+              "median": 2.36256,
+              "p95": 2.38604
+            },
+            "bloom_ms": {
+              "n": 18,
+              "median": 0.56108,
+              "p95": 0.57033
+            },
+            "exposure_ms": {
+              "n": 18,
+              "median": 0.03319,
+              "p95": 0.03862
+            },
+            "dof_ms": null,
+            "shutter_ms": null,
+            "lens_ms": null,
+            "gpu_complete_readback_ms": {
+              "n": 18,
+              "median": 18.54435,
+              "p95": 19.11354
+            }
+          },
+          "7": {
+            "draws": {
+              "n": 18,
+              "median": 238.0,
+              "p95": 238.0
+            },
+            "gl_elapsed_ms": null,
+            "local_cull_ms": {
+              "n": 18,
+              "median": 0.02406,
+              "p95": 0.03146
+            },
+            "forward_ms": {
+              "n": 18,
+              "median": 8.02365,
+              "p95": 8.26429
+            },
+            "csm_ms": {
+              "n": 18,
+              "median": 0.41725,
+              "p95": 0.50375
+            },
+            "spot_ms": {
+              "n": 18,
+              "median": 0.2456,
+              "p95": 0.3375
+            },
+            "point_ms": {
+              "n": 18,
+              "median": 0.14169,
+              "p95": 0.16021
+            },
+            "ao_ms": {
+              "n": 18,
+              "median": 7.72214,
+              "p95": 7.81125
+            },
+            "taa_resolve_ms": {
+              "n": 18,
+              "median": 2.41071,
+              "p95": 2.43067
+            },
+            "bloom_ms": {
+              "n": 18,
+              "median": 0.6715,
+              "p95": 0.69529
+            },
+            "exposure_ms": {
+              "n": 18,
+              "median": 0.0331,
+              "p95": 0.03612
+            },
+            "dof_ms": {
+              "n": 18,
+              "median": 0.77971,
+              "p95": 0.82129
+            },
+            "shutter_ms": null,
+            "lens_ms": {
+              "n": 18,
+              "median": 0.04642,
+              "p95": 0.04767
+            },
+            "gpu_complete_readback_ms": {
+              "n": 18,
+              "median": 23.02183,
+              "p95": 23.47738
+            }
+          },
+          "8": {
+            "draws": {
+              "n": 18,
+              "median": 284.0,
+              "p95": 284.0
+            },
+            "gl_elapsed_ms": null,
+            "local_cull_ms": {
+              "n": 18,
+              "median": 0.02408,
+              "p95": 0.03183
+            },
+            "forward_ms": {
+              "n": 18,
+              "median": 6.07963,
+              "p95": 6.22754
+            },
+            "csm_ms": {
+              "n": 18,
+              "median": 0.56956,
+              "p95": 0.72488
+            },
+            "spot_ms": {
+              "n": 18,
+              "median": 0.24421,
+              "p95": 0.24892
+            },
+            "point_ms": {
+              "n": 18,
+              "median": 0.14548,
+              "p95": 0.15538
+            },
+            "ao_ms": {
+              "n": 18,
+              "median": 7.77316,
+              "p95": 7.87908
+            },
+            "taa_resolve_ms": {
+              "n": 18,
+              "median": 2.38852,
+              "p95": 2.41696
+            },
+            "bloom_ms": {
+              "n": 18,
+              "median": 0.63646,
+              "p95": 0.65754
+            },
+            "exposure_ms": {
+              "n": 18,
+              "median": 0.03269,
+              "p95": 0.03854
+            },
+            "dof_ms": null,
+            "shutter_ms": {
+              "n": 18,
+              "median": 0.26894,
+              "p95": 0.298
+            },
+            "lens_ms": null,
+            "gpu_complete_readback_ms": {
+              "n": 18,
+              "median": 20.55179,
+              "p95": 20.79712
+            }
+          }
+        },
+        "deviceMemoryBytes": {
+          "peakTracked": 569692540,
+          "peakNative": 584040448,
+          "recommended": 12713115648
+        }
+      },
+      "1920": {
+        "shots": {
+          "4": {
+            "draws": {
+              "n": 18,
+              "median": 309.0,
+              "p95": 309.0
+            },
+            "gl_elapsed_ms": null,
+            "local_cull_ms": {
+              "n": 18,
+              "median": 0.04008,
+              "p95": 0.0495
+            },
+            "forward_ms": {
+              "n": 18,
+              "median": 9.9028,
+              "p95": 10.2064
+            },
+            "csm_ms": {
+              "n": 18,
+              "median": 0.59415,
+              "p95": 0.74358
+            },
+            "spot_ms": {
+              "n": 18,
+              "median": 0.24821,
+              "p95": 0.26242
+            },
+            "point_ms": {
+              "n": 18,
+              "median": 0.14683,
+              "p95": 0.15467
+            },
+            "ao_ms": {
+              "n": 18,
+              "median": 15.84145,
+              "p95": 15.9276
+            },
+            "taa_resolve_ms": {
+              "n": 18,
+              "median": 5.34998,
+              "p95": 5.43813
+            },
+            "bloom_ms": {
+              "n": 18,
+              "median": 1.15902,
+              "p95": 1.19942
+            },
+            "exposure_ms": {
+              "n": 18,
+              "median": 0.03681,
+              "p95": 0.0395
+            },
+            "dof_ms": null,
+            "shutter_ms": null,
+            "lens_ms": null,
+            "gpu_complete_readback_ms": {
+              "n": 18,
+              "median": 38.42088,
+              "p95": 38.71071
+            }
+          },
+          "7": {
+            "draws": {
+              "n": 18,
+              "median": 238.0,
+              "p95": 238.0
+            },
+            "gl_elapsed_ms": null,
+            "local_cull_ms": {
+              "n": 18,
+              "median": 0.04031,
+              "p95": 0.044
+            },
+            "forward_ms": {
+              "n": 18,
+              "median": 15.05835,
+              "p95": 16.2236
+            },
+            "csm_ms": {
+              "n": 18,
+              "median": 0.41417,
+              "p95": 0.43842
+            },
+            "spot_ms": {
+              "n": 18,
+              "median": 0.24729,
+              "p95": 0.25338
+            },
+            "point_ms": {
+              "n": 18,
+              "median": 0.14681,
+              "p95": 0.15654
+            },
+            "ao_ms": {
+              "n": 18,
+              "median": 17.3117,
+              "p95": 17.3836
+            },
+            "taa_resolve_ms": {
+              "n": 18,
+              "median": 5.47039,
+              "p95": 5.59829
+            },
+            "bloom_ms": {
+              "n": 18,
+              "median": 1.44131,
+              "p95": 1.49737
+            },
+            "exposure_ms": {
+              "n": 18,
+              "median": 0.03627,
+              "p95": 0.03954
+            },
+            "dof_ms": {
+              "n": 18,
+              "median": 1.45219,
+              "p95": 1.47879
+            },
+            "shutter_ms": null,
+            "lens_ms": {
+              "n": 18,
+              "median": 0.08302,
+              "p95": 0.08729
+            },
+            "gpu_complete_readback_ms": {
+              "n": 18,
+              "median": 46.38138,
+              "p95": 47.61158
+            }
+          },
+          "8": {
+            "draws": {
+              "n": 18,
+              "median": 284.0,
+              "p95": 284.0
+            },
+            "gl_elapsed_ms": null,
+            "local_cull_ms": {
+              "n": 18,
+              "median": 0.03963,
+              "p95": 0.04304
+            },
+            "forward_ms": {
+              "n": 18,
+              "median": 12.5347,
+              "p95": 12.8087
+            },
+            "csm_ms": {
+              "n": 18,
+              "median": 0.57373,
+              "p95": 0.61962
+            },
+            "spot_ms": {
+              "n": 18,
+              "median": 0.2474,
+              "p95": 0.25496
+            },
+            "point_ms": {
+              "n": 18,
+              "median": 0.14783,
+              "p95": 0.15421
+            },
+            "ao_ms": {
+              "n": 18,
+              "median": 17.38995,
+              "p95": 17.6638
+            },
+            "taa_resolve_ms": {
+              "n": 18,
+              "median": 5.40925,
+              "p95": 5.46133
+            },
+            "bloom_ms": {
+              "n": 18,
+              "median": 1.34525,
+              "p95": 1.45829
+            },
+            "exposure_ms": {
+              "n": 18,
+              "median": 0.03608,
+              "p95": 0.04238
+            },
+            "dof_ms": null,
+            "shutter_ms": {
+              "n": 18,
+              "median": 0.61933,
+              "p95": 0.67454
+            },
+            "lens_ms": null,
+            "gpu_complete_readback_ms": {
+              "n": 18,
+              "median": 42.78915,
+              "p95": 43.38083
+            }
+          }
+        },
+        "deviceMemoryBytes": {
+          "peakTracked": 918638972,
+          "peakNative": 931741696,
+          "recommended": 12713115648
+        }
+      },
+      "2560": {
+        "shots": {
+          "4": {
+            "draws": {
+              "n": 18,
+              "median": 309.0,
+              "p95": 309.0
+            },
+            "gl_elapsed_ms": null,
+            "local_cull_ms": {
+              "n": 18,
+              "median": 0.06215,
+              "p95": 0.07196
+            },
+            "forward_ms": {
+              "n": 18,
+              "median": 16.7472,
+              "p95": 16.9551
+            },
+            "csm_ms": {
+              "n": 18,
+              "median": 0.59342,
+              "p95": 0.77075
+            },
+            "spot_ms": {
+              "n": 18,
+              "median": 0.24704,
+              "p95": 0.26354
+            },
+            "point_ms": {
+              "n": 18,
+              "median": 0.14373,
+              "p95": 0.15175
+            },
+            "ao_ms": {
+              "n": 18,
+              "median": 27.96435,
+              "p95": 28.1214
+            },
+            "taa_resolve_ms": {
+              "n": 18,
+              "median": 9.51494,
+              "p95": 9.66233
+            },
+            "bloom_ms": {
+              "n": 18,
+              "median": 1.96821,
+              "p95": 2.01492
+            },
+            "exposure_ms": {
+              "n": 18,
+              "median": 0.03635,
+              "p95": 0.04571
+            },
+            "dof_ms": null,
+            "shutter_ms": null,
+            "lens_ms": null,
+            "gpu_complete_readback_ms": {
+              "n": 18,
+              "median": 65.79092,
+              "p95": 66.13592
+            }
+          },
+          "7": {
+            "draws": {
+              "n": 18,
+              "median": 238.0,
+              "p95": 238.0
+            },
+            "gl_elapsed_ms": null,
+            "local_cull_ms": {
+              "n": 18,
+              "median": 0.06298,
+              "p95": 0.07033
+            },
+            "forward_ms": {
+              "n": 18,
+              "median": 24.13865,
+              "p95": 24.923
+            },
+            "csm_ms": {
+              "n": 18,
+              "median": 0.42123,
+              "p95": 0.50321
+            },
+            "spot_ms": {
+              "n": 18,
+              "median": 0.24854,
+              "p95": 0.25517
+            },
+            "point_ms": {
+              "n": 18,
+              "median": 0.14781,
+              "p95": 0.1535
+            },
+            "ao_ms": {
+              "n": 18,
+              "median": 30.65595,
+              "p95": 30.7103
+            },
+            "taa_resolve_ms": {
+              "n": 18,
+              "median": 9.78281,
+              "p95": 9.86983
+            },
+            "bloom_ms": {
+              "n": 18,
+              "median": 2.47559,
+              "p95": 2.54871
+            },
+            "exposure_ms": {
+              "n": 18,
+              "median": 0.03517,
+              "p95": 0.04433
+            },
+            "dof_ms": {
+              "n": 18,
+              "median": 2.34431,
+              "p95": 2.38442
+            },
+            "shutter_ms": null,
+            "lens_ms": {
+              "n": 18,
+              "median": 0.11865,
+              "p95": 0.122
+            },
+            "gpu_complete_readback_ms": {
+              "n": 18,
+              "median": 78.26744,
+              "p95": 78.97821
+            }
+          },
+          "8": {
+            "draws": {
+              "n": 18,
+              "median": 284.0,
+              "p95": 284.0
+            },
+            "gl_elapsed_ms": null,
+            "local_cull_ms": {
+              "n": 18,
+              "median": 0.06275,
+              "p95": 0.06971
+            },
+            "forward_ms": {
+              "n": 18,
+              "median": 21.10705,
+              "p95": 21.852
+            },
+            "csm_ms": {
+              "n": 18,
+              "median": 0.61135,
+              "p95": 0.69258
+            },
+            "spot_ms": {
+              "n": 18,
+              "median": 0.24654,
+              "p95": 0.25342
+            },
+            "point_ms": {
+              "n": 18,
+              "median": 0.14996,
+              "p95": 0.15317
+            },
+            "ao_ms": {
+              "n": 18,
+              "median": 30.78155,
+              "p95": 31.3528
+            },
+            "taa_resolve_ms": {
+              "n": 18,
+              "median": 9.69452,
+              "p95": 9.75021
+            },
+            "bloom_ms": {
+              "n": 18,
+              "median": 2.28587,
+              "p95": 2.34842
+            },
+            "exposure_ms": {
+              "n": 18,
+              "median": 0.03667,
+              "p95": 0.04617
+            },
+            "dof_ms": null,
+            "shutter_ms": {
+              "n": 18,
+              "median": 1.08633,
+              "p95": 1.22096
+            },
+            "lens_ms": null,
+            "gpu_complete_readback_ms": {
+              "n": 18,
+              "median": 73.526,
+              "p95": 74.73987
+            }
+          }
+        },
+        "deviceMemoryBytes": {
+          "peakTracked": 1415958908,
+          "peakNative": 1427357696,
+          "recommended": 12713115648
+        }
+      },
+      "3840": {
+        "shots": {
+          "4": {
+            "draws": {
+              "n": 18,
+              "median": 309.0,
+              "p95": 309.0
+            },
+            "gl_elapsed_ms": null,
+            "local_cull_ms": {
+              "n": 18,
+              "median": 0.12667,
+              "p95": 0.13729
+            },
+            "forward_ms": {
+              "n": 18,
+              "median": 36.165,
+              "p95": 36.7012
+            },
+            "csm_ms": {
+              "n": 18,
+              "median": 0.56008,
+              "p95": 0.62758
+            },
+            "spot_ms": {
+              "n": 18,
+              "median": 0.24794,
+              "p95": 0.25492
+            },
+            "point_ms": {
+              "n": 18,
+              "median": 0.14652,
+              "p95": 0.15292
+            },
+            "ao_ms": {
+              "n": 18,
+              "median": 62.49035,
+              "p95": 62.775
+            },
+            "taa_resolve_ms": {
+              "n": 18,
+              "median": 21.73775,
+              "p95": 21.9789
+            },
+            "bloom_ms": {
+              "n": 18,
+              "median": 4.44886,
+              "p95": 4.63575
+            },
+            "exposure_ms": {
+              "n": 18,
+              "median": 0.03408,
+              "p95": 0.04383
+            },
+            "dof_ms": null,
+            "shutter_ms": null,
+            "lens_ms": null,
+            "gpu_complete_readback_ms": {
+              "n": 18,
+              "median": 144.06571,
+              "p95": 145.02092
+            }
+          },
+          "7": {
+            "draws": {
+              "n": 18,
+              "median": 238.0,
+              "p95": 238.0
+            },
+            "gl_elapsed_ms": null,
+            "local_cull_ms": {
+              "n": 18,
+              "median": 0.12792,
+              "p95": 0.13733
+            },
+            "forward_ms": {
+              "n": 18,
+              "median": 48.7143,
+              "p95": 49.721
+            },
+            "csm_ms": {
+              "n": 18,
+              "median": 0.41673,
+              "p95": 0.43708
+            },
+            "spot_ms": {
+              "n": 18,
+              "median": 0.24538,
+              "p95": 0.25088
+            },
+            "point_ms": {
+              "n": 18,
+              "median": 0.14719,
+              "p95": 0.156
+            },
+            "ao_ms": {
+              "n": 18,
+              "median": 68.7499,
+              "p95": 68.9327
+            },
+            "taa_resolve_ms": {
+              "n": 18,
+              "median": 22.17225,
+              "p95": 22.5248
+            },
+            "bloom_ms": {
+              "n": 18,
+              "median": 5.63436,
+              "p95": 5.70333
+            },
+            "exposure_ms": {
+              "n": 18,
+              "median": 0.03338,
+              "p95": 0.04308
+            },
+            "dof_ms": {
+              "n": 18,
+              "median": 5.09079,
+              "p95": 5.18542
+            },
+            "shutter_ms": null,
+            "lens_ms": {
+              "n": 18,
+              "median": 0.2446,
+              "p95": 0.24825
+            },
+            "gpu_complete_readback_ms": {
+              "n": 18,
+              "median": 168.45169,
+              "p95": 169.53587
+            }
+          },
+          "8": {
+            "draws": {
+              "n": 18,
+              "median": 284.0,
+              "p95": 284.0
+            },
+            "gl_elapsed_ms": null,
+            "local_cull_ms": {
+              "n": 18,
+              "median": 0.1294,
+              "p95": 0.13583
+            },
+            "forward_ms": {
+              "n": 18,
+              "median": 44.8508,
+              "p95": 45.7581
+            },
+            "csm_ms": {
+              "n": 18,
+              "median": 0.58456,
+              "p95": 0.63592
+            },
+            "spot_ms": {
+              "n": 18,
+              "median": 0.24656,
+              "p95": 0.25175
+            },
+            "point_ms": {
+              "n": 18,
+              "median": 0.1476,
+              "p95": 0.15288
+            },
+            "ao_ms": {
+              "n": 18,
+              "median": 69.04635,
+              "p95": 70.1748
+            },
+            "taa_resolve_ms": {
+              "n": 18,
+              "median": 21.94305,
+              "p95": 22.5134
+            },
+            "bloom_ms": {
+              "n": 18,
+              "median": 5.26255,
+              "p95": 5.35513
+            },
+            "exposure_ms": {
+              "n": 18,
+              "median": 0.03679,
+              "p95": 0.045
+            },
+            "dof_ms": null,
+            "shutter_ms": {
+              "n": 18,
+              "median": 2.71427,
+              "p95": 3.17762
+            },
+            "lens_ms": null,
+            "gpu_complete_readback_ms": {
+              "n": 18,
+              "median": 160.6061,
+              "p95": 163.61125
+            }
+          }
+        },
+        "deviceMemoryBytes": {
+          "peakTracked": 2834109084,
+          "peakNative": 2840625152,
+          "recommended": 12713115648
+        }
+      }
+    },
+    "high": {
+      "1280": {
+        "shots": {
+          "4": {
+            "draws": {
+              "n": 18,
+              "median": 310.0,
+              "p95": 310.0
+            },
+            "gl_elapsed_ms": null,
+            "local_cull_ms": {
+              "n": 18,
+              "median": 0.02269,
+              "p95": 0.02575
+            },
+            "forward_ms": {
+              "n": 18,
+              "median": 4.79223,
+              "p95": 5.06392
+            },
+            "csm_ms": {
+              "n": 18,
+              "median": 0.27348,
+              "p95": 0.42871
+            },
+            "spot_ms": {
+              "n": 18,
+              "median": 0.15748,
+              "p95": 0.1705
+            },
+            "point_ms": {
+              "n": 18,
+              "median": 0.12098,
+              "p95": 0.12833
+            },
+            "ao_ms": {
+              "n": 18,
+              "median": 3.05506,
+              "p95": 3.12008
+            },
+            "taa_resolve_ms": {
+              "n": 18,
+              "median": 2.36244,
+              "p95": 2.3935
+            },
+            "bloom_ms": {
+              "n": 18,
+              "median": 0.55304,
+              "p95": 0.59546
+            },
+            "exposure_ms": {
+              "n": 18,
+              "median": 0.03298,
+              "p95": 0.03917
+            },
+            "dof_ms": null,
+            "shutter_ms": null,
+            "lens_ms": null,
+            "gpu_complete_readback_ms": {
+              "n": 18,
+              "median": 13.67085,
+              "p95": 14.02421
+            }
+          },
+          "7": {
+            "draws": {
+              "n": 18,
+              "median": 239.0,
+              "p95": 239.0
+            },
+            "gl_elapsed_ms": null,
+            "local_cull_ms": {
+              "n": 18,
+              "median": 0.02267,
+              "p95": 0.02496
+            },
+            "forward_ms": {
+              "n": 18,
+              "median": 8.01679,
+              "p95": 8.10737
+            },
+            "csm_ms": {
+              "n": 18,
+              "median": 0.18883,
+              "p95": 0.34883
+            },
+            "spot_ms": {
+              "n": 18,
+              "median": 0.11144,
+              "p95": 0.18308
+            },
+            "point_ms": {
+              "n": 18,
+              "median": 0.11837,
+              "p95": 0.12512
+            },
+            "ao_ms": {
+              "n": 18,
+              "median": 3.32423,
+              "p95": 3.45646
+            },
+            "taa_resolve_ms": {
+              "n": 18,
+              "median": 2.40705,
+              "p95": 2.43483
+            },
+            "bloom_ms": {
+              "n": 18,
+              "median": 0.67685,
+              "p95": 0.71579
+            },
+            "exposure_ms": {
+              "n": 18,
+              "median": 0.0326,
+              "p95": 0.0375
+            },
+            "dof_ms": {
+              "n": 18,
+              "median": 0.55396,
+              "p95": 0.56817
+            },
+            "shutter_ms": null,
+            "lens_ms": {
+              "n": 18,
+              "median": 0.04679,
+              "p95": 0.04796
+            },
+            "gpu_complete_readback_ms": {
+              "n": 18,
+              "median": 17.69454,
+              "p95": 17.84654
+            }
+          },
+          "8": {
+            "draws": {
+              "n": 18,
+              "median": 285.0,
+              "p95": 285.0
+            },
+            "gl_elapsed_ms": null,
+            "local_cull_ms": {
+              "n": 18,
+              "median": 0.02385,
+              "p95": 0.02496
+            },
+            "forward_ms": {
+              "n": 18,
+              "median": 6.07958,
+              "p95": 6.24062
+            },
+            "csm_ms": {
+              "n": 18,
+              "median": 0.2931,
+              "p95": 0.45396
+            },
+            "spot_ms": {
+              "n": 18,
+              "median": 0.15977,
+              "p95": 0.17458
+            },
+            "point_ms": {
+              "n": 18,
+              "median": 0.11992,
+              "p95": 0.13
+            },
+            "ao_ms": {
+              "n": 18,
+              "median": 3.32098,
+              "p95": 3.35462
+            },
+            "taa_resolve_ms": {
+              "n": 18,
+              "median": 2.38992,
+              "p95": 2.40875
+            },
+            "bloom_ms": {
+              "n": 18,
+              "median": 0.64538,
+              "p95": 0.65646
+            },
+            "exposure_ms": {
+              "n": 18,
+              "median": 0.03213,
+              "p95": 0.03704
+            },
+            "dof_ms": null,
+            "shutter_ms": {
+              "n": 18,
+              "median": 0.27287,
+              "p95": 0.30192
+            },
+            "lens_ms": null,
+            "gpu_complete_readback_ms": {
+              "n": 18,
+              "median": 15.37685,
+              "p95": 15.81871
+            }
+          }
+        },
+        "deviceMemoryBytes": {
+          "peakTracked": 501521020,
+          "peakNative": 515866624,
+          "recommended": 12713115648
+        }
+      },
+      "1920": {
+        "shots": {
+          "4": {
+            "draws": {
+              "n": 18,
+              "median": 310.0,
+              "p95": 310.0
+            },
+            "gl_elapsed_ms": null,
+            "local_cull_ms": {
+              "n": 18,
+              "median": 0.04027,
+              "p95": 0.04704
+            },
+            "forward_ms": {
+              "n": 18,
+              "median": 9.90311,
+              "p95": 10.0322
+            },
+            "csm_ms": {
+              "n": 18,
+              "median": 0.30554,
+              "p95": 0.45529
+            },
+            "spot_ms": {
+              "n": 18,
+              "median": 0.158,
+              "p95": 0.17117
+            },
+            "point_ms": {
+              "n": 18,
+              "median": 0.11879,
+              "p95": 0.13062
+            },
+            "ao_ms": {
+              "n": 18,
+              "median": 6.79498,
+              "p95": 6.87975
+            },
+            "taa_resolve_ms": {
+              "n": 18,
+              "median": 5.35629,
+              "p95": 5.40033
+            },
+            "bloom_ms": {
+              "n": 18,
+              "median": 1.14965,
+              "p95": 1.18796
+            },
+            "exposure_ms": {
+              "n": 18,
+              "median": 0.03796,
+              "p95": 0.04517
+            },
+            "dof_ms": null,
+            "shutter_ms": null,
+            "lens_ms": null,
+            "gpu_complete_readback_ms": {
+              "n": 18,
+              "median": 28.23937,
+              "p95": 28.38058
+            }
+          },
+          "7": {
+            "draws": {
+              "n": 18,
+              "median": 239.0,
+              "p95": 239.0
+            },
+            "gl_elapsed_ms": null,
+            "local_cull_ms": {
+              "n": 18,
+              "median": 0.03946,
+              "p95": 0.04213
+            },
+            "forward_ms": {
+              "n": 18,
+              "median": 15.05435,
+              "p95": 15.2979
+            },
+            "csm_ms": {
+              "n": 18,
+              "median": 0.18619,
+              "p95": 0.28904
+            },
+            "spot_ms": {
+              "n": 18,
+              "median": 0.11275,
+              "p95": 0.18054
+            },
+            "point_ms": {
+              "n": 18,
+              "median": 0.1195,
+              "p95": 0.13292
+            },
+            "ao_ms": {
+              "n": 18,
+              "median": 7.43389,
+              "p95": 7.52121
+            },
+            "taa_resolve_ms": {
+              "n": 18,
+              "median": 5.46523,
+              "p95": 5.51725
+            },
+            "bloom_ms": {
+              "n": 18,
+              "median": 1.43383,
+              "p95": 1.48779
+            },
+            "exposure_ms": {
+              "n": 18,
+              "median": 0.03677,
+              "p95": 0.03929
+            },
+            "dof_ms": {
+              "n": 18,
+              "median": 0.95817,
+              "p95": 0.97108
+            },
+            "shutter_ms": null,
+            "lens_ms": {
+              "n": 18,
+              "median": 0.08325,
+              "p95": 0.08704
+            },
+            "gpu_complete_readback_ms": {
+              "n": 18,
+              "median": 34.94573,
+              "p95": 35.15346
+            }
+          },
+          "8": {
+            "draws": {
+              "n": 18,
+              "median": 285.0,
+              "p95": 285.0
+            },
+            "gl_elapsed_ms": null,
+            "local_cull_ms": {
+              "n": 18,
+              "median": 0.03906,
+              "p95": 0.04263
+            },
+            "forward_ms": {
+              "n": 18,
+              "median": 12.51965,
+              "p95": 12.851
+            },
+            "csm_ms": {
+              "n": 18,
+              "median": 0.30556,
+              "p95": 0.47263
+            },
+            "spot_ms": {
+              "n": 18,
+              "median": 0.15877,
+              "p95": 0.1695
+            },
+            "point_ms": {
+              "n": 18,
+              "median": 0.12194,
+              "p95": 0.12896
+            },
+            "ao_ms": {
+              "n": 18,
+              "median": 7.40804,
+              "p95": 7.51392
+            },
+            "taa_resolve_ms": {
+              "n": 18,
+              "median": 5.41641,
+              "p95": 5.47833
+            },
+            "bloom_ms": {
+              "n": 18,
+              "median": 1.34106,
+              "p95": 1.3925
+            },
+            "exposure_ms": {
+              "n": 18,
+              "median": 0.03706,
+              "p95": 0.04254
+            },
+            "dof_ms": null,
+            "shutter_ms": {
+              "n": 18,
+              "median": 0.60154,
+              "p95": 0.63938
+            },
+            "lens_ms": null,
+            "gpu_complete_readback_ms": {
+              "n": 18,
+              "median": 31.8416,
+              "p95": 32.45163
+            }
+          }
+        },
+        "deviceMemoryBytes": {
+          "peakTracked": 850467452,
+          "peakNative": 863567872,
+          "recommended": 12713115648
+        }
+      },
+      "2560": {
+        "shots": {
+          "4": {
+            "draws": {
+              "n": 18,
+              "median": 310.0,
+              "p95": 310.0
+            },
+            "gl_elapsed_ms": null,
+            "local_cull_ms": {
+              "n": 18,
+              "median": 0.06279,
+              "p95": 0.06508
+            },
+            "forward_ms": {
+              "n": 18,
+              "median": 16.7678,
+              "p95": 16.9133
+            },
+            "csm_ms": {
+              "n": 18,
+              "median": 0.31258,
+              "p95": 0.38642
+            },
+            "spot_ms": {
+              "n": 18,
+              "median": 0.16031,
+              "p95": 0.17317
+            },
+            "point_ms": {
+              "n": 18,
+              "median": 0.11962,
+              "p95": 0.12758
+            },
+            "ao_ms": {
+              "n": 18,
+              "median": 11.96555,
+              "p95": 12.0187
+            },
+            "taa_resolve_ms": {
+              "n": 18,
+              "median": 9.53327,
+              "p95": 9.64796
+            },
+            "bloom_ms": {
+              "n": 18,
+              "median": 1.96481,
+              "p95": 2.02317
+            },
+            "exposure_ms": {
+              "n": 18,
+              "median": 0.03617,
+              "p95": 0.03992
+            },
+            "dof_ms": null,
+            "shutter_ms": null,
+            "lens_ms": null,
+            "gpu_complete_readback_ms": {
+              "n": 18,
+              "median": 48.0935,
+              "p95": 48.28171
+            }
+          },
+          "7": {
+            "draws": {
+              "n": 18,
+              "median": 239.0,
+              "p95": 239.0
+            },
+            "gl_elapsed_ms": null,
+            "local_cull_ms": {
+              "n": 18,
+              "median": 0.06202,
+              "p95": 0.07287
+            },
+            "forward_ms": {
+              "n": 18,
+              "median": 25.25915,
+              "p95": 31.3225
+            },
+            "csm_ms": {
+              "n": 18,
+              "median": 0.15656,
+              "p95": 1.72092
+            },
+            "spot_ms": {
+              "n": 18,
+              "median": 0.1254,
+              "p95": 0.25925
+            },
+            "point_ms": {
+              "n": 18,
+              "median": 0.12006,
+              "p95": 1.24875
+            },
+            "ao_ms": {
+              "n": 18,
+              "median": 13.3916,
+              "p95": 13.7942
+            },
+            "taa_resolve_ms": {
+              "n": 18,
+              "median": 9.81967,
+              "p95": 10.1007
+            },
+            "bloom_ms": {
+              "n": 18,
+              "median": 2.53264,
+              "p95": 3.38725
+            },
+            "exposure_ms": {
+              "n": 18,
+              "median": 0.03538,
+              "p95": 0.04008
+            },
+            "dof_ms": {
+              "n": 18,
+              "median": 1.54041,
+              "p95": 1.72487
+            },
+            "shutter_ms": null,
+            "lens_ms": {
+              "n": 18,
+              "median": 0.11835,
+              "p95": 0.13575
+            },
+            "gpu_complete_readback_ms": {
+              "n": 18,
+              "median": 60.76875,
+              "p95": 68.02875
+            }
+          },
+          "8": {
+            "draws": {
+              "n": 18,
+              "median": 285.0,
+              "p95": 285.0
+            },
+            "gl_elapsed_ms": null,
+            "local_cull_ms": {
+              "n": 18,
+              "median": 0.06194,
+              "p95": 0.06813
+            },
+            "forward_ms": {
+              "n": 18,
+              "median": 22.0929,
+              "p95": 26.3308
+            },
+            "csm_ms": {
+              "n": 18,
+              "median": 0.28948,
+              "p95": 0.58008
+            },
+            "spot_ms": {
+              "n": 18,
+              "median": 0.16131,
+              "p95": 0.21863
+            },
+            "point_ms": {
+              "n": 18,
+              "median": 0.12298,
+              "p95": 0.12812
+            },
+            "ao_ms": {
+              "n": 18,
+              "median": 13.51125,
+              "p95": 13.762
+            },
+            "taa_resolve_ms": {
+              "n": 18,
+              "median": 9.70955,
+              "p95": 9.89358
+            },
+            "bloom_ms": {
+              "n": 18,
+              "median": 2.36646,
+              "p95": 2.52537
+            },
+            "exposure_ms": {
+              "n": 18,
+              "median": 0.03554,
+              "p95": 0.04146
+            },
+            "dof_ms": null,
+            "shutter_ms": {
+              "n": 18,
+              "median": 0.98621,
+              "p95": 1.19904
+            },
+            "lens_ms": null,
+            "gpu_complete_readback_ms": {
+              "n": 18,
+              "median": 56.03298,
+              "p95": 61.06292
+            }
+          }
+        },
+        "deviceMemoryBytes": {
+          "peakTracked": 1347787388,
+          "peakNative": 1359183872,
+          "recommended": 12713115648
+        }
+      },
+      "3840": {
+        "shots": {
+          "4": {
+            "draws": {
+              "n": 18,
+              "median": 310.0,
+              "p95": 310.0
+            },
+            "gl_elapsed_ms": null,
+            "local_cull_ms": {
+              "n": 18,
+              "median": 0.12623,
+              "p95": 0.13012
+            },
+            "forward_ms": {
+              "n": 18,
+              "median": 36.1542,
+              "p95": 38.7974
+            },
+            "csm_ms": {
+              "n": 18,
+              "median": 0.2804,
+              "p95": 0.36604
+            },
+            "spot_ms": {
+              "n": 18,
+              "median": 0.15969,
+              "p95": 0.173
+            },
+            "point_ms": {
+              "n": 18,
+              "median": 0.1209,
+              "p95": 0.13171
+            },
+            "ao_ms": {
+              "n": 18,
+              "median": 26.72865,
+              "p95": 27.2685
+            },
+            "taa_resolve_ms": {
+              "n": 18,
+              "median": 21.6308,
+              "p95": 21.9625
+            },
+            "bloom_ms": {
+              "n": 18,
+              "median": 4.41454,
+              "p95": 4.53667
+            },
+            "exposure_ms": {
+              "n": 18,
+              "median": 0.03494,
+              "p95": 0.04079
+            },
+            "dof_ms": null,
+            "shutter_ms": null,
+            "lens_ms": null,
+            "gpu_complete_readback_ms": {
+              "n": 18,
+              "median": 105.10831,
+              "p95": 108.53075
+            }
+          },
+          "7": {
+            "draws": {
+              "n": 18,
+              "median": 239.0,
+              "p95": 239.0
+            },
+            "gl_elapsed_ms": null,
+            "local_cull_ms": {
+              "n": 18,
+              "median": 0.12665,
+              "p95": 0.13225
+            },
+            "forward_ms": {
+              "n": 18,
+              "median": 50.19725,
+              "p95": 51.3637
+            },
+            "csm_ms": {
+              "n": 18,
+              "median": 0.16694,
+              "p95": 0.20858
+            },
+            "spot_ms": {
+              "n": 18,
+              "median": 0.12719,
+              "p95": 0.16412
+            },
+            "point_ms": {
+              "n": 18,
+              "median": 0.12329,
+              "p95": 0.12958
+            },
+            "ao_ms": {
+              "n": 18,
+              "median": 29.5136,
+              "p95": 29.9938
+            },
+            "taa_resolve_ms": {
+              "n": 18,
+              "median": 22.066,
+              "p95": 22.4217
+            },
+            "bloom_ms": {
+              "n": 18,
+              "median": 5.66766,
+              "p95": 5.94163
+            },
+            "exposure_ms": {
+              "n": 18,
+              "median": 0.03308,
+              "p95": 0.04813
+            },
+            "dof_ms": {
+              "n": 18,
+              "median": 3.37502,
+              "p95": 3.69254
+            },
+            "shutter_ms": null,
+            "lens_ms": {
+              "n": 18,
+              "median": 0.24438,
+              "p95": 0.24554
+            },
+            "gpu_complete_readback_ms": {
+              "n": 18,
+              "median": 126.12273,
+              "p95": 128.24987
+            }
+          },
+          "8": {
+            "draws": {
+              "n": 18,
+              "median": 285.0,
+              "p95": 285.0
+            },
+            "gl_elapsed_ms": null,
+            "local_cull_ms": {
+              "n": 18,
+              "median": 0.12656,
+              "p95": 0.13229
+            },
+            "forward_ms": {
+              "n": 18,
+              "median": 44.6206,
+              "p95": 46.6163
+            },
+            "csm_ms": {
+              "n": 18,
+              "median": 0.30267,
+              "p95": 0.37038
+            },
+            "spot_ms": {
+              "n": 18,
+              "median": 0.16015,
+              "p95": 0.17613
+            },
+            "point_ms": {
+              "n": 18,
+              "median": 0.12265,
+              "p95": 0.12854
+            },
+            "ao_ms": {
+              "n": 18,
+              "median": 29.27575,
+              "p95": 29.8128
+            },
+            "taa_resolve_ms": {
+              "n": 18,
+              "median": 21.98725,
+              "p95": 22.3738
+            },
+            "bloom_ms": {
+              "n": 18,
+              "median": 5.22645,
+              "p95": 5.48817
+            },
+            "exposure_ms": {
+              "n": 18,
+              "median": 0.03369,
+              "p95": 0.04383
+            },
+            "dof_ms": null,
+            "shutter_ms": {
+              "n": 18,
+              "median": 2.38425,
+              "p95": 2.60204
+            },
+            "lens_ms": null,
+            "gpu_complete_readback_ms": {
+              "n": 18,
+              "median": 117.90413,
+              "p95": 120.31375
+            }
+          }
+        },
+        "deviceMemoryBytes": {
+          "peakTracked": 2765937564,
+          "peakNative": 2772451328,
+          "recommended": 12713115648
+        }
+      }
+    },
+    "gl": {
+      "1280": {
+        "shots": {
+          "4": {
+            "draws": {
+              "n": 18,
+              "median": 259.0,
+              "p95": 259.0
+            },
+            "gl_elapsed_ms": {
+              "n": 18,
+              "median": 36.00515,
+              "p95": 36.8969
+            },
+            "local_cull_ms": null,
+            "forward_ms": null,
+            "csm_ms": null,
+            "spot_ms": null,
+            "point_ms": null,
+            "ao_ms": null,
+            "taa_resolve_ms": null,
+            "bloom_ms": null,
+            "exposure_ms": null,
+            "dof_ms": null,
+            "shutter_ms": null,
+            "lens_ms": null
+          },
+          "7": {
+            "draws": {
+              "n": 18,
+              "median": 202.0,
+              "p95": 202.0
+            },
+            "gl_elapsed_ms": {
+              "n": 18,
+              "median": 32.2792,
+              "p95": 32.6688
+            },
+            "local_cull_ms": null,
+            "forward_ms": null,
+            "csm_ms": null,
+            "spot_ms": null,
+            "point_ms": null,
+            "ao_ms": null,
+            "taa_resolve_ms": null,
+            "bloom_ms": null,
+            "exposure_ms": null,
+            "dof_ms": null,
+            "shutter_ms": null,
+            "lens_ms": null
+          },
+          "8": {
+            "draws": {
+              "n": 18,
+              "median": 246.0,
+              "p95": 246.0
+            },
+            "gl_elapsed_ms": {
+              "n": 18,
+              "median": 36.36535,
+              "p95": 37.9959
+            },
+            "local_cull_ms": null,
+            "forward_ms": null,
+            "csm_ms": null,
+            "spot_ms": null,
+            "point_ms": null,
+            "ao_ms": null,
+            "taa_resolve_ms": null,
+            "bloom_ms": null,
+            "exposure_ms": null,
+            "dof_ms": null,
+            "shutter_ms": null,
+            "lens_ms": null
+          }
+        }
+      },
+      "1920": {
+        "shots": {
+          "4": {
+            "draws": {
+              "n": 18,
+              "median": 259.0,
+              "p95": 259.0
+            },
+            "gl_elapsed_ms": {
+              "n": 18,
+              "median": 44.90935,
+              "p95": 45.4487
+            },
+            "local_cull_ms": null,
+            "forward_ms": null,
+            "csm_ms": null,
+            "spot_ms": null,
+            "point_ms": null,
+            "ao_ms": null,
+            "taa_resolve_ms": null,
+            "bloom_ms": null,
+            "exposure_ms": null,
+            "dof_ms": null,
+            "shutter_ms": null,
+            "lens_ms": null
+          },
+          "7": {
+            "draws": {
+              "n": 18,
+              "median": 202.0,
+              "p95": 202.0
+            },
+            "gl_elapsed_ms": {
+              "n": 18,
+              "median": 44.57505,
+              "p95": 45.6696
+            },
+            "local_cull_ms": null,
+            "forward_ms": null,
+            "csm_ms": null,
+            "spot_ms": null,
+            "point_ms": null,
+            "ao_ms": null,
+            "taa_resolve_ms": null,
+            "bloom_ms": null,
+            "exposure_ms": null,
+            "dof_ms": null,
+            "shutter_ms": null,
+            "lens_ms": null
+          },
+          "8": {
+            "draws": {
+              "n": 18,
+              "median": 246.0,
+              "p95": 246.0
+            },
+            "gl_elapsed_ms": {
+              "n": 18,
+              "median": 46.8163,
+              "p95": 51.9887
+            },
+            "local_cull_ms": null,
+            "forward_ms": null,
+            "csm_ms": null,
+            "spot_ms": null,
+            "point_ms": null,
+            "ao_ms": null,
+            "taa_resolve_ms": null,
+            "bloom_ms": null,
+            "exposure_ms": null,
+            "dof_ms": null,
+            "shutter_ms": null,
+            "lens_ms": null
+          }
+        }
+      },
+      "2560": {
+        "shots": {
+          "4": {
+            "draws": {
+              "n": 18,
+              "median": 259.0,
+              "p95": 259.0
+            },
+            "gl_elapsed_ms": {
+              "n": 18,
+              "median": 131.0725,
+              "p95": 137.328
+            },
+            "local_cull_ms": null,
+            "forward_ms": null,
+            "csm_ms": null,
+            "spot_ms": null,
+            "point_ms": null,
+            "ao_ms": null,
+            "taa_resolve_ms": null,
+            "bloom_ms": null,
+            "exposure_ms": null,
+            "dof_ms": null,
+            "shutter_ms": null,
+            "lens_ms": null
+          },
+          "7": {
+            "draws": {
+              "n": 18,
+              "median": 202.0,
+              "p95": 202.0
+            },
+            "gl_elapsed_ms": {
+              "n": 18,
+              "median": 121.524,
+              "p95": 150.531
+            },
+            "local_cull_ms": null,
+            "forward_ms": null,
+            "csm_ms": null,
+            "spot_ms": null,
+            "point_ms": null,
+            "ao_ms": null,
+            "taa_resolve_ms": null,
+            "bloom_ms": null,
+            "exposure_ms": null,
+            "dof_ms": null,
+            "shutter_ms": null,
+            "lens_ms": null
+          },
+          "8": {
+            "draws": {
+              "n": 18,
+              "median": 246.0,
+              "p95": 246.0
+            },
+            "gl_elapsed_ms": {
+              "n": 18,
+              "median": 156.9025,
+              "p95": 177.258
+            },
+            "local_cull_ms": null,
+            "forward_ms": null,
+            "csm_ms": null,
+            "spot_ms": null,
+            "point_ms": null,
+            "ao_ms": null,
+            "taa_resolve_ms": null,
+            "bloom_ms": null,
+            "exposure_ms": null,
+            "dof_ms": null,
+            "shutter_ms": null,
+            "lens_ms": null
+          }
+        }
+      },
+      "3840": {
+        "shots": {
+          "4": {
+            "draws": {
+              "n": 18,
+              "median": 259.0,
+              "p95": 259.0
+            },
+            "gl_elapsed_ms": {
+              "n": 18,
+              "median": 174.969,
+              "p95": 186.01
+            },
+            "local_cull_ms": null,
+            "forward_ms": null,
+            "csm_ms": null,
+            "spot_ms": null,
+            "point_ms": null,
+            "ao_ms": null,
+            "taa_resolve_ms": null,
+            "bloom_ms": null,
+            "exposure_ms": null,
+            "dof_ms": null,
+            "shutter_ms": null,
+            "lens_ms": null
+          },
+          "7": {
+            "draws": {
+              "n": 18,
+              "median": 202.0,
+              "p95": 202.0
+            },
+            "gl_elapsed_ms": {
+              "n": 18,
+              "median": 169.815,
+              "p95": 190.975
+            },
+            "local_cull_ms": null,
+            "forward_ms": null,
+            "csm_ms": null,
+            "spot_ms": null,
+            "point_ms": null,
+            "ao_ms": null,
+            "taa_resolve_ms": null,
+            "bloom_ms": null,
+            "exposure_ms": null,
+            "dof_ms": null,
+            "shutter_ms": null,
+            "lens_ms": null
+          },
+          "8": {
+            "draws": {
+              "n": 18,
+              "median": 246.0,
+              "p95": 246.0
+            },
+            "gl_elapsed_ms": {
+              "n": 18,
+              "median": 95.9178,
+              "p95": 223.287
+            },
+            "local_cull_ms": null,
+            "forward_ms": null,
+            "csm_ms": null,
+            "spot_ms": null,
+            "point_ms": null,
+            "ao_ms": null,
+            "taa_resolve_ms": null,
+            "bloom_ms": null,
+            "exposure_ms": null,
+            "dof_ms": null,
+            "shutter_ms": null,
+            "lens_ms": null
+          }
+        }
+      }
+    }
+  },
+  "paired1080p": {
+    "a": {
+      "n": 18,
+      "median": 38.38867,
+      "p95": 38.68796
+    },
+    "aa": {
+      "n": 18,
+      "median": 38.47131,
+      "p95": 38.61242
+    },
+    "ssr-off": {
+      "n": 18,
+      "median": 34.18006,
+      "p95": 34.39013
+    },
+    "neutral": {
+      "n": 18,
+      "median": 38.49429,
+      "p95": 38.68975
+    }
+  }
+}

@@ -1,0 +1,130 @@
+Import:
+  Version: 1
+  Recipe: StaticMesh_v1
+  Producer: GLB2/TinyGLTF-0d9ce1a9561688c6c6e7471430d15a50a0b15f1a/Mikk-3e895b49d05ea07e4c2133156cfa94369e19e409
+  ID: 82f439b80b7fa998
+  Generation: ff6a15978434d8bb
+  PrefabRoot: ccbe6b4977fc87bf
+  Source: Pavilion/FlightHelmet/Source.glb
+  SourceHash: a598e844355040c01c0d14426a09bd0a20b34143c18f99523f7dd88695f30ab8
+  Scene: -1
+  Prefab: Pavilion/FlightHelmet/Model.hprefab
+  PrefabSource: be91c104143b533a5a825f1248d5682638c0b5916bfecdd43e9a3494a4770980
+  PrefabAcceptedHash: dff3b510084bf48622966f7bbb9a16ba48cea3a4b04576421ad57f29e29062e3
+  Materials:
+    - ID: 15e38090770aa779
+      Source: 99ac332233724341f3f34cb39bb42d9674aded0be519de586afb3b21912051ac
+      Output: Pavilion/FlightHelmet/materials/15e38090770aa779.hmat
+      AcceptedHash: a238114e78dbd3acd5ab8eb16dddb6250216b3c02ba5008a011ea05cee15cfdd
+      SourceKey: material:0
+    - ID: 2b7ad87d66c9200b
+      Source: 22ddf27a03dc172f370bc078c2236260555fa09d608f21804749c57951d6d136
+      Output: Pavilion/FlightHelmet/materials/2b7ad87d66c9200b.hmat
+      AcceptedHash: fadcdfd7759f2bfe7677f1a8a163cdad59509128584bf69507176921a71e890c
+      SourceKey: material:1
+    - ID: 7f8f5d1b48398c54
+      Source: f53ca713948fe2577170666a065f46b7bac4c9601c90ff5867908731206f2cba
+      Output: Pavilion/FlightHelmet/materials/7f8f5d1b48398c54.hmat
+      AcceptedHash: 034b2ac6d09693c0ef555f234305eb940b8f98870f99a38779cf57ad08e782b7
+      SourceKey: material:2
+    - ID: 47030d1ac7cab304
+      Source: 2908e40ff5ddf124106a7793a6f42e7c6c749f85b2f33cf8ffac12815997e5fe
+      Output: Pavilion/FlightHelmet/materials/47030d1ac7cab304.hmat
+      AcceptedHash: 9bb8b3d3de4b609de792054c7c48de45e039a6c86ce70a04a781c38e7e071851
+      SourceKey: material:3
+    - ID: 59032096b9764b90
+      Source: ec269d2c65d7c233fbf3715de1e6ec2f775263a3403d40031e17827670d30e75
+      Output: Pavilion/FlightHelmet/materials/59032096b9764b90.hmat
+      AcceptedHash: 9153eabec22d38322abd1188c8ef32bd49f5370f1bce81918370085a8ea8ac4a
+      SourceKey: material:4
+    - ID: 18b34f813d324bc8
+      Source: 19e57dbe41c67a8cf30dc8f37dbb823668e0f75f7756eb196968fc75fe008892
+      Output: Pavilion/FlightHelmet/materials/18b34f813d324bc8.hmat
+      AcceptedHash: 1fae0069c2dbcf3fd1e63a989a0554aba05d68e0ff22ad946fe80bf50f218f01
+      SourceKey: material:5
+  Meshes:
+    - ID: cc79f240df72b5f1
+      Source: d3f65f31ce57d0ff527ca3f5fbb2fbd9a480ee311ba7c95d6acc41134060a1ff
+      Output: Pavilion/FlightHelmet/meshes/cc79f240df72b5f1.hmesh
+      Geometry: Pavilion/FlightHelmet/generations/ff6a15978434d8bb/cc79f240df72b5f1.hgeom
+      GeometryHash: 018c7710092c285718ea4027f11a474641de141c2a33e42971b36860ee8fb579
+      SourceKey: mesh:0
+      Slots:
+        - ID: 5f43bebd97c1ba6d
+          Source: 3a66d33949a6ad2f738f650b897f767fc8f9cf01047b22efd33fa78f18a7858f
+          SourceKey: mesh:0/primitive:0
+          Material: Pavilion/FlightHelmet/materials/15e38090770aa779.hmat
+    - ID: 2ad93c7fc139ec86
+      Source: 8af7318489d8d06c75868530a358ad5d62cc1700ff4a624e8f209081d79325b6
+      Output: Pavilion/FlightHelmet/meshes/2ad93c7fc139ec86.hmesh
+      Geometry: Pavilion/FlightHelmet/generations/ff6a15978434d8bb/2ad93c7fc139ec86.hgeom
+      GeometryHash: 0be8c916c7089756c810f641a4f4afa77cc286ad8cccf3beb4e5d8c685ae59e9
+      SourceKey: mesh:1
+      Slots:
+        - ID: dbb8613893193690
+          Source: af5fa99f98492c0c9680b0cd9e60f4e3f92d87eff7a800113c1273281fa6d10a
+          SourceKey: mesh:1/primitive:0
+          Material: Pavilion/FlightHelmet/materials/2b7ad87d66c9200b.hmat
+    - ID: 557773c533397782
+      Source: ce7316eb88e6559b014b3d0f0f9681cf20aeaef24379c3566c767cc5e3cc913a
+      Output: Pavilion/FlightHelmet/meshes/557773c533397782.hmesh
+      Geometry: Pavilion/FlightHelmet/generations/ff6a15978434d8bb/557773c533397782.hgeom
+      GeometryHash: b8d98ba41eeb336202aa56843d28ff31b3349f273ac7d39452ef7c1d421b203e
+      SourceKey: mesh:2
+      Slots:
+        - ID: feb178b06934b7a8
+          Source: e455addd6e8df4a75a3830db5ffe548cdecbceb06c3ce719df5cdb0557a7e716
+          SourceKey: mesh:2/primitive:0
+          Material: Pavilion/FlightHelmet/materials/7f8f5d1b48398c54.hmat
+    - ID: 8ae5b0fb10db431d
+      Source: 67cf6d48b5b7ccb6e58a7862616a726da02623ba85df5788c54fe239cb6f56c6
+      Output: Pavilion/FlightHelmet/meshes/8ae5b0fb10db431d.hmesh
+      Geometry: Pavilion/FlightHelmet/generations/ff6a15978434d8bb/8ae5b0fb10db431d.hgeom
+      GeometryHash: aa1cf6f466c0a705cf215e81621141fc5c21febc5b2773332da320db6ea7d6b2
+      SourceKey: mesh:3
+      Slots:
+        - ID: 8f72a1fea1e2c454
+          Source: 8f107a79706e017465c528475e80943b47605033937feeba330a9808bf2baa02
+          SourceKey: mesh:3/primitive:0
+          Material: Pavilion/FlightHelmet/materials/47030d1ac7cab304.hmat
+    - ID: 1beef80d933774d0
+      Source: 3c01740966a0da2c524aaf7af8806ee97ae79231fd1c7b77aff1b36d4278eb62
+      Output: Pavilion/FlightHelmet/meshes/1beef80d933774d0.hmesh
+      Geometry: Pavilion/FlightHelmet/generations/ff6a15978434d8bb/1beef80d933774d0.hgeom
+      GeometryHash: 1986245a6a34a4b17462675e9b60d0715dcfad2c252dd7116acc2415ee1080df
+      SourceKey: mesh:4
+      Slots:
+        - ID: 2da2fb82723770ef
+          Source: 4193ec3da08b27d549682d7c95a3b36ba1439b84146ea9f7cca92767d2c50cc1
+          SourceKey: mesh:4/primitive:0
+          Material: Pavilion/FlightHelmet/materials/59032096b9764b90.hmat
+    - ID: 860a697022b0ea4e
+      Source: 67c44563cc2f79f245b5f424cfa7c58f3cc02e3c04c948229f30278790050917
+      Output: Pavilion/FlightHelmet/meshes/860a697022b0ea4e.hmesh
+      Geometry: Pavilion/FlightHelmet/generations/ff6a15978434d8bb/860a697022b0ea4e.hgeom
+      GeometryHash: 5982810a02f09e64ef934c78c3f50cf936398b571d1502df8f9b0ed3fa92d615
+      SourceKey: mesh:5
+      Slots:
+        - ID: b631b0b6027f45d1
+          Source: 5041532e2097753af2af8c4e126cc77c491cbc67897e29e5bbea0345c8ee6bf3
+          SourceKey: mesh:5/primitive:0
+          Material: Pavilion/FlightHelmet/materials/18b34f813d324bc8.hmat
+  Nodes:
+    - ID: 4f799d8a87d94e6e
+      Source: 5b1d11b5c515d883dbf63385d59f30a0de230f15da45c611d7f02a2cc684d3e3
+      SourceKey: node:0
+    - ID: af789d4fc5ce9167
+      Source: b6a54e4c1130d571e86fd02fc54d5cfbccbad2ccc7378dd6812f548ee61a7fa4
+      SourceKey: node:1
+    - ID: 2e3a3d926b4fd715
+      Source: a81e3d48d7a5bfdacc9d02ef7a88f49f7e888bddf2a422cb5dc0f4fcf444fb1b
+      SourceKey: node:2
+    - ID: 5c5203b42359c4f4
+      Source: 0ec2258cab9631e47d80b911b72f262f8c79b8404241f0a6a0bc26beb873b7d8
+      SourceKey: node:3
+    - ID: 08796bed396c7828
+      Source: 60fb190431caa759ddc51b6bd911d7bea10a5ab40271af74b8205815dd7153c3
+      SourceKey: node:4
+    - ID: 33512a218747fa94
+      Source: e954b45dd977c278dc6eb467db1ea43213bbd72d3902ec9ee2ad6ad302628fb0
+      SourceKey: node:5

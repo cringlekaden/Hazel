@@ -192,8 +192,8 @@ From `/Volumes/External/kadencringle/Projects/Hazel`:
 ```sh
 python3 scripts/hazel.py run Hazelnut --config Release --project examples/RenderingReference/RenderingReference-IBLQuality-Photo.hproj
 python3 scripts/hazel.py run Nutella --config Release --project examples/RenderingReference/RenderingReference-IBLQuality-Photo.hproj
-python3 scripts/hazel.py run Hazelnut --config Release --project examples/RenderingShowcase/RenderingShowcase.hproj
-python3 scripts/hazel.py run Nutella --config Release --project examples/RenderingShowcase/RenderingShowcase.hproj
+python3 scripts/hazel.py run Hazelnut --config Release --project examples/RenderingShowcase/RenderingShowcase-Studio.hproj
+python3 scripts/hazel.py run Nutella --config Release --project examples/RenderingShowcase/RenderingShowcase-Studio.hproj
 ```
 
 Use Play in Hazelnut for the fixed authored camera; Edit navigation remains

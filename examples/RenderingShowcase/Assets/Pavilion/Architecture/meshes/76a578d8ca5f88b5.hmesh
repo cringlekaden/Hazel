@@ -1,0 +1,9 @@
+Mesh:
+  Version: 1
+  ID: 76a578d8ca5f88b5
+  Name: Court grasses / Leaves
+  Import: Pavilion/Architecture/Import.himport
+  Slots:
+    - ID: 943cde45ce3465df
+      Name: Surface 1
+      Material: Pavilion/Architecture/materials/8f42732066ef771f.hmat

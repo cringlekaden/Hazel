@@ -4,6 +4,7 @@
 #include "ScreenReflectionQualification.h"
 #include "ReflectionSphereQualification.h"
 #include "HDRBloomQualification.h"
+#include "PavilionStudy.h"
 #include "Hazel/Core/FileDocument.h"
 #include "Hazel/Renderer/Scene/ReflectionProbeCapture.h"
 #include <thread>
@@ -114,6 +115,10 @@ inline void ReflectionProbeQualification(const std::filesystem::path &output,
     std::filesystem::create_directories(output);
     const auto project = Project::LoadCandidate(FileSystem::GetEnvironmentPath("HAZEL_RENDERING_REFERENCE_PROJECT"));
     auto assets = CreateRef<ProjectAssets>(project->GetAssetRoot());
+    if (!FileSystem::GetEnvironmentPath("HAZEL_PAVILION_STUDY").empty()) {
+        PavilionStudy(output, project, assets, capture);
+        return;
+    }
     if (!FileSystem::GetEnvironmentPath("HAZEL_HDR_BLOOM").empty()) {
         HDRBloomQualification(output, project, assets, capture);
         return;

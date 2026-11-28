@@ -1,0 +1,1425 @@
+SceneVersion: 3
+Scene: The Pavilion / High
+Presentation:
+  Mode: SceneReferred
+  CameraExposure:
+    Version: 1
+    Mode: Automatic
+    CompensationStops: -0.28
+    Metering: CenterWeighted
+    IncludeSky: false
+    LowPercentile: 0.1
+    HighPercentile: 0.94
+    MinGainStops: -2.4
+    MaxGainStops: 3.3
+    BrighteningRate: 1.35
+    DarkeningRate: 2.2
+  TemporalAA: true
+  Background: [0.009, 0.01, 0.014, 1]
+  Environment:
+    Asset: Pavilion/Sunset.henv
+    Yaw: 0.94
+    Gain: 0.55
+    Lighting: true
+    Background: true
+  AmbientOcclusion:
+    Enabled: true
+    Quality: 2
+    Radius: 0.65
+    Strength: 0.78
+    Falloff: 0.615
+  ScreenReflections:
+    Enabled: true
+    Quality: 1
+    Steps: 36
+    Distance: 20
+    Thickness: 0.14
+  Bloom:
+    Enabled: true
+    Intensity: 0.095
+    Radius: 0.92
+  Shadows:
+    Enabled: true
+    Resolution: 1024
+    Distance: 56
+    SplitLambda: 0.65
+    NormalBias: 0.2
+    DepthBias: 0.05
+    Blend: 0.15
+Entities:
+- Entity: 1
+  Relationship:
+    Parent: 0
+    Order: 0
+  TagComponent:
+    Tag: 01 Arrival
+  TransformComponent:
+    Translation: [9.4, 2.22, 16.5]
+    Rotation: [0.0258453, 0.6726706, 0]
+    Scale: [1, 1, 1]
+  CameraComponent:
+    Camera:
+      ProjectionType: 0
+      PerspectiveFOV: 0.75
+      PerspectiveNear: 0.055
+      PerspectiveFar: 120
+      OrthographicSize: 10
+      OrthographicNear: -1
+      OrthographicFar: 1
+      PhysicalLens:
+        Version: 1
+        Projection: true
+        FocalLengthMM: 27
+        SensorWidthMM: 36
+        SensorHeightMM: 24
+        Aperture: 4
+        ShutterSeconds: 0.02
+        ISO: 500
+        FocusDistance: 6
+    Primary: true
+    FixedAspectRatio: false
+    ColorGrade:
+      Version: 1
+      WhiteKelvin: 5900
+      TintUV: 0.0011
+      Saturation: 0.93
+      Contrast: 0.13
+      Shadows: -0.1
+      Highlights: 0.04
+      LUT: Pavilion/Surfaces/NightFlight.cube
+      LUTStrength: 0.65
+- Entity: 2
+  Relationship:
+    Parent: 0
+    Order: 1
+  TagComponent:
+    Tag: 02 Threshold
+  TransformComponent:
+    Translation: [0.4, 1.65, 8.7]
+    Rotation: [0.003729, 0.1271302, 0]
+    Scale: [1, 1, 1]
+  CameraComponent:
+    Camera:
+      ProjectionType: 0
+      PerspectiveFOV: 0.75
+      PerspectiveNear: 0.055
+      PerspectiveFar: 120
+      OrthographicSize: 10
+      OrthographicNear: -1
+      OrthographicFar: 1
+      PhysicalLens:
+        Version: 1
+        Projection: true
+        FocalLengthMM: 25
+        SensorWidthMM: 36
+        SensorHeightMM: 24
+        Aperture: 4
+        ShutterSeconds: 0.02
+        ISO: 500
+        FocusDistance: 6
+    Primary: false
+    FixedAspectRatio: false
+    ColorGrade:
+      Version: 1
+      WhiteKelvin: 5900
+      TintUV: 0.0011
+      Saturation: 0.93
+      Contrast: 0.13
+      Shadows: -0.1
+      Highlights: 0.04
+      LUT: Pavilion/Surfaces/NightFlight.cube
+      LUTStrength: 0.65
+- Entity: 3
+  Relationship:
+    Parent: 0
+    Order: 2
+  TagComponent:
+    Tag: 03 Night Flight
+  TransformComponent:
+    Translation: [3.2, 2.5, 4.9]
+    Rotation: [-0.0214058, 0.5321583, 0]
+    Scale: [1, 1, 1]
+  CameraComponent:
+    Camera:
+      ProjectionType: 0
+      PerspectiveFOV: 0.75
+      PerspectiveNear: 0.055
+      PerspectiveFar: 120
+      OrthographicSize: 10
+      OrthographicNear: -1
+      OrthographicFar: 1
+      PhysicalLens:
+        Version: 1
+        Projection: true
+        FocalLengthMM: 25
+        SensorWidthMM: 36
+        SensorHeightMM: 24
+        Aperture: 4
+        ShutterSeconds: 0.02
+        ISO: 500
+        FocusDistance: 6
+    Primary: false
+    FixedAspectRatio: false
+    ColorGrade:
+      Version: 1
+      WhiteKelvin: 5900
+      TintUV: 0.0011
+      Saturation: 0.93
+      Contrast: 0.13
+      Shadows: -0.1
+      Highlights: 0.04
+      LUT: Pavilion/Surfaces/NightFlight.cube
+      LUTStrength: 0.65
+- Entity: 4
+  Relationship:
+    Parent: 0
+    Order: 3
+  TagComponent:
+    Tag: 04 Reflection sweep
+  TransformComponent:
+    Translation: [2.45, 0.68, 3.6]
+    Rotation: [0.0538486, 0.5416046, 0]
+    Scale: [1, 1, 1]
+  CameraComponent:
+    Camera:
+      ProjectionType: 0
+      PerspectiveFOV: 0.75
+      PerspectiveNear: 0.055
+      PerspectiveFar: 120
+      OrthographicSize: 10
+      OrthographicNear: -1
+      OrthographicFar: 1
+      PhysicalLens:
+        Version: 1
+        Projection: true
+        FocalLengthMM: 25
+        SensorWidthMM: 36
+        SensorHeightMM: 24
+        Aperture: 4
+        ShutterSeconds: 0.02
+        ISO: 500
+        FocusDistance: 6
+    Primary: false
+    FixedAspectRatio: false
+    ColorGrade:
+      Version: 1
+      WhiteKelvin: 5900
+      TintUV: 0.0011
+      Saturation: 0.93
+      Contrast: 0.13
+      Shadows: -0.1
+      Highlights: 0.04
+      LUT: Pavilion/Surfaces/NightFlight.cube
+      LUTStrength: 0.65
+- Entity: 5
+  Relationship:
+    Parent: 0
+    Order: 4
+  TagComponent:
+    Tag: 05 Kinetic exhibit
+  TransformComponent:
+    Translation: [3.1, 1.54, -0.32]
+    Rotation: [-0.0950314, 0.4247713, 0]
+    Scale: [1, 1, 1]
+  CameraComponent:
+    Camera:
+      ProjectionType: 0
+      PerspectiveFOV: 0.75
+      PerspectiveNear: 0.055
+      PerspectiveFar: 120
+      OrthographicSize: 10
+      OrthographicNear: -1
+      OrthographicFar: 1
+      PhysicalLens:
+        Version: 1
+        Projection: true
+        FocalLengthMM: 43
+        SensorWidthMM: 36
+        SensorHeightMM: 24
+        Aperture: 4
+        ShutterSeconds: 0.02
+        ISO: 500
+        FocusDistance: 6
+    Primary: false
+    FixedAspectRatio: false
+    ColorGrade:
+      Version: 1
+      WhiteKelvin: 5900
+      TintUV: 0.0011
+      Saturation: 0.93
+      Contrast: 0.13
+      Shadows: -0.1
+      Highlights: 0.04
+      LUT: Pavilion/Surfaces/NightFlight.cube
+      LUTStrength: 0.65
+    MotionBlur:
+      Version: 1
+      Enabled: true
+      Shutter: Angle
+      ShutterAngleDegrees: 180
+      Quality: Balanced
+- Entity: 6
+  Relationship:
+    Parent: 0
+    Order: 5
+  TagComponent:
+    Tag: 06 Archive passage
+  TransformComponent:
+    Translation: [4.03, 1.55, -7.62]
+    Rotation: [0.0266467, -0.0319891, 0]
+    Scale: [1, 1, 1]
+  CameraComponent:
+    Camera:
+      ProjectionType: 0
+      PerspectiveFOV: 0.75
+      PerspectiveNear: 0.055
+      PerspectiveFar: 120
+      OrthographicSize: 10
+      OrthographicNear: -1
+      OrthographicFar: 1
+      PhysicalLens:
+        Version: 1
+        Projection: true
+        FocalLengthMM: 28
+        SensorWidthMM: 36
+        SensorHeightMM: 24
+        Aperture: 4
+        ShutterSeconds: 0.02
+        ISO: 500
+        FocusDistance: 6
+    Primary: false
+    FixedAspectRatio: false
+    ColorGrade:
+      Version: 1
+      WhiteKelvin: 5900
+      TintUV: 0.0011
+      Saturation: 0.93
+      Contrast: 0.13
+      Shadows: -0.1
+      Highlights: 0.04
+      LUT: Pavilion/Surfaces/NightFlight.cube
+      LUTStrength: 0.65
+    LensEffects:
+      Version: 1
+      FlareStrength: 0.065
+      GhostCount: 3
+      GhostSpacing: 0.32
+      HaloStrength: 0.076
+      HaloRadius: 0.41
+      Starburst: 0.11
+      AnamorphicStreak: 0.14
+      DirtTexture: Pavilion/Surfaces/OpticalDust.png
+      DirtStrength: 0.09
+      DirtScale: 1
+      Vignette: 0.15
+    CameraExposure:
+      Version: 1
+      Mode: Automatic
+      CompensationStops: -0.61
+      MinGainStops: -2
+      MaxGainStops: 1.35
+      HighPercentile: 0.91
+- Entity: 7
+  Relationship:
+    Parent: 0
+    Order: 6
+  TagComponent:
+    Tag: 07 Flight helmet
+  TransformComponent:
+    Translation: [-0.7, 1.72, -0.76]
+    Rotation: [-0.0815532, 0.2872815, 0]
+    Scale: [1, 1, 1]
+  CameraComponent:
+    Camera:
+      ProjectionType: 0
+      PerspectiveFOV: 0.75
+      PerspectiveNear: 0.055
+      PerspectiveFar: 120
+      OrthographicSize: 10
+      OrthographicNear: -1
+      OrthographicFar: 1
+      PhysicalLens:
+        Version: 1
+        Projection: true
+        FocalLengthMM: 63
+        SensorWidthMM: 36
+        SensorHeightMM: 24
+        Aperture: 1.3
+        ShutterSeconds: 0.02
+        ISO: 500
+        FocusDistance: 1.86
+    Primary: false
+    FixedAspectRatio: false
+    ColorGrade:
+      Version: 1
+      WhiteKelvin: 5900
+      TintUV: 0.0011
+      Saturation: 0.93
+      Contrast: 0.13
+      Shadows: -0.1
+      Highlights: 0.04
+      LUT: Pavilion/Surfaces/NightFlight.cube
+      LUTStrength: 0.65
+    LensEffects:
+      Version: 1
+      FlareStrength: 0.065
+      GhostCount: 3
+      GhostSpacing: 0.32
+      HaloStrength: 0.076
+      HaloRadius: 0.41
+      Starburst: 0.11
+      AnamorphicStreak: 0.14
+      DirtTexture: Pavilion/Surfaces/OpticalDust.png
+      DirtStrength: 0.09
+      DirtScale: 1
+      Vignette: 0.15
+    DepthOfField:
+      Version: 1
+      Enabled: true
+      Quality: Balanced
+      ApertureBlades: 8
+      ApertureRotationRadians: 0.18
+      FocusHalfLifeSeconds: 0.23
+      TrackedSubject: 66
+- Entity: 8
+  Relationship:
+    Parent: 0
+    Order: 7
+  TagComponent:
+    Tag: 08 Shutter sweep
+  TransformComponent:
+    Translation: [0.92, 1.54, 0.36]
+    Rotation: [-0.0, 0.4484133, 0]
+    Scale: [1, 1, 1]
+  CameraComponent:
+    Camera:
+      ProjectionType: 0
+      PerspectiveFOV: 0.75
+      PerspectiveNear: 0.055
+      PerspectiveFar: 120
+      OrthographicSize: 10
+      OrthographicNear: -1
+      OrthographicFar: 1
+      PhysicalLens:
+        Version: 1
+        Projection: true
+        FocalLengthMM: 39
+        SensorWidthMM: 36
+        SensorHeightMM: 24
+        Aperture: 4
+        ShutterSeconds: 0.02
+        ISO: 500
+        FocusDistance: 6
+    Primary: false
+    FixedAspectRatio: false
+    ColorGrade:
+      Version: 1
+      WhiteKelvin: 5900
+      TintUV: 0.0011
+      Saturation: 0.93
+      Contrast: 0.13
+      Shadows: -0.1
+      Highlights: 0.04
+      LUT: Pavilion/Surfaces/NightFlight.cube
+      LUTStrength: 0.65
+    MotionBlur:
+      Version: 1
+      Enabled: true
+      Shutter: Angle
+      ShutterAngleDegrees: 180
+      Quality: Balanced
+- Entity: 9
+  Relationship:
+    Parent: 0
+    Order: 8
+  TagComponent:
+    Tag: 09 Closing gallery
+  TransformComponent:
+    Translation: [-5.65, 2.48, 3.4]
+    Rotation: [-0.0251277, -0.5803982, 0]
+    Scale: [1, 1, 1]
+  CameraComponent:
+    Camera:
+      ProjectionType: 0
+      PerspectiveFOV: 0.75
+      PerspectiveNear: 0.055
+      PerspectiveFar: 120
+      OrthographicSize: 10
+      OrthographicNear: -1
+      OrthographicFar: 1
+      PhysicalLens:
+        Version: 1
+        Projection: true
+        FocalLengthMM: 25
+        SensorWidthMM: 36
+        SensorHeightMM: 24
+        Aperture: 4
+        ShutterSeconds: 0.02
+        ISO: 500
+        FocusDistance: 6
+    Primary: false
+    FixedAspectRatio: false
+    ColorGrade:
+      Version: 1
+      WhiteKelvin: 5900
+      TintUV: 0.0011
+      Saturation: 0.93
+      Contrast: 0.13
+      Shadows: -0.1
+      Highlights: 0.04
+      LUT: Pavilion/Surfaces/NightFlight.cube
+      LUTStrength: 0.65
+    LensEffects:
+      Version: 1
+      FlareStrength: 0.065
+      GhostCount: 3
+      GhostSpacing: 0.32
+      HaloStrength: 0.076
+      HaloRadius: 0.41
+      Starburst: 0.11
+      AnamorphicStreak: 0.14
+      DirtTexture: Pavilion/Surfaces/OpticalDust.png
+      DirtStrength: 0.09
+      DirtScale: 1
+      Vignette: 0.15
+- Entity: 10
+  Relationship:
+    Parent: 0
+    Order: 9
+  TagComponent:
+    Tag: Late sunlight
+  TransformComponent:
+    Translation: [0, 0, 0]
+    Rotation: [-0.4303421, -0.9874233, 0]
+    Scale: [1, 1, 1]
+  DirectionalLightComponent:
+    Enabled: true
+    Color: [1, 0.68, 0.4]
+    Intensity: 3.8
+- Entity: 11
+  Relationship:
+    Parent: 0
+    Order: 10
+  TagComponent:
+    Tag: Exhibit warm key
+  TransformComponent:
+    Translation: [-0.15, 4.57, -0.62]
+    Rotation: [-0.959549, 0.5180294, 0]
+    Scale: [1, 1, 1]
+  SpotLightComponent:
+    Enabled: true
+    Color: [1, 0.68, 0.44]
+    Intensity: 125
+    Range: 9
+    InnerCone: 0.248
+    OuterCone: 0.4
+    CastShadows: true
+    ShadowResolution: 512
+- Entity: 12
+  Relationship:
+    Parent: 0
+    Order: 11
+  TagComponent:
+    Tag: Exhibit cool edge
+  TransformComponent:
+    Translation: [-3.3, 4.56, -3.65]
+    Rotation: [-0.9091305, -2.059248, 0]
+    Scale: [1, 1, 1]
+  SpotLightComponent:
+    Enabled: true
+    Color: [0.5, 0.74, 1]
+    Intensity: 95
+    Range: 8
+    InnerCone: 0.2294
+    OuterCone: 0.37
+    CastShadows: true
+    ShadowResolution: 512
+- Entity: 13
+  Relationship:
+    Parent: 0
+    Order: 12
+  TagComponent:
+    Tag: Kinetic spotlight
+  TransformComponent:
+    Translation: [1.65, 3.8, -3.18]
+    Rotation: [-1.4464413, 0.0, 0]
+    Scale: [1, 1, 1]
+  SpotLightComponent:
+    Enabled: true
+    Color: [1, 0.78, 0.55]
+    Intensity: 67
+    Range: 6
+    InnerCone: 0.248
+    OuterCone: 0.4
+    CastShadows: true
+    ShadowResolution: 512
+- Entity: 14
+  Relationship:
+    Parent: 0
+    Order: 13
+  TagComponent:
+    Tag: Passage warm graze
+  TransformComponent:
+    Translation: [4.34, 3.21, -10.3]
+    Rotation: [-1.0404515, 0.6422786, 0]
+    Scale: [1, 1, 1]
+  SpotLightComponent:
+    Enabled: true
+    Color: [1, 0.58, 0.3]
+    Intensity: 72
+    Range: 6
+    InnerCone: 0.2976
+    OuterCone: 0.48
+    CastShadows: true
+    ShadowResolution: 512
+- Entity: 15
+  Relationship:
+    Parent: 0
+    Order: 14
+  TagComponent:
+    Tag: Gallery warm practical
+  TransformComponent:
+    Translation: [2.6, 2.56, -4.8]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  PointLightComponent:
+    Enabled: true
+    Color: [1, 0.6, 0.31]
+    Intensity: 39
+    Range: 6
+    CastShadows: true
+    ShadowResolution: 256
+- Entity: 16
+  Relationship:
+    Parent: 0
+    Order: 15
+  TagComponent:
+    Tag: Passage blue practical
+  TransformComponent:
+    Translation: [4.57, 2.49, -13.46]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  PointLightComponent:
+    Enabled: true
+    Color: [0.17, 0.54, 1]
+    Intensity: 11
+    Range: 3.45
+    CastShadows: true
+    ShadowResolution: 256
+- Entity: 17
+  Relationship:
+    Parent: 0
+    Order: 16
+  TagComponent:
+    Tag: Ceiling bounce 0
+  TransformComponent:
+    Translation: [1, 4.05, -5.7]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  PointLightComponent:
+    Enabled: true
+    Color: [0.8, 0.7, 0.59]
+    Intensity: 55
+    Range: 6.7
+    CastShadows: false
+    ShadowResolution: 256
+- Entity: 18
+  Relationship:
+    Parent: 0
+    Order: 17
+  TagComponent:
+    Tag: Window bounce 0
+  TransformComponent:
+    Translation: [-5.8, 2.55, -5.7]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  PointLightComponent:
+    Enabled: true
+    Color: [0.39, 0.56, 0.82]
+    Intensity: 14
+    Range: 5.4
+    CastShadows: false
+    ShadowResolution: 256
+- Entity: 19
+  Relationship:
+    Parent: 0
+    Order: 18
+  TagComponent:
+    Tag: Ceiling bounce 1
+  TransformComponent:
+    Translation: [1, 4.05, -2.9]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  PointLightComponent:
+    Enabled: true
+    Color: [0.8, 0.7, 0.59]
+    Intensity: 55
+    Range: 6.7
+    CastShadows: false
+    ShadowResolution: 256
+- Entity: 20
+  Relationship:
+    Parent: 0
+    Order: 19
+  TagComponent:
+    Tag: Window bounce 1
+  TransformComponent:
+    Translation: [-5.8, 2.55, -2.9]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  PointLightComponent:
+    Enabled: true
+    Color: [0.39, 0.56, 0.82]
+    Intensity: 14
+    Range: 5.4
+    CastShadows: false
+    ShadowResolution: 256
+- Entity: 21
+  Relationship:
+    Parent: 0
+    Order: 20
+  TagComponent:
+    Tag: Ceiling bounce 2
+  TransformComponent:
+    Translation: [1, 4.05, -0.2]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  PointLightComponent:
+    Enabled: true
+    Color: [0.8, 0.7, 0.59]
+    Intensity: 55
+    Range: 6.7
+    CastShadows: false
+    ShadowResolution: 256
+- Entity: 22
+  Relationship:
+    Parent: 0
+    Order: 21
+  TagComponent:
+    Tag: Window bounce 2
+  TransformComponent:
+    Translation: [-5.8, 2.55, -0.2]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  PointLightComponent:
+    Enabled: true
+    Color: [0.39, 0.56, 0.82]
+    Intensity: 14
+    Range: 5.4
+    CastShadows: false
+    ShadowResolution: 256
+- Entity: 23
+  Relationship:
+    Parent: 0
+    Order: 22
+  TagComponent:
+    Tag: Ceiling bounce 3
+  TransformComponent:
+    Translation: [1, 4.05, 2.5]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  PointLightComponent:
+    Enabled: true
+    Color: [0.8, 0.7, 0.59]
+    Intensity: 55
+    Range: 6.7
+    CastShadows: false
+    ShadowResolution: 256
+- Entity: 24
+  Relationship:
+    Parent: 0
+    Order: 23
+  TagComponent:
+    Tag: Window bounce 3
+  TransformComponent:
+    Translation: [-5.8, 2.55, 2.5]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  PointLightComponent:
+    Enabled: true
+    Color: [0.39, 0.56, 0.82]
+    Intensity: 14
+    Range: 5.4
+    CastShadows: false
+    ShadowResolution: 256
+- Entity: 25
+  Relationship:
+    Parent: 0
+    Order: 24
+  TagComponent:
+    Tag: Passage warm fill
+  TransformComponent:
+    Translation: [4.14, 2.9, -8.38]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  PointLightComponent:
+    Enabled: true
+    Color: [1, 0.55, 0.26]
+    Intensity: 6
+    Range: 3.5
+    CastShadows: false
+    ShadowResolution: 256
+- Entity: 26
+  Relationship:
+    Parent: 0
+    Order: 25
+  TagComponent:
+    Tag: Passage warm fill
+  TransformComponent:
+    Translation: [4.14, 2.9, -12.51]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  PointLightComponent:
+    Enabled: true
+    Color: [1, 0.55, 0.26]
+    Intensity: 6
+    Range: 3.5
+    CastShadows: false
+    ShadowResolution: 256
+- Entity: 27
+  Relationship:
+    Parent: 0
+    Order: 26
+  TagComponent:
+    Tag: Passage warm fill
+  TransformComponent:
+    Translation: [4.14, 2.9, -14.43]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  PointLightComponent:
+    Enabled: true
+    Color: [1, 0.55, 0.26]
+    Intensity: 6
+    Range: 3.5
+    CastShadows: false
+    ShadowResolution: 256
+- Entity: 28
+  Relationship:
+    Parent: 0
+    Order: 27
+  TagComponent:
+    Tag: Entrance sconce
+  TransformComponent:
+    Translation: [-5.0, 3.7, 5.25]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  PointLightComponent:
+    Enabled: true
+    Color: [1, 0.57, 0.29]
+    Intensity: 23
+    Range: 5.5
+    CastShadows: false
+    ShadowResolution: 256
+- Entity: 29
+  Relationship:
+    Parent: 0
+    Order: 28
+  TagComponent:
+    Tag: Entrance sconce
+  TransformComponent:
+    Translation: [5.0, 3.7, 5.25]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  PointLightComponent:
+    Enabled: true
+    Color: [1, 0.57, 0.29]
+    Intensity: 23
+    Range: 5.5
+    CastShadows: false
+    ShadowResolution: 256
+- Entity: 30
+  Relationship:
+    Parent: 0
+    Order: 29
+  TagComponent:
+    Tag: Courtyard practical
+  TransformComponent:
+    Translation: [-6.16, 0.62, 7.7]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  PointLightComponent:
+    Enabled: true
+    Color: [1, 0.51, 0.23]
+    Intensity: 2.1
+    Range: 2.8
+    CastShadows: false
+    ShadowResolution: 256
+- Entity: 31
+  Relationship:
+    Parent: 0
+    Order: 30
+  TagComponent:
+    Tag: Courtyard practical
+  TransformComponent:
+    Translation: [-6.16, 0.62, 12.6]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  PointLightComponent:
+    Enabled: true
+    Color: [1, 0.51, 0.23]
+    Intensity: 2.1
+    Range: 2.8
+    CastShadows: false
+    ShadowResolution: 256
+- Entity: 32
+  Relationship:
+    Parent: 0
+    Order: 31
+  TagComponent:
+    Tag: Courtyard practical
+  TransformComponent:
+    Translation: [-6.16, 0.62, 17.5]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  PointLightComponent:
+    Enabled: true
+    Color: [1, 0.51, 0.23]
+    Intensity: 2.1
+    Range: 2.8
+    CastShadows: false
+    ShadowResolution: 256
+- Entity: 33
+  Relationship:
+    Parent: 0
+    Order: 32
+  TagComponent:
+    Tag: Courtyard practical
+  TransformComponent:
+    Translation: [6.16, 0.62, 7.7]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  PointLightComponent:
+    Enabled: true
+    Color: [1, 0.51, 0.23]
+    Intensity: 2.1
+    Range: 2.8
+    CastShadows: false
+    ShadowResolution: 256
+- Entity: 34
+  Relationship:
+    Parent: 0
+    Order: 33
+  TagComponent:
+    Tag: Courtyard practical
+  TransformComponent:
+    Translation: [6.16, 0.62, 12.6]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  PointLightComponent:
+    Enabled: true
+    Color: [1, 0.51, 0.23]
+    Intensity: 2.1
+    Range: 2.8
+    CastShadows: false
+    ShadowResolution: 256
+- Entity: 35
+  Relationship:
+    Parent: 0
+    Order: 34
+  TagComponent:
+    Tag: Courtyard practical
+  TransformComponent:
+    Translation: [6.16, 0.62, 17.5]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  PointLightComponent:
+    Enabled: true
+    Color: [1, 0.51, 0.23]
+    Intensity: 2.1
+    Range: 2.8
+    CastShadows: false
+    ShadowResolution: 256
+- Entity: 36
+  Relationship:
+    Parent: 0
+    Order: 35
+  TagComponent:
+    Tag: 01 Gallery probe
+  TransformComponent:
+    Translation: [-1.9, 2.05, -1.8]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  ReflectionProbeComponent:
+    Environment: Pavilion/Reflections/Hall.henv
+    Enabled: true
+    InfluenceHalfSize: [5.38, 2.09, 5.1]
+    ProjectionOffset: [1.9, 0.45, 0.89]
+    ProjectionHalfSize: [7.3, 2.55, 7.0]
+    BlendDistance: 1.1
+- Entity: 37
+  Relationship:
+    Parent: 0
+    Order: 36
+  TagComponent:
+    Tag: 02 Threshold probe
+  TransformComponent:
+    Translation: [4.28, 1.6, -6.65]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  ReflectionProbeComponent:
+    Environment: Pavilion/Reflections/Archive.henv
+    Enabled: true
+    InfluenceHalfSize: [1.69, 1.65, 2.91]
+    ProjectionOffset: [0, 0.16, -0.53]
+    ProjectionHalfSize: [1.85, 1.87, 3.55]
+    BlendDistance: 1.1
+- Entity: 38
+  Relationship:
+    Parent: 0
+    Order: 37
+  TagComponent:
+    Tag: Aggregate architecture
+  TransformComponent:
+    Translation: [0, 0, 0]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Pavilion/Architecture/meshes/0c6cbedb31c8e0b9.hmesh
+    Materials:
+    - Slot: 05f560d84b55e967
+      Material: Pavilion/Surfaces/Aggregate.hmat
+- Entity: 39
+  Relationship:
+    Parent: 0
+    Order: 38
+  TagComponent:
+    Tag: Black architecture
+  TransformComponent:
+    Translation: [0, 0, 0]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Pavilion/Architecture/meshes/1731ada5e6a39464.hmesh
+    Materials:
+    - Slot: e3773052c80ecb2c
+      Material: Pavilion/Surfaces/Black.hmat
+- Entity: 40
+  Relationship:
+    Parent: 0
+    Order: 39
+  TagComponent:
+    Tag: Bronze architecture
+  TransformComponent:
+    Translation: [0, 0, 0]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Pavilion/Architecture/meshes/7b742e0865e29013.hmesh
+    Materials:
+    - Slot: bee1249d229d4ae9
+      Material: Pavilion/Surfaces/Bronze.hmat
+- Entity: 41
+  Relationship:
+    Parent: 0
+    Order: 40
+  TagComponent:
+    Tag: Concrete architecture
+  TransformComponent:
+    Translation: [0, 0, 0]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Pavilion/Architecture/meshes/a1a359b5da61ce07.hmesh
+    Materials:
+    - Slot: c5cd039b68831b35
+      Material: Pavilion/Surfaces/Concrete.hmat
+- Entity: 42
+  Relationship:
+    Parent: 0
+    Order: 41
+  TagComponent:
+    Tag: Amber architecture
+  TransformComponent:
+    Translation: [0, 0, 0]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Pavilion/Architecture/meshes/40482c8c2212e05d.hmesh
+    Materials:
+    - Slot: 45ca41c0222e40d2
+      Material: Pavilion/Surfaces/Amber.hmat
+- Entity: 43
+  Relationship:
+    Parent: 0
+    Order: 42
+  TagComponent:
+    Tag: Oak architecture
+  TransformComponent:
+    Translation: [0, 0, 0]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Pavilion/Architecture/meshes/0f55735a33fc82c6.hmesh
+    Materials:
+    - Slot: 3c6ff97a6e652d78
+      Material: Pavilion/Surfaces/Oak.hmat
+- Entity: 44
+  Relationship:
+    Parent: 0
+    Order: 43
+  TagComponent:
+    Tag: Marble architecture
+  TransformComponent:
+    Translation: [0, 0, 0]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Pavilion/Architecture/meshes/8176cb8701f17e06.hmesh
+    Materials:
+    - Slot: 3fd67eadd0f0c73d
+      Material: Pavilion/Surfaces/Marble.hmat
+- Entity: 45
+  Relationship:
+    Parent: 0
+    Order: 44
+  TagComponent:
+    Tag: Warm architecture
+  TransformComponent:
+    Translation: [0, 0, 0]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Pavilion/Architecture/meshes/0a6d40f938d2cc9f.hmesh
+    Materials:
+    - Slot: e9dcb89c5090df96
+      Material: Pavilion/Surfaces/Warm.hmat
+- Entity: 46
+  Relationship:
+    Parent: 0
+    Order: 45
+  TagComponent:
+    Tag: Slate architecture
+  TransformComponent:
+    Translation: [0, 0, 0]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Pavilion/Architecture/meshes/967351e735800838.hmesh
+    Materials:
+    - Slot: 3ec2bb0b775930c8
+      Material: Pavilion/Surfaces/Slate.hmat
+- Entity: 47
+  Relationship:
+    Parent: 0
+    Order: 46
+  TagComponent:
+    Tag: Orbital sculpture outer
+  TransformComponent:
+    Translation: [-1.39, 2.85, -3.52]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Pavilion/Architecture/meshes/8821a8378b58ef76.hmesh
+    Materials:
+    - Slot: 14f750def936b4ae
+      Material: Pavilion/Surfaces/Bronze.hmat
+- Entity: 48
+  Relationship:
+    Parent: 0
+    Order: 47
+  TagComponent:
+    Tag: Orbital sculpture inner
+  TransformComponent:
+    Translation: [-1.39, 2.85, -3.52]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Pavilion/Architecture/meshes/dbbde9ea7c3d0c80.hmesh
+    Materials:
+    - Slot: f3cc4b9f2a53bed4
+      Material: Pavilion/Surfaces/Steel.hmat
+- Entity: 49
+  Relationship:
+    Parent: 0
+    Order: 48
+  TagComponent:
+    Tag: Orbital sculpture arc
+  TransformComponent:
+    Translation: [-1.39, 2.85, -3.52]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Pavilion/Architecture/meshes/2d95967e37d9fc01.hmesh
+    Materials:
+    - Slot: 599de380940a9743
+      Material: Pavilion/Surfaces/Warm.hmat
+- Entity: 50
+  Relationship:
+    Parent: 0
+    Order: 49
+  TagComponent:
+    Tag: Kinetic exhibit
+  TransformComponent:
+    Translation: [1.6, 1.151, -3.5]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Pavilion/Architecture/meshes/800fd3e656365e11.hmesh
+    Materials:
+    - Slot: 8308ceca3660a5aa
+      Material: Pavilion/Surfaces/Bronze.hmat
+- Entity: 51
+  Relationship:
+    Parent: 0
+    Order: 50
+  TagComponent:
+    Tag: Archive lens housing
+  TransformComponent:
+    Translation: [2.24, 1.104, -3.48]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Pavilion/Architecture/meshes/a670306ed0c3ae71.hmesh
+    Materials:
+    - Slot: f0f90f9f4631cae0
+      Material: Pavilion/Surfaces/Steel.hmat
+- Entity: 52
+  Relationship:
+    Parent: 0
+    Order: 51
+  TagComponent:
+    Tag: Archive lens rim
+  TransformComponent:
+    Translation: [2.24, 1.102, -3.42]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Pavilion/Architecture/meshes/13fa9ea3cc127478.hmesh
+    Materials:
+    - Slot: eb3e13fd34815a7a
+      Material: Pavilion/Surfaces/Bronze.hmat
+- Entity: 53
+  Relationship:
+    Parent: 0
+    Order: 52
+  TagComponent:
+    Tag: Cold architecture
+  TransformComponent:
+    Translation: [0, 0, 0]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Pavilion/Architecture/meshes/4802f7b6073c1717.hmesh
+    Materials:
+    - Slot: 815f8479c7b01f69
+      Material: Pavilion/Surfaces/Cold.hmat
+- Entity: 54
+  Relationship:
+    Parent: 0
+    Order: 53
+  TagComponent:
+    Tag: Exit architecture
+  TransformComponent:
+    Translation: [0, 0, 0]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Pavilion/Architecture/meshes/511ecfea16bdf945.hmesh
+    Materials:
+    - Slot: dc398c0eebe0018a
+      Material: Pavilion/Surfaces/Exit.hmat
+- Entity: 55
+  Relationship:
+    Parent: 0
+    Order: 54
+  TagComponent:
+    Tag: Title architecture
+  TransformComponent:
+    Translation: [0, 0, 0]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Pavilion/Architecture/meshes/cba676d9a18c3bb1.hmesh
+    Materials:
+    - Slot: d6a7c1ae5f95f26f
+      Material: Pavilion/Surfaces/Title.hmat
+- Entity: 56
+  Relationship:
+    Parent: 0
+    Order: 55
+  TagComponent:
+    Tag: Exhibition architecture
+  TransformComponent:
+    Translation: [0, 0, 0]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Pavilion/Architecture/meshes/904c74d3fc14e3cc.hmesh
+    Materials:
+    - Slot: 32af7fd8e73ac26e
+      Material: Pavilion/Surfaces/Exhibition.hmat
+- Entity: 57
+  Relationship:
+    Parent: 0
+    Order: 56
+  TagComponent:
+    Tag: Label architecture
+  TransformComponent:
+    Translation: [0, 0, 0]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Pavilion/Architecture/meshes/c56ef470896ca0ce.hmesh
+    Materials:
+    - Slot: 57cd5377b3494a74
+      Material: Pavilion/Surfaces/Label.hmat
+- Entity: 58
+  Relationship:
+    Parent: 0
+    Order: 57
+  TagComponent:
+    Tag: Court grasses
+  TransformComponent:
+    Translation: [0, 0, 0]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Pavilion/Architecture/meshes/76a578d8ca5f88b5.hmesh
+    Materials:
+    - Slot: 943cde45ce3465df
+      Material: Pavilion/Surfaces/Leaves.hmat
+- Entity: 59
+  Relationship:
+    Parent: 0
+    Order: 58
+  TagComponent:
+    Tag: "A\u201311 flight helmet"
+  TransformComponent:
+    Translation: [-1.25, 1.159, -2.56]
+    Rotation: [0, 0.31, 0]
+    Scale: [1, 1, 1]
+- Entity: 60
+  Relationship:
+    Parent: 59
+    Order: 0
+  TagComponent:
+    Tag: Hose_low
+  TransformComponent:
+    Translation: [0, 0, 0]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Pavilion/FlightHelmet/meshes/cc79f240df72b5f1.hmesh
+    Materials: []
+- Entity: 61
+  Relationship:
+    Parent: 59
+    Order: 1
+  TagComponent:
+    Tag: RubberWood_low
+  TransformComponent:
+    Translation: [0, 0, 0]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Pavilion/FlightHelmet/meshes/2ad93c7fc139ec86.hmesh
+    Materials: []
+- Entity: 62
+  Relationship:
+    Parent: 59
+    Order: 2
+  TagComponent:
+    Tag: GlassPlastic_low
+  TransformComponent:
+    Translation: [0, 0, 0]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Pavilion/FlightHelmet/meshes/557773c533397782.hmesh
+    Materials: []
+- Entity: 63
+  Relationship:
+    Parent: 59
+    Order: 3
+  TagComponent:
+    Tag: MetalParts_low
+  TransformComponent:
+    Translation: [0, 0, 0]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Pavilion/FlightHelmet/meshes/8ae5b0fb10db431d.hmesh
+    Materials: []
+- Entity: 64
+  Relationship:
+    Parent: 59
+    Order: 4
+  TagComponent:
+    Tag: LeatherParts_low
+  TransformComponent:
+    Translation: [0, 0, 0]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Pavilion/FlightHelmet/meshes/1beef80d933774d0.hmesh
+    Materials: []
+- Entity: 65
+  Relationship:
+    Parent: 59
+    Order: 5
+  TagComponent:
+    Tag: Lenses_low
+  TransformComponent:
+    Translation: [0, 0, 0]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Pavilion/FlightHelmet/meshes/860a697022b0ea4e.hmesh
+    Materials: []
+- Entity: 66
+  Relationship:
+    Parent: 0
+    Order: 59
+  TagComponent:
+    Tag: "A\u201311 focus pivot"
+  TransformComponent:
+    Translation: [-1.21, 1.71, -2.46]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+- Entity: 67
+  Relationship:
+    Parent: 0
+    Order: 60
+  TagComponent:
+    Tag: Archive focus mark
+  TransformComponent:
+    Translation: [-1.75, 2.82, -6.81]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]
+- Entity: 68
+  Relationship:
+    Parent: 0
+    Order: 61
+  TagComponent:
+    Tag: Foreground focus mark
+  TransformComponent:
+    Translation: [-1.45, 1.19, -0.65]
+    Rotation: [0, 0, 0]
+    Scale: [1, 1, 1]

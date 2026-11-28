@@ -1,0 +1,186 @@
+{
+  "base": "224a77994c5d365e278a6d3550260194d26b31a9",
+  "host": "Apple M4 16 GiB macOS 27.3",
+  "scope": "Pavilion checkpoint, local native GPU",
+  "desktop": {
+    "Hazelnut-metal-Debug": [
+      "SMOKE: 60 rendered frames minimum met; 60 CPU layer ticks, 17881 engine draw submissions; normal close accepted",
+      "METAL_FINAL submitted=73 completed=73 presented=68 completed_presented=68 errors=0 peak_frame_bytes=670402988 peak_attachment_bytes=428261632 peak_allocator_bytes=14446120 live_attachment_generations=0 pending_bytes=0",
+      "SMOKE PASS: application teardown completed"
+    ],
+    "Hazelnut-metal-Release": [
+      "SMOKE: 60 rendered frames minimum met; 60 CPU layer ticks, 17881 engine draw submissions; normal close accepted",
+      "METAL_FINAL submitted=73 completed=73 presented=66 completed_presented=66 errors=0 peak_frame_bytes=718621572 peak_attachment_bytes=461570304 peak_allocator_bytes=14446120 live_attachment_generations=0 pending_bytes=0",
+      "SMOKE PASS: application teardown completed"
+    ],
+    "Hazelnut-opengl-Debug": [
+      "SMOKE: 60 rendered frames minimum met; 60 CPU layer ticks, 14761 engine draw submissions; normal close accepted",
+      "SMOKE PASS: application teardown completed"
+    ],
+    "Hazelnut-opengl-Release": [
+      "SMOKE: 60 rendered frames minimum met; 60 CPU layer ticks, 14761 engine draw submissions; normal close accepted",
+      "SMOKE PASS: application teardown completed"
+    ],
+    "Nutella-metal-Debug": [
+      "SMOKE: 60 rendered frames minimum met; 62 CPU layer ticks, 17422 engine draw submissions; normal close accepted",
+      "METAL_FINAL submitted=62 completed=62 presented=60 completed_presented=60 errors=0 peak_frame_bytes=526947316 peak_attachment_bytes=330383616 peak_allocator_bytes=13200936 live_attachment_generations=0 pending_bytes=0",
+      "SMOKE PASS: application teardown completed"
+    ],
+    "Nutella-metal-Release": [
+      "SMOKE: 60 rendered frames minimum met; 72 CPU layer ticks, 20232 engine draw submissions; normal close accepted",
+      "METAL_FINAL submitted=67 completed=67 presented=62 completed_presented=62 errors=0 peak_frame_bytes=550999028 peak_attachment_bytes=353452288 peak_allocator_bytes=13200936 live_attachment_generations=0 pending_bytes=0",
+      "SMOKE PASS: application teardown completed"
+    ],
+    "Nutella-opengl-Debug": [
+      "SMOKE: 60 rendered frames minimum met; 60 CPU layer ticks, 13620 engine draw submissions; normal close accepted",
+      "SMOKE PASS: application teardown completed"
+    ],
+    "Nutella-opengl-Release": [
+      "SMOKE: 60 rendered frames minimum met; 60 CPU layer ticks, 13620 engine draw submissions; normal close accepted",
+      "SMOKE PASS: application teardown completed"
+    ]
+  },
+  "independentReleaseReferences": {
+    "exposure": {
+      "status": "PASS focused HDR bloom and camera study",
+      "checks": {
+        "metal": [
+          "BLOOM_ORACLE uniformCases=27 maxLinearError=1.43051e-08",
+          "CAMERA_ORACLE physicalCases=5 maxLinearError=8.9407e-10",
+          "CAMERA_EXPOSURE startupError=1.58721e-07 adaptationError=5.15657e-07 frameRateDrift=4.58702e-07 lock=pass cut=pass resize=pass",
+          "BLOOM_IMPULSE fourPhases=pass minEnergy=6.47153 maxEnergy=6.47153",
+          "BLOOM_DISOCCLUSION maxResidual=0",
+          "CAMERA_STUDY equivalentGain=bit-exact ID/depth=pass cameraSwitch=pass",
+          "BLOOM_LIFETIME queue=3 reset=pass oddResize=pass onePixel=pass exposureHistory=exact",
+          "BLOOM_STUDY poses=17 ID/depth=pass disabled=pass UI=pass AO/TAA=pass exposureHistory=pass"
+        ],
+        "opengl": [
+          "BLOOM_ORACLE uniformCases=27 maxLinearError=1.43051e-08",
+          "CAMERA_ORACLE physicalCases=5 maxLinearError=8.9407e-10",
+          "CAMERA_EXPOSURE startupError=9.69999e-08 adaptationError=5.15657e-07 frameRateDrift=4.87914e-07 lock=pass cut=pass resize=pass",
+          "BLOOM_IMPULSE fourPhases=pass minEnergy=6.47153 maxEnergy=6.47153",
+          "CAMERA_STUDY equivalentGain=bit-exact ID/depth=pass cameraSwitch=pass",
+          "BLOOM_STUDY poses=17 ID/depth=pass disabled=pass UI=pass"
+        ]
+      }
+    },
+    "dof": {
+      "status": "PASS defocus disc study",
+      "checks": {
+        "metal": [
+          "DEFOCUS_DISC depth=1.2 referenceRadius=8.44149 measuredRadius=8.68674 energyRatio=0.999426",
+          "DEFOCUS_DISC depth=6 referenceRadius=8.44149 measuredRadius=8.70273 energyRatio=0.99977",
+          "DEFOCUS_DISC depth=3.2 referenceRadius=4.74834 measuredRadius=5.27205 energyRatio=1.00078",
+          "DEFOCUS_OCCLUSION coverageMAE=0.015291 farMAE=0.015291 outside=0",
+          "DEFOCUS_FOCUS halfLife=pass tracking=pass hysteresis=pass cameraCut=pass oddResize=pass pickingDepth=exact",
+          "DEFOCUS_COMBINED focalPull=pass autoExposure=pass pickingDepth=exact TAA_AO_SSR=pass",
+          "DEFOCUS_LIFETIME queue=3 reset=pass resize=pass history=exact"
+        ],
+        "opengl": [
+          "DEFOCUS_DISC depth=1.2 referenceRadius=8.44149 measuredRadius=8.68673 energyRatio=0.999426",
+          "DEFOCUS_DISC depth=6 referenceRadius=8.44149 measuredRadius=8.70273 energyRatio=0.99977",
+          "DEFOCUS_DISC depth=3.2 referenceRadius=4.74834 measuredRadius=5.27205 energyRatio=1.00078",
+          "DEFOCUS_OCCLUSION coverageMAE=0.015291 farMAE=0.015291 outside=0",
+          "DEFOCUS_FOCUS halfLife=pass tracking=pass hysteresis=pass cameraCut=pass oddResize=pass pickingDepth=exact",
+          "DEFOCUS_COMBINED focalPull=pass autoExposure=pass pickingDepth=exact spatialSSR=pass"
+        ]
+      }
+    },
+    "shutter": {
+      "status": "PASS motion shutter study",
+      "checks": {
+        "metal": [
+          "SHUTTER_SUPPORT case=moving-object reference=8 measured=8.27581 centerError=-0.0714558 endpointError=0.209363 energyRatio=1.01754",
+          "SHUTTER_SUPPORT case=balanced-moving-object reference=8 measured=8.80742 centerError=0.269117 endpointError=0.672826 energyRatio=1.03933",
+          "SHUTTER_SUPPORT case=fast-object-24hz reference=16 measured=15.7133 centerError=0.0581149 endpointError=0.201455 energyRatio=1.01086",
+          "SHUTTER_SUPPORT case=translating-camera reference=8 measured=8.07396 centerError=0.0216885 endpointError=0.0586692 energyRatio=1.02159",
+          "SHUTTER_SUPPORT case=rotating-camera reference=8 measured=8.27581 centerError=-0.0714558 endpointError=0.209363 energyRatio=1.01754",
+          "SHUTTER_SUPPORT case=duration-24hz reference=8 measured=8.27581 centerError=-0.0714558 endpointError=0.209363 energyRatio=1.01754",
+          "SHUTTER_SUPPORT case=duration-120hz reference=8 measured=8.27581 centerError=-0.0714558 endpointError=0.209363 energyRatio=1.01754",
+          "SHUTTER_COVERAGE screenEdge=pass screenUI=pass",
+          "SHUTTER_LENS apertureRadius=8.70525 referenceAperture=8.44149 shutterHalfWidth=3.04532 referenceShutter=4",
+          "SHUTTER_COMBINED optics=pass cut=pass pickingDepth=exact reuseTemporalVectors=pass",
+          "SHUTTER_LIFETIME queue=3 reset=pass resize=pass history=exact"
+        ],
+        "opengl": [
+          "SHUTTER_SUPPORT case=moving-object reference=8 measured=8.27581 centerError=-0.0714559 endpointError=0.209363 energyRatio=1.01754",
+          "SHUTTER_SUPPORT case=balanced-moving-object reference=8 measured=8.80742 centerError=0.269117 endpointError=0.672826 energyRatio=1.03933",
+          "SHUTTER_SUPPORT case=fast-object-24hz reference=16 measured=15.7133 centerError=0.0581149 endpointError=0.201455 energyRatio=1.01086",
+          "SHUTTER_SUPPORT case=translating-camera reference=8 measured=8.22366 centerError=-0.114494 endpointError=0.226326 energyRatio=1.00542",
+          "SHUTTER_SUPPORT case=rotating-camera reference=8 measured=8.27581 centerError=-0.0714559 endpointError=0.209363 energyRatio=1.01754",
+          "SHUTTER_SUPPORT case=duration-24hz reference=8 measured=8.27581 centerError=-0.0714559 endpointError=0.209363 energyRatio=1.01754",
+          "SHUTTER_SUPPORT case=duration-120hz reference=8 measured=8.27581 centerError=-0.0714559 endpointError=0.209363 energyRatio=1.01754",
+          "SHUTTER_COVERAGE screenEdge=pass screenUI=pass",
+          "SHUTTER_LENS apertureRadius=8.70525 referenceAperture=8.44149 shutterHalfWidth=3.04532 referenceShutter=4",
+          "SHUTTER_COMBINED optics=pass cut=pass pickingDepth=exact spatialVectors=pass"
+        ]
+      }
+    },
+    "lens": {
+      "status": "PASS lens effects study",
+      "checks": {
+        "metal": [
+          "LENS_GLARE ghostPeak=0.296387 dirtFactor=1.5 occultation=exact fallback=exact",
+          "LENS_GEOMETRY warpedPixels=1690 idDepthMismatches=0 chromaticError=4.68803e-06 chromaticChanges=2",
+          "LENS_SENSOR vignetteError=3.5795e-08 grainMean=-1.69508e-05 grainRMS=0.00575176 reset=exact screenUI=exact",
+          "LENS_RUNTIME authoredCamera=pass dirtAsset=pass pickingDepth=exact",
+          "LENS_LIFETIME queue=3 reset=pass resize=pass sourceChange=exact"
+        ],
+        "opengl": [
+          "LENS_GLARE ghostPeak=0.296387 dirtFactor=1.5 occultation=exact fallback=exact",
+          "LENS_GEOMETRY warpedPixels=1690 idDepthMismatches=0 chromaticError=4.68803e-06 chromaticChanges=2",
+          "LENS_SENSOR vignetteError=3.5795e-08 grainMean=-1.69508e-05 grainRMS=0.00575176 reset=exact screenUI=exact",
+          "LENS_RUNTIME authoredCamera=pass dirtAsset=pass pickingDepth=exact"
+        ]
+      }
+    },
+    "probe": {
+      "status": "PASS focused native reflection probes",
+      "checks": {
+        "metal": [
+          "REFLECTION_REFERENCE samples=175560 overlap=41160 residual=130192 faces=63 radiance=0.000101215 energy=4.91462e-05 diffuse=0",
+          "REFLECTION_CAPTURED_TEMPORAL AO/TAA=pass invalidation=pass",
+          "REFLECTION_GALLERY poses=1 matchedAuthoring=pass coverage=pass exposure=0.1"
+        ],
+        "opengl": [
+          "REFLECTION_REFERENCE samples=175560 overlap=41160 residual=130192 faces=63 radiance=0.000101185 energy=4.91313e-05 diffuse=0",
+          "REFLECTION_GALLERY poses=1 matchedAuthoring=pass coverage=pass exposure=0.1"
+        ]
+      }
+    }
+  },
+  "negative": {
+    "missingTexture": "Named the missing marble_01-normal.jpg and rejected startup",
+    "invalidProbe": "Rejected oversized/invalid lighting and kept the accepted manifest byte-identical"
+  },
+  "probeBake": [
+    "PAVILION_BAKE Hall face=256 peakHDR=739.33 viewEffectsInvariant=true",
+    "PAVILION_BAKE Archive face=256 peakHDR=284.987 viewEffectsInvariant=true"
+  ],
+  "sourceFreePackages": [
+    "PASS: Hazelnut Smoke-Metal actual relocated product startup/normal shutdown, runtime-loaded closure and unchanged signature; human interaction details remain separately recorded",
+    "PASS: Hazelnut Smoke-OpenGL actual relocated product startup/normal shutdown, runtime-loaded closure and unchanged signature; human interaction details remain separately recorded",
+    "PASS: Nutella Smoke-Metal actual relocated product startup/normal shutdown, runtime-loaded closure and unchanged signature; human interaction details remain separately recorded",
+    "PASS: Nutella Smoke-OpenGL actual relocated product startup/normal shutdown, runtime-loaded closure and unchanged signature; human interaction details remain separately recorded"
+  ],
+  "editorResize": {
+    "resize-metal": [
+      "PAVILION_EDITOR 1280x720 -> 1120x760 draws=8033",
+      "METAL_FINAL submitted=40 completed=40 presented=35 completed_presented=35 errors=0 peak_frame_bytes=718424964 peak_attachment_bytes=461570304 peak_allocator_bytes=14478888 live_attachment_generations=0 pending_bytes=0",
+      "PASS: Pavilion in native EditorLayer after drawable resize and normal shutdown"
+    ],
+    "resize-gl": [
+      "PAVILION_EDITOR 1280x720 -> 1120x760 draws=5894",
+      "PASS: Pavilion in native EditorLayer after drawable resize and normal shutdown"
+    ],
+    "resize-debug-metal": [
+      "PAVILION_EDITOR 1280x720 -> 1120x760 draws=7736",
+      "METAL_FINAL submitted=39 completed=39 presented=35 completed_presented=35 errors=0 peak_frame_bytes=670271916 peak_attachment_bytes=455901440 peak_allocator_bytes=14446120 live_attachment_generations=0 pending_bytes=0",
+      "PASS: Pavilion in native EditorLayer after drawable resize and normal shutdown"
+    ]
+  },
+  "frozenRuntime": {
+    "default": "FAIL Frozen IBLQuality_v2 bytes changed",
+    "immutable86c581c": "PASS Release RuntimeSessionSmoke and Core_v1 Nutella"
+  }
+}

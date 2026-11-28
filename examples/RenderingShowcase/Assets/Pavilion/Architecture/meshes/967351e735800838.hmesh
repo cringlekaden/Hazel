@@ -1,0 +1,9 @@
+Mesh:
+  Version: 1
+  ID: 967351e735800838
+  Name: Architecture / Slate
+  Import: Pavilion/Architecture/Import.himport
+  Slots:
+    - ID: 3ec2bb0b775930c8
+      Name: Surface 1
+      Material: Pavilion/Architecture/materials/8f42732066ef771f.hmat

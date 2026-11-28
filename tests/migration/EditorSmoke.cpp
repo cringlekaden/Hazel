@@ -1773,7 +1773,22 @@ static int HierarchyCPU() {
     Check(!panel.DropEntity(scene->GetIdentity(),child.GetUUID(),root.GetUUID()) && SceneSerializer(scene).SerializeAuthoredSnapshot()==retained,"Availability bypass");
     std::cout<<"PASS: production panel root/row drops, selection/dirty state, cycle/cross-scene/physics/shear/availability rejection and save/reopen (CPU)\n";return 0;
 }
+#ifdef HZ_PLATFORM_MACOS
+#include "../macos/PavilionEditorResize.h"
+#endif
 int main(int argc, char** argv) {
+#ifdef HZ_PLATFORM_MACOS
+    if (argc == 6 && std::string_view(argv[1]) == "--pavilion-resize") {
+        try {
+            return Hazel::PavilionEditorResize(std::filesystem::absolute(argv[2]),
+                std::filesystem::absolute(argv[3]), std::string_view(argv[4]) == "metal",
+                std::filesystem::absolute(argv[5]));
+        } catch (const std::exception& error) {
+            std::cerr << "FAIL: " << error.what() << '\n';
+            return 1;
+        }
+    }
+#endif
     if(argc==2 && std::string(argv[1])=="--caption-cpu")try{return CaptionCPU();}catch(const std::exception& e){std::cerr<<"FAIL: "<<e.what()<<'\n';return 1;}
     if(argc==2 && std::string(argv[1])=="--hierarchy-cpu")try{return HierarchyCPU();}catch(const std::exception& e){std::cerr<<"FAIL: "<<e.what()<<'\n';return 1;}
 

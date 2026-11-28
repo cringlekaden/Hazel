@@ -1,0 +1,9 @@
+Mesh:
+  Version: 1
+  ID: cc79f240df72b5f1
+  Name: Hose_low
+  Import: Pavilion/FlightHelmet/Import.himport
+  Slots:
+    - ID: 5f43bebd97c1ba6d
+      Name: Surface 1
+      Material: Pavilion/FlightHelmet/materials/15e38090770aa779.hmat

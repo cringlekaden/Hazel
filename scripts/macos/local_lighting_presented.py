@@ -69,7 +69,7 @@ def stats(values):
     if len(values)<30:raise RuntimeError('Insufficient matched positive presentation samples')
     return dict(samples=len(values),median=statistics.median(values),p95=values[math.ceil(.95*len(values))-1])
 
-def presented_timings(log,name):
+def presented_timings(log,name,extents=('1280x720','1920x1080')):
     text=log.read_text();cpu={};joins={};gpu={};present={}
     for m in re.finditer(r'M4_BENCH_CPU frame=(\d+) pixels=(\d+)x(\d+) scene_ms=([\d.]+) layer_ms=([\d.]+)',text):cpu[int(m[1])]=(m[2]+'x'+m[3],float(m[4]),float(m[5]))
     for m in re.finditer(r'M4_BENCH_JOIN cpu_frame=(\d+) submission=(\d+)',text):joins[int(m[2])]=int(m[1])
@@ -87,7 +87,7 @@ def presented_timings(log,name):
         case[extent]=dict(positiveFrames=len(rows),gpuWholeFrameMs=stats([r[1] for r in rows]),
             sceneCPUms=stats([r[2] for r in rows]),layerCPUms=stats([r[3] for r in rows]),
             presentedIntervalMs=stats([(b[0]-a[0])*1000 for a,b in zip(rows,rows[1:])]))
-    if set(case)!= {'1280x720','1920x1080'}:raise RuntimeError('Physical extents differ: '+str(case.keys()))
+    if set(case)!=set(extents):raise RuntimeError('Physical extents differ: '+str(case.keys()))
     return case
 
 def main():

@@ -139,6 +139,7 @@ static int Benchmark(const std::filesystem::path& output,const std::filesystem::
     spec.Rendering.TextureSlots=4;spec.WindowVSync=false;
     std::shared_ptr<MetalProofObserver> observer;
     const bool localBenchmark=!FileSystem::GetEnvironmentPath("HAZEL_LOCAL_PRESENT_BENCHMARK").empty();
+    const bool include1440 = localBenchmark && !FileSystem::GetEnvironmentPath("HAZEL_PRESENT_1440").empty();
     const auto startup=Clock::now();
     {
         Application app(spec);if(metal)observer=Backend().Observe();
@@ -171,8 +172,21 @@ static int Benchmark(const std::filesystem::path& output,const std::filesystem::
             }}
             const auto completed=localBenchmark&&observer?observer->Snapshot().CompletedPresented:proof->Frames;
             if(completed-phaseStart>=(localBenchmark?120u:720u)) {
-                if(!phase){phase=1;phaseStart=completed;glfwSetWindowSize(window,int(1920/(localBenchmark?physicalScale:1)),int(1080/(localBenchmark?physicalScale:1)));}
-                else app.GetWindow().RequestClose();
+                if (phase == 0) {
+                    ++phase;
+                    phaseStart = completed;
+                    glfwSetWindowSize(window, int(1920/(localBenchmark?physicalScale:1)),
+                                      int(1080/(localBenchmark?physicalScale:1)));
+                } else if (phase == 1 && include1440) {
+                    ++phase;
+                    phaseStart = completed;
+                    auto* monitor = glfwGetPrimaryMonitor();
+                    const auto* mode = monitor ? glfwGetVideoMode(monitor) : nullptr;
+                    Check(mode != nullptr, "1440p presentation requires a primary monitor");
+                    // Reuse the current physical display mode. The decorated
+                    // macOS window can otherwise be clamped below screen height.
+                    glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+                } else app.GetWindow().RequestClose();
             }
         });
         app.Run();

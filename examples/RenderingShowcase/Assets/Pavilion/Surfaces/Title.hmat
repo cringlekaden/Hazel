@@ -1,0 +1,45 @@
+Material:
+  Version: 1
+  Name: Title
+  Model: MetallicRoughness
+  BaseColor: [0.42, 0.42, 0.42, 1]
+  Emissive: [1.0, 1.0, 1.0]
+  EmissiveStrength: 1.5
+  Metallic: 0
+  Roughness: 0.6
+  NormalScale: 0.5
+  OcclusionStrength: 0.8
+  Alpha: Opaque
+  AlphaCutoff: 0.4
+  DoubleSided: false
+  Textures:
+    BaseColor:
+      Image: Pavilion/Surfaces/Title.png
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    MetallicRoughness:
+      Image: ''
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Normal:
+      Image: ''
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Occlusion:
+      Image: ''
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Emissive:
+      Image: Pavilion/Surfaces/Title.png
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
